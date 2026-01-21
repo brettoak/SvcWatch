@@ -1,0 +1,12 @@
+server:
+  port: 8080
+
+log:
+  path: "./access.log"
+  # topic for kafka or redis key in the future
+  topic: "nginx_access_log"
+
+redis:
+  addr: "localhost:6379"
+  password: ""
+  db: 0
