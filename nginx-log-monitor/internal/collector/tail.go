@@ -5,7 +5,7 @@ import (
 	"nginx-log-monitor/internal/model"
 	"time"
 
-	"github.com/hpcloud/tail"
+	"github.com/nxadm/tail"
 )
 
 // LogCollector handles the tailing of log files.
