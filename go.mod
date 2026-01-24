@@ -2,7 +2,11 @@ module SvcWatch
 
 go 1.25.6
 
+
+replace nginx-log-monitor => ./nginx-log-monitor
+
 require (
+	nginx-log-monitor v0.0.0-00010101000000-000000000000
 	github.com/bytedance/gopkg v0.1.3 // indirect
 	github.com/bytedance/sonic v1.14.2 // indirect
 	github.com/bytedance/sonic/loader v0.4.0 // indirect
