@@ -2,9 +2,6 @@ package collector
 
 import (
 	"fmt"
-	"nginx-log-monitor/internal/model"
-	"time"
-
 	"github.com/nxadm/tail"
 )
 
