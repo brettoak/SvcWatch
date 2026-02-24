@@ -11,7 +11,7 @@ import (
 func main() {
 	// Let's test just the storage creation and insertion
 	fmt.Println("Testing SQLite Storage...")
-	store := storage.NewSqliteStorage("test_nginx_logs.db")
+	store := storage.NewSqliteStorage("test_nginx_logs.db", true)
 	defer store.Close()
 
 	entry := &model.LogEntry{
@@ -35,7 +35,7 @@ func main() {
 	fmt.Printf("Total logs in database: %d\n", count)
 	
 	// Create a monitor object using NewMonitor, passing a dummy path to test it doesn't crash
-	_, err = mon.NewMonitor("../access.log")
+	_, err = mon.NewMonitor("../access.log", true)
 	if err != nil {
 		fmt.Printf("Monitor initialization err: %v\n", err)
 	} else {

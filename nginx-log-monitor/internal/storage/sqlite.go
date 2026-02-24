@@ -14,10 +14,19 @@ type SqliteStorage struct {
 }
 
 // NewSqliteStorage creates a new SqliteStorage.
-func NewSqliteStorage(dbPath string) *SqliteStorage {
+func NewSqliteStorage(dbPath string, clearOnStartup bool) *SqliteStorage {
 	db, err := sql.Open("sqlite3", dbPath)
 	if err != nil {
 		log.Fatalf("Failed to open sqlite database: %v", err)
+	}
+
+	if clearOnStartup {
+		// Drop table to clear previous data on startup
+		dropTableSQL := `DROP TABLE IF EXISTS nginx_logs;`
+		_, err = db.Exec(dropTableSQL)
+		if err != nil {
+			log.Fatalf("Failed to drop table: %v", err)
+		}
 	}
 
 	// Create table if not exists

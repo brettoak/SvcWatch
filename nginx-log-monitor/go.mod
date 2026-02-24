@@ -6,6 +6,7 @@ require (
 	github.com/gin-gonic/gin v1.11.0
 	github.com/mattn/go-sqlite3 v1.14.34
 	github.com/nxadm/tail v1.4.11
+	gopkg.in/yaml.v3 v3.0.1
 )
 
 require (

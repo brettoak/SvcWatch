@@ -14,12 +14,12 @@ type Monitor struct {
 }
 
 // NewMonitor creates a new Monitor instance.
-func NewMonitor(logPath string) (*Monitor, error) {
+func NewMonitor(logPath string, clearOnStartup bool) (*Monitor, error) {
 	coll, err := collector.NewLogCollector(logPath)
 	if err != nil {
 		return nil, err
 	}
-	store := storage.NewSqliteStorage("nginx_logs.db")
+	store := storage.NewSqliteStorage("nginx_logs.db", clearOnStartup)
 	return &Monitor{
 		collector: coll,
 		storage:   store,

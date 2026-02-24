@@ -2,19 +2,26 @@ package main
 
 import (
 	"log"
-	monitor "nginx-log-monitor" // Import the local module
+	mon "nginx-log-monitor" // Import the local module
+	"nginx-log-monitor/configPkg"
 
 	"github.com/gin-gonic/gin"
 )
 
 func main() {
-	// Initialize the monitor with log file path
+	// Load configuration
+	cfg, err := configPkg.LoadConfig("nginx-log-monitor/config/config.yaml")
+	if err != nil {
+		log.Fatalf("Failed to load config: %v", err)
+	}
+
+	// Initialize the monitor with log file path and config flag
 	// Assuming access.log exists or will be created
-	mon, err := monitor.NewMonitor("./access.log")
+	monitor, err := mon.NewMonitor("./access.log", cfg.Database.ClearOnStartup)
 	if err != nil {
 		log.Fatalf("Failed to create monitor: %v", err)
 	}
-	mon.Start()
+	monitor.Start()
 
 	router := gin.Default()
 	v1 := router.Group("/api/v1")
@@ -27,7 +34,7 @@ func main() {
 
 		// Expose stats endpoint
 		v1.GET("/stats", func(c *gin.Context) {
-			c.JSON(200, mon.GetStats())
+			c.JSON(200, monitor.GetStats())
 		})
 	}
 
