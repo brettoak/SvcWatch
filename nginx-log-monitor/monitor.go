@@ -4,25 +4,26 @@ import (
 	"fmt"
 	"nginx-log-monitor/internal/collector"
 	"nginx-log-monitor/internal/parser"
-	"nginx-log-monitor/internal/storage"
+	storage "nginx-log-monitor/storagePkg"
 )
 
-// Monitor is the main entry point for the log monitoring service.
+// Monitor is the main entry point for the log monitoring service for a single table.
 type Monitor struct {
 	collector *collector.LogCollector
 	storage   *storage.SqliteStorage
+	tableName string
 }
 
 // NewMonitor creates a new Monitor instance.
-func NewMonitor(logPath string, clearOnStartup bool) (*Monitor, error) {
+func NewMonitor(logPath string, store *storage.SqliteStorage, tableName string) (*Monitor, error) {
 	coll, err := collector.NewLogCollector(logPath)
 	if err != nil {
 		return nil, err
 	}
-	store := storage.NewSqliteStorage("nginx_logs.db", clearOnStartup)
 	return &Monitor{
 		collector: coll,
 		storage:   store,
+		tableName: tableName,
 	}, nil
 }
 
@@ -38,14 +39,14 @@ func (m *Monitor) Start() {
 				fmt.Printf("Parse error: %v, line: %s\n", err, line)
 				continue
 			}
-			m.storage.Save(entry)
+			m.storage.Save(m.tableName, entry)
 		}
 	}()
 }
 
-// GetStats returns current statistics.
+// GetStats returns current statistics for this monitor's table.
 func (m *Monitor) GetStats() map[string]interface{} {
 	return map[string]interface{}{
-		"total_logs": m.storage.GetTotalCount(),
+		"total_logs": m.storage.GetTotalCount(m.tableName),
 	}
 }

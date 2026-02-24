@@ -1,10 +1,11 @@
 server:
   port: 8080
 
-log:
-  path: "./access.log"
-  # topic for kafka or redis key in the future
-  topic: "nginx_access_log"
+targets:
+  - path: "./access.log"
+    table: "nginx_logs"
+  - path: "./access_api.log"
+    table: "api_logs"
 
 redis:
   addr: "localhost:6379"

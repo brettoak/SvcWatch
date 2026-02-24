@@ -7,8 +7,14 @@ import (
 )
 
 type Config struct {
+	Targets  []TargetConfig `yaml:"targets"`
 	Database DatabaseConfig `yaml:"database"`
-	// Other fields can be added here later (Server, Log, Redis, etc.)
+	// Other fields can be added here later (Server, Redis, etc.)
+}
+
+type TargetConfig struct {
+	Path  string `yaml:"path"`
+	Table string `yaml:"table"`
 }
 
 type DatabaseConfig struct {

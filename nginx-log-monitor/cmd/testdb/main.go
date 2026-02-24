@@ -4,15 +4,18 @@ import (
 	"fmt"
 	mon "nginx-log-monitor"
 	"nginx-log-monitor/internal/model"
-	"nginx-log-monitor/internal/storage"
+	storage "nginx-log-monitor/storagePkg"
 	"time"
 )
 
 func main() {
 	// Let's test just the storage creation and insertion
 	fmt.Println("Testing SQLite Storage...")
-	store := storage.NewSqliteStorage("test_nginx_logs.db", true)
+	store := storage.NewSqliteStorage("test_nginx_logs.db")
 	defer store.Close()
+
+	// Initialize the table
+	store.InitTable("test_nginx_logs", true)
 
 	entry := &model.LogEntry{
 		RemoteAddr:    "127.0.0.1",
@@ -25,17 +28,17 @@ func main() {
 		HttpUserAgent: "TestAgent/1.0",
 	}
 
-	err := store.Save(entry)
+	err := store.Save("test_nginx_logs", entry)
 	if err != nil {
 		fmt.Printf("Error saving entry: %v\n", err)
 		return
 	}
 
-	count := store.GetTotalCount()
+	count := store.GetTotalCount("test_nginx_logs")
 	fmt.Printf("Total logs in database: %d\n", count)
 	
 	// Create a monitor object using NewMonitor, passing a dummy path to test it doesn't crash
-	_, err = mon.NewMonitor("../access.log", true)
+	_, err = mon.NewMonitor("../access.log", store, "test_nginx_logs")
 	if err != nil {
 		fmt.Printf("Monitor initialization err: %v\n", err)
 	} else {

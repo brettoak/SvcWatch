@@ -1,4 +1,4 @@
-package storage
+package storagePkg
 
 import (
 	"nginx-log-monitor/internal/model"

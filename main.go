@@ -4,6 +4,7 @@ import (
 	"log"
 	mon "nginx-log-monitor" // Import the local module
 	"nginx-log-monitor/configPkg"
+	storage "nginx-log-monitor/storagePkg"
 
 	"github.com/gin-gonic/gin"
 )
@@ -15,13 +16,24 @@ func main() {
 		log.Fatalf("Failed to load config: %v", err)
 	}
 
-	// Initialize the monitor with log file path and config flag
-	// Assuming access.log exists or will be created
-	monitor, err := mon.NewMonitor("./access.log", cfg.Database.ClearOnStartup)
-	if err != nil {
-		log.Fatalf("Failed to create monitor: %v", err)
+	// Initialize shared storage
+	store := storage.NewSqliteStorage("nginx_logs.db")
+	defer store.Close()
+
+	var monitors []*mon.Monitor
+
+	for _, target := range cfg.Targets {
+		// Initialize the table for the target
+		store.InitTable(target.Table, cfg.Database.ClearOnStartup)
+
+		// Create a monitor for each target
+		monitor, err := mon.NewMonitor(target.Path, store, target.Table)
+		if err != nil {
+			log.Fatalf("Failed to create monitor for %s: %v", target.Path, err)
+		}
+		monitor.Start()
+		monitors = append(monitors, monitor)
 	}
-	monitor.Start()
 
 	router := gin.Default()
 	v1 := router.Group("/api/v1")
@@ -32,9 +44,14 @@ func main() {
 			})
 		})
 
-		// Expose stats endpoint
+		// Expose combined stats endpoint for all targets
 		v1.GET("/stats", func(c *gin.Context) {
-			c.JSON(200, monitor.GetStats())
+			stats := make(map[string]interface{})
+			for i, monitor := range monitors {
+				tableName := cfg.Targets[i].Table
+				stats[tableName] = monitor.GetStats()["total_logs"]
+			}
+			c.JSON(200, stats)
 		})
 	}
 
