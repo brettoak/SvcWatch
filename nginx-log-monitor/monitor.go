@@ -10,7 +10,7 @@ import (
 // Monitor is the main entry point for the log monitoring service.
 type Monitor struct {
 	collector *collector.LogCollector
-	storage   *storage.MemoryStorage
+	storage   *storage.SqliteStorage
 }
 
 // NewMonitor creates a new Monitor instance.
@@ -19,7 +19,7 @@ func NewMonitor(logPath string) (*Monitor, error) {
 	if err != nil {
 		return nil, err
 	}
-	store := storage.NewMemoryStorage()
+	store := storage.NewSqliteStorage("nginx_logs.db")
 	return &Monitor{
 		collector: coll,
 		storage:   store,
