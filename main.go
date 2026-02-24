@@ -3,7 +3,6 @@ package main
 import (
 	"log"
 	"nginx-log-monitor" // Import the local module
-
 	"github.com/gin-gonic/gin"
 )
 
