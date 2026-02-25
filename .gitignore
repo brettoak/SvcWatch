@@ -29,3 +29,4 @@ access_api.log
 nginx-log-monitor/test_nginx_logs.db
 nginx-log-monitor/nginx_logs.db
 nginx-log-monitor/main
+svcwatch

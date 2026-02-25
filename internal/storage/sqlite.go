@@ -1,10 +1,10 @@
-package storagePkg
+package storage
 
 import (
 	"database/sql"
 	"fmt"
 	"log"
-	"nginx-log-monitor/internal/model"
+	"SvcWatch/internal/model"
 
 	_ "github.com/mattn/go-sqlite3"
 )

@@ -2,7 +2,7 @@ package parser
 
 import (
 	"fmt"
-	"nginx-log-monitor/internal/model"
+	"SvcWatch/internal/model"
 	"regexp"
 	"strconv"
 	"time"

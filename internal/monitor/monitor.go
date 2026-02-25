@@ -2,9 +2,9 @@ package monitor
 
 import (
 	"fmt"
-	"nginx-log-monitor/internal/collector"
-	"nginx-log-monitor/internal/parser"
-	storage "nginx-log-monitor/storagePkg"
+	"SvcWatch/internal/collector"
+	"SvcWatch/internal/parser"
+	storage "SvcWatch/internal/storage"
 )
 
 // Monitor is the main entry point for the log monitoring service for a single table.

@@ -1,7 +1,7 @@
-package storagePkg
+package storage
 
 import (
-	"nginx-log-monitor/internal/model"
+	"SvcWatch/internal/model"
 	"sync"
 )
 

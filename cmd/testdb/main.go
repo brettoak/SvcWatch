@@ -2,9 +2,9 @@ package main
 
 import (
 	"fmt"
-	mon "nginx-log-monitor"
-	"nginx-log-monitor/internal/model"
-	storage "nginx-log-monitor/storagePkg"
+	mon "SvcWatch/internal/monitor"
+	"SvcWatch/internal/model"
+	storage "SvcWatch/internal/storage"
 	"time"
 )
 

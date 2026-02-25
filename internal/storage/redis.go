@@ -1,4 +1,4 @@
-package storagePkg
+package storage
 
 // RedisStorage implements Redis storage.
 type RedisStorage struct {
