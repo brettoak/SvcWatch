@@ -1,0 +1,44 @@
+basePath: /
+host: localhost:8080
+info:
+  contact: {}
+  description: SvcWatch is a real-time Nginx log monitoring system.
+  title: SvcWatch API
+  version: "1.0"
+paths:
+  /api/v1/ping:
+    get:
+      description: returns a "pong" string to verify the service is running
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Health Check
+      tags:
+      - System
+  /api/v1/stats:
+    get:
+      description: Retrieves the total log count for each configured monitored target.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get aggregated logs statistics
+      tags:
+      - Statistics
+securityDefinitions:
+  BearerAuth:
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"

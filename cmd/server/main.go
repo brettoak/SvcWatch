@@ -6,8 +6,19 @@ import (
 	mon "SvcWatch/internal/monitor" // Import the local module
 	storage "SvcWatch/internal/storage"
 	"log"
+
+	_ "SvcWatch/docs"
 )
 
+// @title SvcWatch API
+// @version 1.0
+// @description SvcWatch is a real-time Nginx log monitoring system.
+// @host localhost:8080
+// @BasePath /
+
+// @securityDefinitions.apikey BearerAuth
+// @in header
+// @name Authorization
 func main() {
 	// Load configuration
 	cfg, err := config.LoadConfig("config/config.yaml")
