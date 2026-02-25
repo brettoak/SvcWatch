@@ -1,6 +1,9 @@
 server:
   port: 8080
 
+auth:
+  passport_url: "http://127.0.0.1:8089/api/v1/auth/check-token"
+
 targets:
   - path: "./access.log"
     table: "nginx_logs"

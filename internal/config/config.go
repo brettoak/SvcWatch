@@ -9,7 +9,12 @@ import (
 type Config struct {
 	Targets  []TargetConfig `yaml:"targets"`
 	Database DatabaseConfig `yaml:"database"`
+	Auth     AuthConfig     `yaml:"auth"`
 	// Other fields can be added here later (Server, Redis, etc.)
+}
+
+type AuthConfig struct {
+	PassportURL string `yaml:"passport_url"`
 }
 
 type TargetConfig struct {
