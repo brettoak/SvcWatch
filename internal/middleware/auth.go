@@ -65,8 +65,29 @@ func TokenAuthMiddleware(passportURL string) gin.HandlerFunc {
 		defer resp.Body.Close()
 
 		if resp.StatusCode != http.StatusOK {
-			// Verification failed
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid or expired token"})
+			// HTTP layer check failed
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Failed to connect to passport service or token rejected"})
+			c.Abort()
+			return
+		}
+
+		var passportResp struct {
+			Code    int    `json:"code"`
+			Message string `json:"message"`
+			Data    struct {
+				Active bool `json:"active"`
+				Valid  bool `json:"valid"`
+			} `json:"data"`
+		}
+
+		if err := json.NewDecoder(resp.Body).Decode(&passportResp); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to parse authentication response"})
+			c.Abort()
+			return
+		}
+
+		if passportResp.Code != 200 || !passportResp.Data.Active || !passportResp.Data.Valid {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Token validation failed or token is inactive"})
 			c.Abort()
 			return
 		}
