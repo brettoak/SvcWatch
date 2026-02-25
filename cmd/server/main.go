@@ -1,12 +1,11 @@
 package main
 
 import (
+	"SvcWatch/internal/api"
 	"SvcWatch/internal/config"
 	mon "SvcWatch/internal/monitor" // Import the local module
 	storage "SvcWatch/internal/storage"
 	"log"
-
-	"github.com/gin-gonic/gin"
 )
 
 func main() {
@@ -35,25 +34,7 @@ func main() {
 		monitors = append(monitors, monitor)
 	}
 
-	router := gin.Default()
-	v1 := router.Group("/api/v1")
-	{
-		v1.GET("/ping", func(c *gin.Context) {
-			c.JSON(200, gin.H{
-				"message": "pong",
-			})
-		})
-
-		// Expose combined stats endpoint for all targets
-		v1.GET("/stats", func(c *gin.Context) {
-			stats := make(map[string]interface{})
-			for i, monitor := range monitors {
-				tableName := cfg.Targets[i].Table
-				stats[tableName] = monitor.GetStats()["total_logs"]
-			}
-			c.JSON(200, stats)
-		})
-	}
-
+	// Setup and start the router
+	router := api.SetupRouter(monitors, cfg)
 	router.Run() // listens on 0.0.0.0:8080 by default
 }
