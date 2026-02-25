@@ -1,7 +1,7 @@
 package main
 
 import (
-	"SvcWatch/internal/configPkg"
+	"SvcWatch/internal/config"
 	mon "SvcWatch/internal/monitor" // Import the local module
 	storage "SvcWatch/internal/storage"
 	"log"
@@ -11,7 +11,7 @@ import (
 
 func main() {
 	// Load configuration
-	cfg, err := configPkg.LoadConfig("config/config.yaml")
+	cfg, err := config.LoadConfig("config/config.yaml")
 	if err != nil {
 		log.Fatalf("Failed to load config: %v", err)
 	}

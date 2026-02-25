@@ -1,4 +1,4 @@
-package configPkg
+package config
 
 import (
 	"os"
