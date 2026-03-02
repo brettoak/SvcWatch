@@ -1,5 +1,4 @@
 basePath: /
-host: localhost:8080
 info:
   contact: {}
   description: SvcWatch is a real-time Nginx log monitoring system.

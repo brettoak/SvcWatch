@@ -13,7 +13,6 @@ import (
 // @title SvcWatch API
 // @version 1.0
 // @description SvcWatch is a real-time Nginx log monitoring system.
-// @host localhost:8080
 // @BasePath /
 
 // @securityDefinitions.apikey BearerAuth

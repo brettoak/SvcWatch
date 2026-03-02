@@ -5,6 +5,7 @@ import (
 	"SvcWatch/internal/middleware"
 	"SvcWatch/internal/monitor"
 
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
@@ -49,6 +50,10 @@ func (ctrl *APIController) StatsHandler(c *gin.Context) {
 // SetupRouter initializes and configures the Gin API router.
 func SetupRouter(monitors []*monitor.Monitor, cfg *config.Config) *gin.Engine {
 	router := gin.Default()
+
+	// Enable CORS for all origins (fixes Swagger UI doc.json fetch issues)
+	router.Use(cors.Default())
+
 	ctrl := &APIController{monitors: monitors, cfg: cfg}
 
 	v1 := router.Group("/api/v1")
