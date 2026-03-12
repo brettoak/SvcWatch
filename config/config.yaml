@@ -3,6 +3,8 @@ server:
 
 auth:
   passport_url: "http://127.0.0.1:8089/api/v1/auth/check-token"
+  permission_url: "http://127.0.0.1:8089/api/v1/auth/check-permission"
+  sys_code: "svcwatch"
 
 targets:
   - path: "./access.log"

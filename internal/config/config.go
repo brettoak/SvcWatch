@@ -14,7 +14,9 @@ type Config struct {
 }
 
 type AuthConfig struct {
-	PassportURL string `yaml:"passport_url"`
+	PassportURL   string `yaml:"passport_url"`
+	PermissionURL string `yaml:"permission_url"`
+	SysCode       string `yaml:"sys_code"`
 }
 
 type TargetConfig struct {

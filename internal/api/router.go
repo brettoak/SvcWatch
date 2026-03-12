@@ -65,7 +65,8 @@ func SetupRouter(monitors []*monitor.Monitor, cfg *config.Config) *gin.Engine {
 		private := v1.Group("")
 		private.Use(middleware.TokenAuthMiddleware(cfg.Auth.PassportURL))
 		{
-			private.GET("/stats", ctrl.StatsHandler)
+			// Example permission required to view stats
+			private.GET("/stats", middleware.PermissionMiddleware(cfg.Auth.PermissionURL, cfg.Auth.SysCode, "view:stats"), ctrl.StatsHandler)
 		}
 	}
 
