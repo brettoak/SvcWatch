@@ -177,7 +177,10 @@ func PermissionMiddleware(permissionURL, sysCode, requiredPermission string) gin
 		var passportResp struct {
 			Code    int    `json:"code"`
 			Message string `json:"message"`
-			// Assuming the structure requires code 200 for permission success.
+			Data    struct {
+				Valid         bool `json:"valid"`
+				HasPermission bool `json:"hasPermission"`
+			} `json:"data"`
 		}
 
 		if err := json.NewDecoder(resp.Body).Decode(&passportResp); err != nil {
@@ -186,8 +189,8 @@ func PermissionMiddleware(permissionURL, sysCode, requiredPermission string) gin
 			return
 		}
 
-		if passportResp.Code != 200 {
-			c.JSON(http.StatusForbidden, gin.H{"error": "Forbidden: Insufficient permissions"})
+		if passportResp.Code != 200 || !passportResp.Data.Valid || !passportResp.Data.HasPermission {
+			c.JSON(http.StatusForbidden, gin.H{"error": "Forbidden: Insufficient permissions or token invalid"})
 			c.Abort()
 			return
 		}
