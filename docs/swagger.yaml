@@ -5,7 +5,7 @@ info:
   title: SvcWatch API
   version: "1.0"
 paths:
-  /api/v1/ping:
+  /api/v1/sev/ping:
     get:
       description: returns a "pong" string to verify the service is running
       produces:
@@ -19,7 +19,7 @@ paths:
       summary: Health Check
       tags:
       - System
-  /api/v1/stats:
+  /api/v1/sev/stats:
     get:
       description: Retrieves the total log count for each configured monitored target.
       produces:
@@ -37,6 +37,7 @@ paths:
       - Statistics
 securityDefinitions:
   BearerAuth:
+    description: Type "Bearer" followed by a space and JWT token.
     in: header
     name: Authorization
     type: apiKey

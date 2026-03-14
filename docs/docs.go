@@ -15,7 +15,7 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
-        "/api/v1/ping": {
+        "/api/v1/sev/ping": {
             "get": {
                 "description": "returns a \"pong\" string to verify the service is running",
                 "produces": [
@@ -36,7 +36,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v1/stats": {
+        "/api/v1/sev/stats": {
             "get": {
                 "security": [
                     {
@@ -65,6 +65,7 @@ const docTemplate = `{
     },
     "securityDefinitions": {
         "BearerAuth": {
+            "description": "Type \"Bearer\" followed by a space and JWT token.",
             "type": "apiKey",
             "name": "Authorization",
             "in": "header"

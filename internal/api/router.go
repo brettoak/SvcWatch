@@ -23,7 +23,7 @@ type APIController struct {
 // @Tags System
 // @Produce json
 // @Success 200 {object} map[string]interface{}
-// @Router /api/v1/ping [get]
+// @Router /api/v1/sev/ping [get]
 func (ctrl *APIController) PingHandler(c *gin.Context) {
 	c.JSON(200, gin.H{
 		"message": "pong",
@@ -37,7 +37,7 @@ func (ctrl *APIController) PingHandler(c *gin.Context) {
 // @Security BearerAuth
 // @Produce json
 // @Success 200 {object} map[string]interface{}
-// @Router /api/v1/stats [get]
+// @Router /api/v1/sev/stats [get]
 func (ctrl *APIController) StatsHandler(c *gin.Context) {
 	stats := make(map[string]interface{})
 	for i, monInst := range ctrl.monitors {
@@ -56,7 +56,7 @@ func SetupRouter(monitors []*monitor.Monitor, cfg *config.Config) *gin.Engine {
 
 	ctrl := &APIController{monitors: monitors, cfg: cfg}
 
-	v1 := router.Group("/api/v1")
+	v1 := router.Group("/api/v1/sev")
 	{
 		// Public routes
 		v1.GET("/ping", ctrl.PingHandler)
