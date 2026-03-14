@@ -18,6 +18,7 @@ import (
 // @securityDefinitions.apikey BearerAuth
 // @in header
 // @name Authorization
+// @description Type "Bearer" followed by a space and JWT token.
 func main() {
 	// Load configuration
 	cfg, err := config.LoadConfig("config/config.yaml")
