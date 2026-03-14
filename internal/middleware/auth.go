@@ -7,6 +7,8 @@ import (
 	"net/http"
 	"strings"
 
+	"SvcWatch/internal/utils"
+
 	"github.com/gin-gonic/gin"
 )
 
@@ -54,7 +56,9 @@ func TokenAuthMiddleware(passportURL string) gin.HandlerFunc {
 		req.Header.Set("Content-Type", "application/json")
 		req.Header.Set("Accept", "application/json")
 
-		client := &http.Client{}
+		client := &http.Client{
+			Transport: &utils.LoggingRoundTripper{Proxied: http.DefaultTransport},
+		}
 		resp, err := client.Do(req)
 		if err != nil {
 			// Network error
@@ -153,7 +157,9 @@ func PermissionMiddleware(permissionURL, sysCode, requiredPermission string) gin
 		// Optional: Propagate the original Authorization header to the passport service as well
 		req.Header.Set("Authorization", authHeader)
 
-		client := &http.Client{}
+		client := &http.Client{
+			Transport: &utils.LoggingRoundTripper{Proxied: http.DefaultTransport},
+		}
 		resp, err := client.Do(req)
 		if err != nil {
 			c.JSON(http.StatusServiceUnavailable, gin.H{"error": fmt.Sprintf("Permission service unavailable: %v", err)})
