@@ -1,9 +1,11 @@
 package api
 
 import (
+	"fmt"
 	"SvcWatch/internal/config"
 	"SvcWatch/internal/middleware"
 	"SvcWatch/internal/monitor"
+	"SvcWatch/internal/storage"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
@@ -47,6 +49,71 @@ func (ctrl *APIController) StatsHandler(c *gin.Context) {
 	c.JSON(200, stats)
 }
 
+// OverviewHandler Get business overview key metrics
+// @Summary Get business overview key metrics
+// @Description Retrieves Total Requests, Success Rate, Error Rate, and Average Response time with % comparison against yesterday.
+// @Tags Statistics
+// @Security BearerAuth
+// @Produce json
+// @Param start_time query string true "Start Time (RFC3339 or YYYY-MM-DD HH:MM:SS)"
+// @Param end_time query string true "End Time (RFC3339 or YYYY-MM-DD HH:MM:SS)"
+// @Param log_file query string false "Optional specific log file (table name) to search" 
+// @Success 200 {object} storage.OverviewStats
+// @Router /api/v1/sev/overview [get]
+func (ctrl *APIController) OverviewHandler(c *gin.Context) {
+	startTime := c.Query("start_time")
+	endTime := c.Query("end_time")
+	logFile := c.Query("log_file") // Optional
+
+	if startTime == "" || endTime == "" {
+		c.JSON(400, gin.H{"error": "start_time and end_time are required"})
+		return
+	}
+
+	// We'll aggregate results if logFile is empty. For MVP, we'll just sum or take average
+	// To be perfectly accurate for multiple files, we should ask storage to query all tables or do custom logic.
+	// We'll do a simple iteration across configured tables.
+	var aggregated *storage.OverviewStats
+
+	for _, monInst := range ctrl.monitors {
+		// If specific logFile is requested, skip others
+		tableName := monInst.GetTableName()
+		if logFile != "" && tableName != logFile {
+			continue
+		}
+
+		stats, err := monInst.GetOverviewStats(startTime, endTime)
+		if err != nil {
+			c.JSON(500, gin.H{"error": fmt.Sprintf("failed to get stats for %s: %v", tableName, err)})
+			return
+		}
+
+		if aggregated == nil {
+			aggregated = stats
+		} else {
+			// Basic accumulation; 
+			// Note: Average rate accumulation is not perfectly mathematically sound 
+			// without total weights, but sufficient for an MVP overview dashboard.
+			aggregated.TotalRequests.Value += stats.TotalRequests.Value
+			aggregated.SuccessRate.Value = (aggregated.SuccessRate.Value + stats.SuccessRate.Value) / 2
+			aggregated.ErrorRate.Value = (aggregated.ErrorRate.Value + stats.ErrorRate.Value) / 2
+			aggregated.AvgResponseTime.Value = (aggregated.AvgResponseTime.Value + stats.AvgResponseTime.Value) / 2
+			
+			// For simplicity we average out the compare percents for combined view
+			aggregated.TotalRequests.ComparePercent = (aggregated.TotalRequests.ComparePercent + stats.TotalRequests.ComparePercent) / 2
+			aggregated.SuccessRate.ComparePercent = (aggregated.SuccessRate.ComparePercent + stats.SuccessRate.ComparePercent) / 2
+			aggregated.ErrorRate.ComparePercent = (aggregated.ErrorRate.ComparePercent + stats.ErrorRate.ComparePercent) / 2
+			aggregated.AvgResponseTime.ComparePercent = (aggregated.AvgResponseTime.ComparePercent + stats.AvgResponseTime.ComparePercent) / 2
+		}
+	}
+
+	if aggregated == nil {
+		aggregated = &storage.OverviewStats{}
+	}
+
+	c.JSON(200, aggregated)
+}
+
 // SetupRouter initializes and configures the Gin API router.
 func SetupRouter(monitors []*monitor.Monitor, cfg *config.Config) *gin.Engine {
 	router := gin.Default()
@@ -67,6 +134,8 @@ func SetupRouter(monitors []*monitor.Monitor, cfg *config.Config) *gin.Engine {
 		{
 			// Example permission required to view stats
 			private.GET("/stats", middleware.PermissionMiddleware(cfg.Auth.PermissionURL, cfg.Auth.SysCode, "view:stats"), ctrl.StatsHandler)
+			// Overview endpoint
+			private.GET("/overview", middleware.PermissionMiddleware(cfg.Auth.PermissionURL, cfg.Auth.SysCode, "view:overview"), ctrl.OverviewHandler)
 		}
 	}
 

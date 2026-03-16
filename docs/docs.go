@@ -15,6 +15,53 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
+        "/api/v1/sev/overview": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Retrieves Total Requests, Success Rate, Error Rate, and Average Response time with % comparison against yesterday.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Statistics"
+                ],
+                "summary": "Get business overview key metrics",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Start Time (RFC3339 or YYYY-MM-DD HH:MM:SS)",
+                        "name": "start_time",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "End Time (RFC3339 or YYYY-MM-DD HH:MM:SS)",
+                        "name": "end_time",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Optional specific log file (table name) to search",
+                        "name": "log_file",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/SvcWatch_internal_storage.OverviewStats"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/sev/ping": {
             "get": {
                 "description": "returns a \"pong\" string to verify the service is running",
@@ -63,24 +110,46 @@ const docTemplate = `{
             }
         }
     },
-    "securityDefinitions": {
-        "BearerAuth": {
-            "description": "Type \"Bearer\" followed by a space and JWT token.",
-            "type": "apiKey",
-            "name": "Authorization",
-            "in": "header"
+    "definitions": {
+        "SvcWatch_internal_storage.MetricValue": {
+            "type": "object",
+            "properties": {
+                "compare_percent": {
+                    "type": "number"
+                },
+                "value": {
+                    "type": "number"
+                }
+            }
+        },
+        "SvcWatch_internal_storage.OverviewStats": {
+            "type": "object",
+            "properties": {
+                "avg_response_time": {
+                    "$ref": "#/definitions/SvcWatch_internal_storage.MetricValue"
+                },
+                "error_rate": {
+                    "$ref": "#/definitions/SvcWatch_internal_storage.MetricValue"
+                },
+                "success_rate": {
+                    "$ref": "#/definitions/SvcWatch_internal_storage.MetricValue"
+                },
+                "total_requests": {
+                    "$ref": "#/definitions/SvcWatch_internal_storage.MetricValue"
+                }
+            }
         }
     }
 }`
 
 // SwaggerInfo holds exported Swagger Info so clients can modify it
 var SwaggerInfo = &swag.Spec{
-	Version:          "1.0",
+	Version:          "",
 	Host:             "",
-	BasePath:         "/",
+	BasePath:         "",
 	Schemes:          []string{},
-	Title:            "SvcWatch API",
-	Description:      "SvcWatch is a real-time Nginx log monitoring system.",
+	Title:            "",
+	Description:      "",
 	InfoInstanceName: "swagger",
 	SwaggerTemplate:  docTemplate,
 	LeftDelim:        "{{",

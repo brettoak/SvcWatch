@@ -1,10 +1,56 @@
-basePath: /
+definitions:
+  SvcWatch_internal_storage.MetricValue:
+    properties:
+      compare_percent:
+        type: number
+      value:
+        type: number
+    type: object
+  SvcWatch_internal_storage.OverviewStats:
+    properties:
+      avg_response_time:
+        $ref: '#/definitions/SvcWatch_internal_storage.MetricValue'
+      error_rate:
+        $ref: '#/definitions/SvcWatch_internal_storage.MetricValue'
+      success_rate:
+        $ref: '#/definitions/SvcWatch_internal_storage.MetricValue'
+      total_requests:
+        $ref: '#/definitions/SvcWatch_internal_storage.MetricValue'
+    type: object
 info:
   contact: {}
-  description: SvcWatch is a real-time Nginx log monitoring system.
-  title: SvcWatch API
-  version: "1.0"
 paths:
+  /api/v1/sev/overview:
+    get:
+      description: Retrieves Total Requests, Success Rate, Error Rate, and Average
+        Response time with % comparison against yesterday.
+      parameters:
+      - description: Start Time (RFC3339 or YYYY-MM-DD HH:MM:SS)
+        in: query
+        name: start_time
+        required: true
+        type: string
+      - description: End Time (RFC3339 or YYYY-MM-DD HH:MM:SS)
+        in: query
+        name: end_time
+        required: true
+        type: string
+      - description: Optional specific log file (table name) to search
+        in: query
+        name: log_file
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/SvcWatch_internal_storage.OverviewStats'
+      security:
+      - BearerAuth: []
+      summary: Get business overview key metrics
+      tags:
+      - Statistics
   /api/v1/sev/ping:
     get:
       description: returns a "pong" string to verify the service is running
@@ -35,10 +81,4 @@ paths:
       summary: Get aggregated logs statistics
       tags:
       - Statistics
-securityDefinitions:
-  BearerAuth:
-    description: Type "Bearer" followed by a space and JWT token.
-    in: header
-    name: Authorization
-    type: apiKey
 swagger: "2.0"
