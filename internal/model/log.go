@@ -13,4 +13,5 @@ type LogEntry struct {
 	BodyBytesSent int       `json:"body_bytes_sent"`
 	HttpReferer   string    `json:"http_referer"`
 	HttpUserAgent string    `json:"http_user_agent"`
+	RequestTime   float64   `json:"request_time"`
 }

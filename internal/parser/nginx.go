@@ -9,8 +9,8 @@ import (
 )
 
 // Default Nginx log format regex
-// $remote_addr - $remote_user [$time_local] "$request" $status $body_bytes_sent "$http_referer" "$http_user_agent"
-var logRegex = regexp.MustCompile(`^(\S+) \- (\S+) \[(.*?)\] "(.*?)" (\d+) (\d+) "(.*?)" "(.*?)"`)
+// $remote_addr - $remote_user [$time_local] "$request" $status $body_bytes_sent "$http_referer" "$http_user_agent" optionally ending with $request_time
+var logRegex = regexp.MustCompile(`^(\S+) \- (\S+) \[(.*?)\] "(.*?)" (\d+) (\d+) "(.*?)" "(.*?)"(?:\s+(\d+(?:\.\d+)?))?`)
 
 // Parse parses a raw log line into a LogEntry.
 func Parse(line string) (*model.LogEntry, error) {
@@ -30,6 +30,11 @@ func Parse(line string) (*model.LogEntry, error) {
 	status, _ := strconv.Atoi(matches[5])
 	bodyBytes, _ := strconv.Atoi(matches[6])
 
+	var reqTime float64
+	if len(matches) > 9 && matches[9] != "" {
+		reqTime, _ = strconv.ParseFloat(matches[9], 64)
+	}
+
 	return &model.LogEntry{
 		RemoteAddr:    matches[1],
 		RemoteUser:    matches[2],
@@ -39,5 +44,6 @@ func Parse(line string) (*model.LogEntry, error) {
 		BodyBytesSent: bodyBytes,
 		HttpReferer:   matches[7],
 		HttpUserAgent: matches[8],
+		RequestTime:   reqTime,
 	}, nil
 }

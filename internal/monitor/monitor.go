@@ -14,6 +14,11 @@ type Monitor struct {
 	tableName string
 }
 
+// GetTableName returns the table name this monitor is linked to.
+func (m *Monitor) GetTableName() string {
+	return m.tableName
+}
+
 // NewMonitor creates a new Monitor instance.
 func NewMonitor(logPath string, store *storage.SqliteStorage, tableName string) (*Monitor, error) {
 	coll, err := collector.NewLogCollector(logPath)
@@ -49,4 +54,9 @@ func (m *Monitor) GetStats() map[string]interface{} {
 	return map[string]interface{}{
 		"total_logs": m.storage.GetTotalCount(m.tableName),
 	}
+}
+
+// GetOverviewStats routes the request to storage to get comparison-based KPI metrics.
+func (m *Monitor) GetOverviewStats(startTime, endTime string) (*storage.OverviewStats, error) {
+	return m.storage.GetOverviewWithCompare(m.tableName, startTime, endTime)
 }
