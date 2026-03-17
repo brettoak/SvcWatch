@@ -131,6 +131,10 @@ const docTemplate = `{
                 "avg_response_time": {
                     "$ref": "#/definitions/storage.MetricValue"
                 },
+                "compare_type": {
+                    "description": "e.g., \"vs yesterday\" or \"vs previous period\"",
+                    "type": "string"
+                },
                 "error_rate": {
                     "$ref": "#/definitions/storage.MetricValue"
                 },

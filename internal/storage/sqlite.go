@@ -109,6 +109,7 @@ type OverviewStats struct {
 	SuccessRate     MetricValue `json:"success_rate"`
 	ErrorRate       MetricValue `json:"error_rate"`
 	AvgResponseTime MetricValue `json:"avg_response_time"`
+	CompareType     string      `json:"compare_type"` // e.g., "vs yesterday" or "vs previous period"
 }
 
 // BaseMetrics contains raw metric counts for a specific time period.
@@ -198,8 +199,10 @@ func (s *SqliteStorage) GetOverviewWithCompare(tableName string, startTimeStr, e
 	// Calculate range duration
 	rangeDuration := endTime.Sub(startTime)
 	offset := 24 * time.Hour
+	compareType := "vs yesterday"
 	if rangeDuration > 24*time.Hour {
 		offset = rangeDuration
+		compareType = "vs previous period"
 	}
 
 	prevStartTime := startTime.Add(-offset).Format(layout)
@@ -245,6 +248,7 @@ func (s *SqliteStorage) GetOverviewWithCompare(tableName string, startTimeStr, e
 			Value:          math.Round(currentMetrics.AvgResponseTime*1000) / 1000, // rounded to 3 decimals
 			ComparePercent: calculateComparePercent(currentMetrics.AvgResponseTime, prevMetrics.AvgResponseTime),
 		},
+		CompareType: compareType,
 	}
 
 	return stats, nil
