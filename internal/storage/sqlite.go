@@ -180,12 +180,12 @@ func (s *SqliteStorage) GetOverviewWithCompare(tableName string, startTimeStr, e
 		return nil, err
 	}
 
-	// 2. Parse times to calculate the previous period (fixed 24h subtraction per user request)
+	// 2. Parse times to calculate the previous period
 	layout := time.RFC3339
 	if len(startTimeStr) == 19 {
 		layout = time.DateTime // "2006-01-02 15:04:05"
 	}
-	
+
 	startTime, err := time.Parse(layout, startTimeStr)
 	if err != nil {
 		return nil, fmt.Errorf("invalid start_time format: %w", err)
@@ -195,8 +195,15 @@ func (s *SqliteStorage) GetOverviewWithCompare(tableName string, startTimeStr, e
 		return nil, fmt.Errorf("invalid end_time format: %w", err)
 	}
 
-	prevStartTime := startTime.Add(-24 * time.Hour).Format(layout)
-	prevEndTime := endTime.Add(-24 * time.Hour).Format(layout)
+	// Calculate range duration
+	rangeDuration := endTime.Sub(startTime)
+	offset := 24 * time.Hour
+	if rangeDuration > 24*time.Hour {
+		offset = rangeDuration
+	}
+
+	prevStartTime := startTime.Add(-offset).Format(layout)
+	prevEndTime := endTime.Add(-offset).Format(layout)
 
 	// 3. Get previous period metrics
 	prevMetrics, err := s.GetBaseMetrics(tableName, prevStartTime, prevEndTime)
