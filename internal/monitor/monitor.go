@@ -19,6 +19,11 @@ func (m *Monitor) GetTableName() string {
 	return m.tableName
 }
 
+// GetLogPath returns the original log file path.
+func (m *Monitor) GetLogPath() string {
+	return m.collector.GetFilePath()
+}
+
 // NewMonitor creates a new Monitor instance.
 func NewMonitor(logPath string, store *storage.SqliteStorage, tableName string) (*Monitor, error) {
 	coll, err := collector.NewLogCollector(logPath)

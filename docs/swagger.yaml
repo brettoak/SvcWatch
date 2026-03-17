@@ -30,16 +30,19 @@ paths:
         Response time with % comparison against yesterday.
       parameters:
       - description: Start Time (RFC3339 or YYYY-MM-DD HH:MM:SS)
+        example: "2026-03-10 00:00:00"
         in: query
         name: start_time
         required: true
         type: string
       - description: End Time (RFC3339 or YYYY-MM-DD HH:MM:SS)
+        example: "2026-03-17 23:59:59"
         in: query
         name: end_time
         required: true
         type: string
-      - description: Optional specific log file (table name) to search
+      - description: Optional specific log file (table name or filename) to search
+        example: nginx_logs
         in: query
         name: log_file
         type: string

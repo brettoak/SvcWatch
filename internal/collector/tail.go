@@ -39,6 +39,11 @@ func NewLogCollector(path string) (*LogCollector, error) {
 	}, nil
 }
 
+// GetFilePath returns the path of the file being tailed.
+func (lc *LogCollector) GetFilePath() string {
+	return lc.filePath
+}
+
 // Start begins reading lines from the tailed file.
 func (lc *LogCollector) Start() {
 	go func() {

@@ -2,6 +2,7 @@ package api
 
 import (
 	"fmt"
+	"path/filepath"
 	"SvcWatch/internal/config"
 	"SvcWatch/internal/middleware"
 	"SvcWatch/internal/monitor"
@@ -55,9 +56,9 @@ func (ctrl *APIController) StatsHandler(c *gin.Context) {
 // @Tags Statistics
 // @Security BearerAuth
 // @Produce json
-// @Param start_time query string true "Start Time (RFC3339 or YYYY-MM-DD HH:MM:SS)"
-// @Param end_time query string true "End Time (RFC3339 or YYYY-MM-DD HH:MM:SS)"
-// @Param log_file query string false "Optional specific log file (table name) to search" 
+// @Param start_time query string true "Start Time (RFC3339 or YYYY-MM-DD HH:MM:SS)" example(2026-03-10 00:00:00)
+// @Param end_time query string true "End Time (RFC3339 or YYYY-MM-DD HH:MM:SS)" example(2026-03-17 23:59:59)
+// @Param log_file query string false "Optional specific log file (table name or filename) to search" example(nginx_logs)
 // @Success 200 {object} storage.OverviewStats
 // @Router /api/v1/sev/overview [get]
 func (ctrl *APIController) OverviewHandler(c *gin.Context) {
@@ -78,7 +79,8 @@ func (ctrl *APIController) OverviewHandler(c *gin.Context) {
 	for _, monInst := range ctrl.monitors {
 		// If specific logFile is requested, skip others
 		tableName := monInst.GetTableName()
-		if logFile != "" && tableName != logFile {
+		logPath := monInst.GetLogPath()
+		if logFile != "" && tableName != logFile && filepath.Base(logPath) != logFile {
 			continue
 		}
 

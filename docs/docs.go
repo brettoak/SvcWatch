@@ -33,6 +33,7 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "string",
+                        "example": "2026-03-10 00:00:00",
                         "description": "Start Time (RFC3339 or YYYY-MM-DD HH:MM:SS)",
                         "name": "start_time",
                         "in": "query",
@@ -40,6 +41,7 @@ const docTemplate = `{
                     },
                     {
                         "type": "string",
+                        "example": "2026-03-17 23:59:59",
                         "description": "End Time (RFC3339 or YYYY-MM-DD HH:MM:SS)",
                         "name": "end_time",
                         "in": "query",
@@ -47,7 +49,8 @@ const docTemplate = `{
                     },
                     {
                         "type": "string",
-                        "description": "Optional specific log file (table name) to search",
+                        "example": "nginx_logs",
+                        "description": "Optional specific log file (table name or filename) to search",
                         "name": "log_file",
                         "in": "query"
                     }
