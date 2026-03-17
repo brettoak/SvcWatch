@@ -24,6 +24,7 @@ func NewLogCollector(path string) (*LogCollector, error) {
 		Follow:    true,
 		MustExist: false, // File might not exist yet
 		Poll:      true,  // Poll for changes (sometimes needed for Docker/mounted volumes)
+		Location:  &tail.SeekInfo{Offset: 0, Whence: 0},
 	}
 
 	t, err := tail.TailFile(path, config)
