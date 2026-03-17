@@ -3,6 +3,7 @@ package api
 import (
 	"fmt"
 	"path/filepath"
+	"time"
 	"SvcWatch/internal/config"
 	"SvcWatch/internal/middleware"
 	"SvcWatch/internal/monitor"
@@ -62,12 +63,49 @@ func (ctrl *APIController) StatsHandler(c *gin.Context) {
 // @Success 200 {object} storage.OverviewStats
 // @Router /api/v1/sev/overview [get]
 func (ctrl *APIController) OverviewHandler(c *gin.Context) {
-	startTime := c.Query("start_time")
-	endTime := c.Query("end_time")
+	startTimeStr := c.Query("start_time")
+	endTimeStr := c.Query("end_time")
 	logFile := c.Query("log_file") // Optional
 
-	if startTime == "" || endTime == "" {
+	if startTimeStr == "" || endTimeStr == "" {
 		c.JSON(400, gin.H{"error": "start_time and end_time are required"})
+		return
+	}
+
+	// Helper to parse time in supported formats
+	parseTime := func(s string) (time.Time, error) {
+		t, err := time.Parse(time.RFC3339, s)
+		if err != nil {
+			t, err = time.Parse("2006-01-02 15:04:05", s)
+		}
+		return t, err
+	}
+
+	startT, err := parseTime(startTimeStr)
+	if err != nil {
+		c.JSON(400, gin.H{"error": "invalid start_time format"})
+		return
+	}
+
+	endT, err := parseTime(endTimeStr)
+	if err != nil {
+		c.JSON(400, gin.H{"error": "invalid end_time format"})
+		return
+	}
+
+	now := time.Now()
+	if startT.After(now) {
+		c.JSON(400, gin.H{"error": "start_time cannot be in the future"})
+		return
+	}
+
+	if !endT.After(startT) {
+		c.JSON(400, gin.H{"error": "end_time must be after start_time"})
+		return
+	}
+
+	if endT.Sub(startT) > 366*24*time.Hour {
+		c.JSON(400, gin.H{"error": "time range cannot exceed 1 year"})
 		return
 	}
 
@@ -84,7 +122,7 @@ func (ctrl *APIController) OverviewHandler(c *gin.Context) {
 			continue
 		}
 
-		stats, err := monInst.GetOverviewStats(startTime, endTime)
+		stats, err := monInst.GetOverviewStats(startTimeStr, endTimeStr)
 		if err != nil {
 			c.JSON(500, gin.H{"error": fmt.Sprintf("failed to get stats for %s: %v", tableName, err)})
 			return
