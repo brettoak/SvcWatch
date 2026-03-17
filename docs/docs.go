@@ -56,7 +56,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/SvcWatch_internal_storage.OverviewStats"
+                            "$ref": "#/definitions/storage.OverviewStats"
                         }
                     }
                 }
@@ -111,7 +111,7 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "SvcWatch_internal_storage.MetricValue": {
+        "storage.MetricValue": {
             "type": "object",
             "properties": {
                 "compare_percent": {
@@ -122,34 +122,42 @@ const docTemplate = `{
                 }
             }
         },
-        "SvcWatch_internal_storage.OverviewStats": {
+        "storage.OverviewStats": {
             "type": "object",
             "properties": {
                 "avg_response_time": {
-                    "$ref": "#/definitions/SvcWatch_internal_storage.MetricValue"
+                    "$ref": "#/definitions/storage.MetricValue"
                 },
                 "error_rate": {
-                    "$ref": "#/definitions/SvcWatch_internal_storage.MetricValue"
+                    "$ref": "#/definitions/storage.MetricValue"
                 },
                 "success_rate": {
-                    "$ref": "#/definitions/SvcWatch_internal_storage.MetricValue"
+                    "$ref": "#/definitions/storage.MetricValue"
                 },
                 "total_requests": {
-                    "$ref": "#/definitions/SvcWatch_internal_storage.MetricValue"
+                    "$ref": "#/definitions/storage.MetricValue"
                 }
             }
+        }
+    },
+    "securityDefinitions": {
+        "BearerAuth": {
+            "description": "Type \"Bearer\" followed by a space and JWT token.",
+            "type": "apiKey",
+            "name": "Authorization",
+            "in": "header"
         }
     }
 }`
 
 // SwaggerInfo holds exported Swagger Info so clients can modify it
 var SwaggerInfo = &swag.Spec{
-	Version:          "",
+	Version:          "1.0",
 	Host:             "",
-	BasePath:         "",
+	BasePath:         "/",
 	Schemes:          []string{},
-	Title:            "",
-	Description:      "",
+	Title:            "SvcWatch API",
+	Description:      "SvcWatch is a real-time Nginx log monitoring system.",
 	InfoInstanceName: "swagger",
 	SwaggerTemplate:  docTemplate,
 	LeftDelim:        "{{",

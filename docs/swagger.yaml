@@ -1,24 +1,28 @@
+basePath: /
 definitions:
-  SvcWatch_internal_storage.MetricValue:
+  storage.MetricValue:
     properties:
       compare_percent:
         type: number
       value:
         type: number
     type: object
-  SvcWatch_internal_storage.OverviewStats:
+  storage.OverviewStats:
     properties:
       avg_response_time:
-        $ref: '#/definitions/SvcWatch_internal_storage.MetricValue'
+        $ref: '#/definitions/storage.MetricValue'
       error_rate:
-        $ref: '#/definitions/SvcWatch_internal_storage.MetricValue'
+        $ref: '#/definitions/storage.MetricValue'
       success_rate:
-        $ref: '#/definitions/SvcWatch_internal_storage.MetricValue'
+        $ref: '#/definitions/storage.MetricValue'
       total_requests:
-        $ref: '#/definitions/SvcWatch_internal_storage.MetricValue'
+        $ref: '#/definitions/storage.MetricValue'
     type: object
 info:
   contact: {}
+  description: SvcWatch is a real-time Nginx log monitoring system.
+  title: SvcWatch API
+  version: "1.0"
 paths:
   /api/v1/sev/overview:
     get:
@@ -45,7 +49,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/SvcWatch_internal_storage.OverviewStats'
+            $ref: '#/definitions/storage.OverviewStats'
       security:
       - BearerAuth: []
       summary: Get business overview key metrics
@@ -81,4 +85,10 @@ paths:
       summary: Get aggregated logs statistics
       tags:
       - Statistics
+securityDefinitions:
+  BearerAuth:
+    description: Type "Bearer" followed by a space and JWT token.
+    in: header
+    name: Authorization
+    type: apiKey
 swagger: "2.0"

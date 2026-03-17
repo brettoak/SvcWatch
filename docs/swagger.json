@@ -1,8 +1,12 @@
 {
     "swagger": "2.0",
     "info": {
-        "contact": {}
+        "description": "SvcWatch is a real-time Nginx log monitoring system.",
+        "title": "SvcWatch API",
+        "contact": {},
+        "version": "1.0"
     },
+    "basePath": "/",
     "paths": {
         "/api/v1/sev/overview": {
             "get": {
@@ -45,7 +49,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/SvcWatch_internal_storage.OverviewStats"
+                            "$ref": "#/definitions/storage.OverviewStats"
                         }
                     }
                 }
@@ -100,7 +104,7 @@
         }
     },
     "definitions": {
-        "SvcWatch_internal_storage.MetricValue": {
+        "storage.MetricValue": {
             "type": "object",
             "properties": {
                 "compare_percent": {
@@ -111,22 +115,30 @@
                 }
             }
         },
-        "SvcWatch_internal_storage.OverviewStats": {
+        "storage.OverviewStats": {
             "type": "object",
             "properties": {
                 "avg_response_time": {
-                    "$ref": "#/definitions/SvcWatch_internal_storage.MetricValue"
+                    "$ref": "#/definitions/storage.MetricValue"
                 },
                 "error_rate": {
-                    "$ref": "#/definitions/SvcWatch_internal_storage.MetricValue"
+                    "$ref": "#/definitions/storage.MetricValue"
                 },
                 "success_rate": {
-                    "$ref": "#/definitions/SvcWatch_internal_storage.MetricValue"
+                    "$ref": "#/definitions/storage.MetricValue"
                 },
                 "total_requests": {
-                    "$ref": "#/definitions/SvcWatch_internal_storage.MetricValue"
+                    "$ref": "#/definitions/storage.MetricValue"
                 }
             }
+        }
+    },
+    "securityDefinitions": {
+        "BearerAuth": {
+            "description": "Type \"Bearer\" followed by a space and JWT token.",
+            "type": "apiKey",
+            "name": "Authorization",
+            "in": "header"
         }
     }
 }
