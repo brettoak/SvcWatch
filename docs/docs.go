@@ -15,6 +15,56 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
+        "/api/v1/sev/distribution": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Retrieves the total count and 1xx, 2xx, 3xx, 4xx, 5xx distribution with percentages.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Statistics"
+                ],
+                "summary": "Get distribution of HTTP status codes",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "example": "2026-03-10 00:00:00",
+                        "description": "Start Time (RFC3339 or YYYY-MM-DD HH:MM:SS)",
+                        "name": "start_time",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "example": "2026-03-17 23:59:59",
+                        "description": "End Time (RFC3339 or YYYY-MM-DD HH:MM:SS)",
+                        "name": "end_time",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "example": "nginx_logs",
+                        "description": "Optional specific log file (table name or filename) to search",
+                        "name": "log_file",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/SvcWatch_internal_storage.StatusDistributionResult"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/sev/overview": {
             "get": {
                 "security": [
@@ -59,7 +109,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/storage.OverviewStats"
+                            "$ref": "#/definitions/SvcWatch_internal_storage.OverviewStats"
                         }
                     }
                 }
@@ -114,7 +164,7 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "storage.MetricValue": {
+        "SvcWatch_internal_storage.MetricValue": {
             "type": "object",
             "properties": {
                 "compare_percent": {
@@ -125,24 +175,52 @@ const docTemplate = `{
                 }
             }
         },
-        "storage.OverviewStats": {
+        "SvcWatch_internal_storage.OverviewStats": {
             "type": "object",
             "properties": {
                 "avg_response_time": {
-                    "$ref": "#/definitions/storage.MetricValue"
+                    "$ref": "#/definitions/SvcWatch_internal_storage.MetricValue"
                 },
                 "compare_type": {
                     "description": "e.g., \"vs yesterday\" or \"vs previous period\"",
                     "type": "string"
                 },
                 "error_rate": {
-                    "$ref": "#/definitions/storage.MetricValue"
+                    "$ref": "#/definitions/SvcWatch_internal_storage.MetricValue"
                 },
                 "success_rate": {
-                    "$ref": "#/definitions/storage.MetricValue"
+                    "$ref": "#/definitions/SvcWatch_internal_storage.MetricValue"
                 },
                 "total_requests": {
-                    "$ref": "#/definitions/storage.MetricValue"
+                    "$ref": "#/definitions/SvcWatch_internal_storage.MetricValue"
+                }
+            }
+        },
+        "SvcWatch_internal_storage.StatusDistributionEntry": {
+            "type": "object",
+            "properties": {
+                "code_class": {
+                    "type": "string"
+                },
+                "count": {
+                    "type": "integer"
+                },
+                "percentage": {
+                    "type": "number"
+                }
+            }
+        },
+        "SvcWatch_internal_storage.StatusDistributionResult": {
+            "type": "object",
+            "properties": {
+                "distribution": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/SvcWatch_internal_storage.StatusDistributionEntry"
+                    }
+                },
+                "total": {
+                    "type": "integer"
                 }
             }
         }
