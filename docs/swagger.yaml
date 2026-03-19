@@ -1,25 +1,43 @@
 basePath: /
 definitions:
-  storage.MetricValue:
+  SvcWatch_internal_storage.MetricValue:
     properties:
       compare_percent:
         type: number
       value:
         type: number
     type: object
-  storage.OverviewStats:
+  SvcWatch_internal_storage.OverviewStats:
     properties:
       avg_response_time:
-        $ref: '#/definitions/storage.MetricValue'
+        $ref: '#/definitions/SvcWatch_internal_storage.MetricValue'
       compare_type:
         description: e.g., "vs yesterday" or "vs previous period"
         type: string
       error_rate:
-        $ref: '#/definitions/storage.MetricValue'
+        $ref: '#/definitions/SvcWatch_internal_storage.MetricValue'
       success_rate:
-        $ref: '#/definitions/storage.MetricValue'
+        $ref: '#/definitions/SvcWatch_internal_storage.MetricValue'
       total_requests:
-        $ref: '#/definitions/storage.MetricValue'
+        $ref: '#/definitions/SvcWatch_internal_storage.MetricValue'
+    type: object
+  SvcWatch_internal_storage.StatusDistributionEntry:
+    properties:
+      code_class:
+        type: string
+      count:
+        type: integer
+      percentage:
+        type: number
+    type: object
+  SvcWatch_internal_storage.StatusDistributionResult:
+    properties:
+      distribution:
+        items:
+          $ref: '#/definitions/SvcWatch_internal_storage.StatusDistributionEntry'
+        type: array
+      total:
+        type: integer
     type: object
 info:
   contact: {}
@@ -27,6 +45,40 @@ info:
   title: SvcWatch API
   version: "1.0"
 paths:
+  /api/v1/sev/distribution:
+    get:
+      description: Retrieves the total count and 1xx, 2xx, 3xx, 4xx, 5xx distribution
+        with percentages.
+      parameters:
+      - description: Start Time (RFC3339 or YYYY-MM-DD HH:MM:SS)
+        example: "2026-03-10 00:00:00"
+        in: query
+        name: start_time
+        required: true
+        type: string
+      - description: End Time (RFC3339 or YYYY-MM-DD HH:MM:SS)
+        example: "2026-03-17 23:59:59"
+        in: query
+        name: end_time
+        required: true
+        type: string
+      - description: Optional specific log file (table name or filename) to search
+        example: nginx_logs
+        in: query
+        name: log_file
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/SvcWatch_internal_storage.StatusDistributionResult'
+      security:
+      - BearerAuth: []
+      summary: Get distribution of HTTP status codes
+      tags:
+      - Statistics
   /api/v1/sev/overview:
     get:
       description: Retrieves Total Requests, Success Rate, Error Rate, and Average
@@ -55,7 +107,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/storage.OverviewStats'
+            $ref: '#/definitions/SvcWatch_internal_storage.OverviewStats'
       security:
       - BearerAuth: []
       summary: Get business overview key metrics
