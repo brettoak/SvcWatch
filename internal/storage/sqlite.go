@@ -112,6 +112,19 @@ type OverviewStats struct {
 	CompareType     string      `json:"compare_type"` // e.g., "vs yesterday" or "vs previous period"
 }
 
+// StatusDistributionEntry represents a single status code class distribution.
+type StatusDistributionEntry struct {
+	CodeClass  string  `json:"code_class"`
+	Count      int     `json:"count"`
+	Percentage float64 `json:"percentage"`
+}
+
+// StatusDistributionResult contains the total record count and the distribution of status codes.
+type StatusDistributionResult struct {
+	Total        int                       `json:"total"`
+	Distribution []StatusDistributionEntry `json:"distribution"`
+}
+
 // BaseMetrics contains raw metric counts for a specific time period.
 type BaseMetrics struct {
 	TotalRequests   float64
@@ -121,7 +134,7 @@ type BaseMetrics struct {
 }
 
 // GetBaseMetrics queries the raw metrics for a specific time range.
-func (s *SqliteStorage) GetBaseMetrics(tableName string, startTime, endTime string) (*BaseMetrics, error) {
+func (s *SqliteStorage) GetBaseMetrics(tableName string, startTime, endTime time.Time) (*BaseMetrics, error) {
 	// The query calculates Total Request, Success Count (<400), Error Count (>=400) and Average Request Time.
 	query := fmt.Sprintf(`
 		SELECT 
@@ -175,13 +188,7 @@ func calculateComparePercent(current, previous float64) float64 {
 
 // GetOverviewWithCompare calculates metrics for the given timeframe and compares against the same timeframe 24 hours prior.
 func (s *SqliteStorage) GetOverviewWithCompare(tableName string, startTimeStr, endTimeStr string) (*OverviewStats, error) {
-	// 1. Get current period metrics
-	currentMetrics, err := s.GetBaseMetrics(tableName, startTimeStr, endTimeStr)
-	if err != nil {
-		return nil, err
-	}
-
-	// 2. Parse times to calculate the previous period
+	// 1. Parse times to calculate the previous period
 	layout := time.RFC3339
 	if len(startTimeStr) == 19 {
 		layout = time.DateTime // "2006-01-02 15:04:05"
@@ -196,6 +203,12 @@ func (s *SqliteStorage) GetOverviewWithCompare(tableName string, startTimeStr, e
 		return nil, fmt.Errorf("invalid end_time format: %w", err)
 	}
 
+	// 2. Get current period metrics
+	currentMetrics, err := s.GetBaseMetrics(tableName, startTime, endTime)
+	if err != nil {
+		return nil, err
+	}
+
 	// Calculate range duration
 	rangeDuration := endTime.Sub(startTime)
 	offset := 24 * time.Hour
@@ -205,8 +218,8 @@ func (s *SqliteStorage) GetOverviewWithCompare(tableName string, startTimeStr, e
 		compareType = "vs previous period"
 	}
 
-	prevStartTime := startTime.Add(-offset).Format(layout)
-	prevEndTime := endTime.Add(-offset).Format(layout)
+	prevStartTime := startTime.Add(-offset)
+	prevEndTime := endTime.Add(-offset)
 
 	// 3. Get previous period metrics
 	prevMetrics, err := s.GetBaseMetrics(tableName, prevStartTime, prevEndTime)
@@ -252,6 +265,49 @@ func (s *SqliteStorage) GetOverviewWithCompare(tableName string, startTimeStr, e
 	}
 
 	return stats, nil
+}
+
+// GetStatusDistribution calculates the distribution of status codes (1xx, 2xx, 3xx, 4xx, 5xx) for a given time range.
+func (s *SqliteStorage) GetStatusDistribution(tableName string, startTime, endTime time.Time) (*StatusDistributionResult, error) {
+	query := fmt.Sprintf(`
+		SELECT 
+			COUNT(*) as total,
+			SUM(CASE WHEN status >= 100 AND status < 200 THEN 1 ELSE 0 END) as s1xx,
+			SUM(CASE WHEN status >= 200 AND status < 300 THEN 1 ELSE 0 END) as s2xx,
+			SUM(CASE WHEN status >= 300 AND status < 400 THEN 1 ELSE 0 END) as s3xx,
+			SUM(CASE WHEN status >= 400 AND status < 500 THEN 1 ELSE 0 END) as s4xx,
+			SUM(CASE WHEN status >= 500 AND status < 600 THEN 1 ELSE 0 END) as s5xx
+		FROM %s 
+		WHERE time_local >= ? AND time_local <= ?
+	`, tableName)
+
+	var total int
+	var s1xx, s2xx, s3xx, s4xx, s5xx sql.NullInt64
+
+	err := s.db.QueryRow(query, startTime, endTime).Scan(&total, &s1xx, &s2xx, &s3xx, &s4xx, &s5xx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query status distribution: %w", err)
+	}
+
+	result := &StatusDistributionResult{
+		Total: total,
+		Distribution: []StatusDistributionEntry{
+			{CodeClass: "1xx", Count: int(s1xx.Int64)},
+			{CodeClass: "2xx", Count: int(s2xx.Int64)},
+			{CodeClass: "3xx", Count: int(s3xx.Int64)},
+			{CodeClass: "4xx", Count: int(s4xx.Int64)},
+			{CodeClass: "5xx", Count: int(s5xx.Int64)},
+		},
+	}
+
+	if total > 0 {
+		for i := range result.Distribution {
+			perc := float64(result.Distribution[i].Count) / float64(total)
+			result.Distribution[i].Percentage = math.Round(perc*1000) / 1000
+		}
+	}
+
+	return result, nil
 }
 
 // Close closes the database connection.

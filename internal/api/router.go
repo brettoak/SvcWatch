@@ -2,6 +2,7 @@ package api
 
 import (
 	"fmt"
+	"math"
 	"path/filepath"
 	"time"
 	"SvcWatch/internal/config"
@@ -154,6 +155,99 @@ func (ctrl *APIController) OverviewHandler(c *gin.Context) {
 	c.JSON(200, aggregated)
 }
 
+// StatusDistributionHandler Get distribution of HTTP status codes
+// @Summary Get distribution of HTTP status codes
+// @Description Retrieves the total count and 1xx, 2xx, 3xx, 4xx, 5xx distribution with percentages.
+// @Tags Statistics
+// @Security BearerAuth
+// @Produce json
+// @Param start_time query string true "Start Time (RFC3339 or YYYY-MM-DD HH:MM:SS)" example(2026-03-10 00:00:00)
+// @Param end_time query string true "End Time (RFC3339 or YYYY-MM-DD HH:MM:SS)" example(2026-03-17 23:59:59)
+// @Param log_file query string false "Optional specific log file (table name or filename) to search" example(nginx_logs)
+// @Success 200 {object} storage.StatusDistributionResult
+// @Router /api/v1/sev/distribution [get]
+func (ctrl *APIController) StatusDistributionHandler(c *gin.Context) {
+	startTimeStr := c.Query("start_time")
+	endTimeStr := c.Query("end_time")
+	logFile := c.Query("log_file")
+
+	if startTimeStr == "" || endTimeStr == "" {
+		c.JSON(400, gin.H{"error": "start_time and end_time are required"})
+		return
+	}
+
+	parseTime := func(s string) (time.Time, error) {
+		t, err := time.Parse(time.RFC3339, s)
+		if err != nil {
+			t, err = time.Parse("2006-01-02 15:04:05", s)
+		}
+		return t, err
+	}
+
+	startT, err := parseTime(startTimeStr)
+	if err != nil {
+		c.JSON(400, gin.H{"error": "invalid start_time format"})
+		return
+	}
+
+	endT, err := parseTime(endTimeStr)
+	if err != nil {
+		c.JSON(400, gin.H{"error": "invalid end_time format"})
+		return
+	}
+
+	if startT.After(time.Now()) {
+		c.JSON(400, gin.H{"error": "start_time cannot be in the future"})
+		return
+	}
+
+	if !endT.After(startT) {
+		c.JSON(400, gin.H{"error": "end_time must be after start_time"})
+		return
+	}
+
+	var aggregated *storage.StatusDistributionResult
+
+	for _, monInst := range ctrl.monitors {
+		tableName := monInst.GetTableName()
+		logPath := monInst.GetLogPath()
+		if logFile != "" && tableName != logFile && filepath.Base(logPath) != logFile {
+			continue
+		}
+
+		result, err := monInst.GetStatusDistribution(startT, endT)
+		if err != nil {
+			c.JSON(500, gin.H{"error": fmt.Sprintf("failed to get distribution for %s: %v", tableName, err)})
+			return
+		}
+
+		if aggregated == nil {
+			aggregated = result
+		} else {
+			aggregated.Total += result.Total
+			for i := range aggregated.Distribution {
+				aggregated.Distribution[i].Count += result.Distribution[i].Count
+			}
+		}
+	}
+
+	if aggregated == nil {
+		aggregated = &storage.StatusDistributionResult{
+			Distribution: []storage.StatusDistributionEntry{
+				{CodeClass: "1xx"}, {CodeClass: "2xx"}, {CodeClass: "3xx"}, {CodeClass: "4xx"}, {CodeClass: "5xx"},
+			},
+		}
+	} else if aggregated.Total > 0 {
+		// Recalculate percentages for aggregated view
+		for i := range aggregated.Distribution {
+			perc := float64(aggregated.Distribution[i].Count) / float64(aggregated.Total)
+			aggregated.Distribution[i].Percentage = math.Round(perc*1000) / 1000
+		}
+	}
+
+	c.JSON(200, aggregated)
+}
+
 // SetupRouter initializes and configures the Gin API router.
 func SetupRouter(monitors []*monitor.Monitor, cfg *config.Config) *gin.Engine {
 	router := gin.Default()
@@ -176,6 +270,8 @@ func SetupRouter(monitors []*monitor.Monitor, cfg *config.Config) *gin.Engine {
 			private.GET("/stats", middleware.PermissionMiddleware(cfg.Auth.PermissionURL, cfg.Auth.SysCode, "view:stats"), ctrl.StatsHandler)
 			// Overview endpoint
 			private.GET("/overview", middleware.PermissionMiddleware(cfg.Auth.PermissionURL, cfg.Auth.SysCode, "view:overview"), ctrl.OverviewHandler)
+			// Status distribution endpoint
+			private.GET("/distribution", middleware.PermissionMiddleware(cfg.Auth.PermissionURL, cfg.Auth.SysCode, "view:distribution"), ctrl.StatusDistributionHandler)
 		}
 	}
 

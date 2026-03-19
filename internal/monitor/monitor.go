@@ -5,6 +5,7 @@ import (
 	"SvcWatch/internal/collector"
 	"SvcWatch/internal/parser"
 	storage "SvcWatch/internal/storage"
+	"time"
 )
 
 // Monitor is the main entry point for the log monitoring service for a single table.
@@ -64,4 +65,9 @@ func (m *Monitor) GetStats() map[string]interface{} {
 // GetOverviewStats routes the request to storage to get comparison-based KPI metrics.
 func (m *Monitor) GetOverviewStats(startTime, endTime string) (*storage.OverviewStats, error) {
 	return m.storage.GetOverviewWithCompare(m.tableName, startTime, endTime)
+}
+
+// GetStatusDistribution routes the request to storage to get status code distribution.
+func (m *Monitor) GetStatusDistribution(startTime, endTime time.Time) (*storage.StatusDistributionResult, error) {
+	return m.storage.GetStatusDistribution(m.tableName, startTime, endTime)
 }
