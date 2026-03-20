@@ -1,43 +1,12 @@
 basePath: /
 definitions:
-  SvcWatch_internal_storage.MetricValue:
+  SvcWatch_internal_utils.Response:
     properties:
-      compare_percent:
-        type: number
-      value:
-        type: number
-    type: object
-  SvcWatch_internal_storage.OverviewStats:
-    properties:
-      avg_response_time:
-        $ref: '#/definitions/SvcWatch_internal_storage.MetricValue'
-      compare_type:
-        description: e.g., "vs yesterday" or "vs previous period"
-        type: string
-      error_rate:
-        $ref: '#/definitions/SvcWatch_internal_storage.MetricValue'
-      success_rate:
-        $ref: '#/definitions/SvcWatch_internal_storage.MetricValue'
-      total_requests:
-        $ref: '#/definitions/SvcWatch_internal_storage.MetricValue'
-    type: object
-  SvcWatch_internal_storage.StatusDistributionEntry:
-    properties:
-      code_class:
-        type: string
-      count:
+      code:
         type: integer
-      percentage:
-        type: number
-    type: object
-  SvcWatch_internal_storage.StatusDistributionResult:
-    properties:
-      distribution:
-        items:
-          $ref: '#/definitions/SvcWatch_internal_storage.StatusDistributionEntry'
-        type: array
-      total:
-        type: integer
+      data: {}
+      message:
+        type: string
     type: object
 info:
   contact: {}
@@ -47,23 +16,21 @@ info:
 paths:
   /api/v1/sev/distribution:
     get:
-      description: Retrieves the total count and 1xx, 2xx, 3xx, 4xx, 5xx distribution
-        with percentages.
+      description: Get distribution of status codes for a time range
       parameters:
-      - description: Start Time (RFC3339 or YYYY-MM-DD HH:MM:SS)
-        example: "2026-03-10 00:00:00"
+      - default: "2026-03-19 00:00:00"
+        description: Start Time
         in: query
         name: start_time
         required: true
         type: string
-      - description: End Time (RFC3339 or YYYY-MM-DD HH:MM:SS)
-        example: "2026-03-17 23:59:59"
+      - default: "2026-03-20 00:00:00"
+        description: End Time
         in: query
         name: end_time
         required: true
         type: string
-      - description: Optional specific log file (table name or filename) to search
-        example: nginx_logs
+      - description: Log File or Source ID (optional)
         in: query
         name: log_file
         type: string
@@ -73,31 +40,113 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/SvcWatch_internal_storage.StatusDistributionResult'
+            $ref: '#/definitions/SvcWatch_internal_utils.Response'
       security:
       - BearerAuth: []
-      summary: Get distribution of HTTP status codes
+      summary: Get HTTP status code distribution
       tags:
-      - Statistics
+      - Monitor
+  /api/v1/sev/logs:
+    get:
+      description: Query parsed Nginx logs with comprehensive filtering, sorting,
+        and pagination
+      parameters:
+      - default: 1
+        description: Page number (default 1)
+        in: query
+        name: page
+        type: integer
+      - default: 50
+        description: Page size (default 50, max 500)
+        in: query
+        name: size
+        type: integer
+      - description: Start Time
+        example: "2026-03-19 00:00:00"
+        in: query
+        name: start_time
+        type: string
+      - description: End Time
+        example: "2026-03-20 00:00:00"
+        in: query
+        name: end_time
+        type: string
+      - description: Log File or Source ID
+        in: query
+        name: source_id
+        type: string
+      - description: IP address (supports prefix match)
+        example: 192.168.1.1
+        in: query
+        name: ip
+        type: string
+      - description: HTTP Method (e.g. GET)
+        example: GET
+        in: query
+        name: method
+        type: string
+      - description: Exact HTTP Status (e.g. 500)
+        example: 200
+        in: query
+        name: status
+        type: integer
+      - description: HTTP Status Class (e.g. 5xx)
+        example: 5xx
+        in: query
+        name: status_class
+        type: string
+      - description: Keyword to search in URL path
+        example: api
+        in: query
+        name: path_keyword
+        type: string
+      - description: Minimum Latency in ms
+        example: 100
+        in: query
+        name: min_latency
+        type: integer
+      - description: Maximum Latency in ms
+        example: 5000
+        in: query
+        name: max_latency
+        type: integer
+      - default: time_desc
+        description: Sort order (time_desc or latency_desc)
+        enum:
+        - time_desc
+        - latency_desc
+        in: query
+        name: sort
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/SvcWatch_internal_utils.Response'
+      security:
+      - BearerAuth: []
+      summary: Query detailed logs
+      tags:
+      - Monitor
   /api/v1/sev/overview:
     get:
-      description: Retrieves Total Requests, Success Rate, Error Rate, and Average
-        Response time with % comparison against yesterday.
+      description: Get overview statistics with comparison for a time range
       parameters:
-      - description: Start Time (RFC3339 or YYYY-MM-DD HH:MM:SS)
-        example: "2026-03-10 00:00:00"
+      - default: "2026-03-19 00:00:00"
+        description: Start Time
         in: query
         name: start_time
         required: true
         type: string
-      - description: End Time (RFC3339 or YYYY-MM-DD HH:MM:SS)
-        example: "2026-03-17 23:59:59"
+      - default: "2026-03-20 00:00:00"
+        description: End Time
         in: query
         name: end_time
         required: true
         type: string
-      - description: Optional specific log file (table name or filename) to search
-        example: nginx_logs
+      - description: Log File or Source ID (optional)
         in: query
         name: log_file
         type: string
@@ -107,42 +156,40 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/SvcWatch_internal_storage.OverviewStats'
+            $ref: '#/definitions/SvcWatch_internal_utils.Response'
       security:
       - BearerAuth: []
       summary: Get business overview key metrics
       tags:
-      - Statistics
+      - Monitor
   /api/v1/sev/ping:
     get:
-      description: returns a "pong" string to verify the service is running
+      description: Returns pong message to check if API is alive
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            additionalProperties: true
-            type: object
+            $ref: '#/definitions/SvcWatch_internal_utils.Response'
       summary: Health Check
       tags:
       - System
   /api/v1/sev/stats:
     get:
-      description: Retrieves the total log count for each configured monitored target.
+      description: Get total logs count for all monitored tables
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            additionalProperties: true
-            type: object
+            $ref: '#/definitions/SvcWatch_internal_utils.Response'
       security:
       - BearerAuth: []
       summary: Get aggregated logs statistics
       tags:
-      - Statistics
+      - Monitor
 securityDefinitions:
   BearerAuth:
     description: Type "Bearer" followed by a space and JWT token.

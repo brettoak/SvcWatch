@@ -48,7 +48,7 @@ func main() {
 	}
 
 	// Initialize Services
-	monitorSvc := service.NewMonitorService(monitors, cfg)
+	monitorSvc := service.NewMonitorService(monitors, cfg, store)
 
 	// Initialize Controllers
 	monitorCtrl := controller.NewMonitorController(monitorSvc)

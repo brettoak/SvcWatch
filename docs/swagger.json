@@ -15,35 +15,34 @@
                         "BearerAuth": []
                     }
                 ],
-                "description": "Retrieves the total count and 1xx, 2xx, 3xx, 4xx, 5xx distribution with percentages.",
+                "description": "Get distribution of status codes for a time range",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
-                    "Statistics"
+                    "Monitor"
                 ],
-                "summary": "Get distribution of HTTP status codes",
+                "summary": "Get HTTP status code distribution",
                 "parameters": [
                     {
                         "type": "string",
-                        "example": "2026-03-10 00:00:00",
-                        "description": "Start Time (RFC3339 or YYYY-MM-DD HH:MM:SS)",
+                        "default": "2026-03-19 00:00:00",
+                        "description": "Start Time",
                         "name": "start_time",
                         "in": "query",
                         "required": true
                     },
                     {
                         "type": "string",
-                        "example": "2026-03-17 23:59:59",
-                        "description": "End Time (RFC3339 or YYYY-MM-DD HH:MM:SS)",
+                        "default": "2026-03-20 00:00:00",
+                        "description": "End Time",
                         "name": "end_time",
                         "in": "query",
                         "required": true
                     },
                     {
                         "type": "string",
-                        "example": "nginx_logs",
-                        "description": "Optional specific log file (table name or filename) to search",
+                        "description": "Log File or Source ID (optional)",
                         "name": "log_file",
                         "in": "query"
                     }
@@ -52,7 +51,128 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/SvcWatch_internal_storage.StatusDistributionResult"
+                            "$ref": "#/definitions/SvcWatch_internal_utils.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/sev/logs": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Query parsed Nginx logs with comprehensive filtering, sorting, and pagination",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Monitor"
+                ],
+                "summary": "Query detailed logs",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "default": 1,
+                        "description": "Page number (default 1)",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 50,
+                        "description": "Page size (default 50, max 500)",
+                        "name": "size",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "2026-03-19 00:00:00",
+                        "description": "Start Time",
+                        "name": "start_time",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "2026-03-20 00:00:00",
+                        "description": "End Time",
+                        "name": "end_time",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Log File or Source ID",
+                        "name": "source_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "192.168.1.1",
+                        "description": "IP address (supports prefix match)",
+                        "name": "ip",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "GET",
+                        "description": "HTTP Method (e.g. GET)",
+                        "name": "method",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 200,
+                        "description": "Exact HTTP Status (e.g. 500)",
+                        "name": "status",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "5xx",
+                        "description": "HTTP Status Class (e.g. 5xx)",
+                        "name": "status_class",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "api",
+                        "description": "Keyword to search in URL path",
+                        "name": "path_keyword",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 100,
+                        "description": "Minimum Latency in ms",
+                        "name": "min_latency",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 5000,
+                        "description": "Maximum Latency in ms",
+                        "name": "max_latency",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "time_desc",
+                            "latency_desc"
+                        ],
+                        "type": "string",
+                        "default": "time_desc",
+                        "description": "Sort order (time_desc or latency_desc)",
+                        "name": "sort",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/SvcWatch_internal_utils.Response"
                         }
                     }
                 }
@@ -65,35 +185,34 @@
                         "BearerAuth": []
                     }
                 ],
-                "description": "Retrieves Total Requests, Success Rate, Error Rate, and Average Response time with % comparison against yesterday.",
+                "description": "Get overview statistics with comparison for a time range",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
-                    "Statistics"
+                    "Monitor"
                 ],
                 "summary": "Get business overview key metrics",
                 "parameters": [
                     {
                         "type": "string",
-                        "example": "2026-03-10 00:00:00",
-                        "description": "Start Time (RFC3339 or YYYY-MM-DD HH:MM:SS)",
+                        "default": "2026-03-19 00:00:00",
+                        "description": "Start Time",
                         "name": "start_time",
                         "in": "query",
                         "required": true
                     },
                     {
                         "type": "string",
-                        "example": "2026-03-17 23:59:59",
-                        "description": "End Time (RFC3339 or YYYY-MM-DD HH:MM:SS)",
+                        "default": "2026-03-20 00:00:00",
+                        "description": "End Time",
                         "name": "end_time",
                         "in": "query",
                         "required": true
                     },
                     {
                         "type": "string",
-                        "example": "nginx_logs",
-                        "description": "Optional specific log file (table name or filename) to search",
+                        "description": "Log File or Source ID (optional)",
                         "name": "log_file",
                         "in": "query"
                     }
@@ -102,7 +221,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/SvcWatch_internal_storage.OverviewStats"
+                            "$ref": "#/definitions/SvcWatch_internal_utils.Response"
                         }
                     }
                 }
@@ -110,7 +229,7 @@
         },
         "/api/v1/sev/ping": {
             "get": {
-                "description": "returns a \"pong\" string to verify the service is running",
+                "description": "Returns pong message to check if API is alive",
                 "produces": [
                     "application/json"
                 ],
@@ -122,8 +241,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/SvcWatch_internal_utils.Response"
                         }
                     }
                 }
@@ -136,20 +254,19 @@
                         "BearerAuth": []
                     }
                 ],
-                "description": "Retrieves the total log count for each configured monitored target.",
+                "description": "Get total logs count for all monitored tables",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
-                    "Statistics"
+                    "Monitor"
                 ],
                 "summary": "Get aggregated logs statistics",
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/SvcWatch_internal_utils.Response"
                         }
                     }
                 }
@@ -157,63 +274,15 @@
         }
     },
     "definitions": {
-        "SvcWatch_internal_storage.MetricValue": {
+        "SvcWatch_internal_utils.Response": {
             "type": "object",
             "properties": {
-                "compare_percent": {
-                    "type": "number"
-                },
-                "value": {
-                    "type": "number"
-                }
-            }
-        },
-        "SvcWatch_internal_storage.OverviewStats": {
-            "type": "object",
-            "properties": {
-                "avg_response_time": {
-                    "$ref": "#/definitions/SvcWatch_internal_storage.MetricValue"
-                },
-                "compare_type": {
-                    "description": "e.g., \"vs yesterday\" or \"vs previous period\"",
-                    "type": "string"
-                },
-                "error_rate": {
-                    "$ref": "#/definitions/SvcWatch_internal_storage.MetricValue"
-                },
-                "success_rate": {
-                    "$ref": "#/definitions/SvcWatch_internal_storage.MetricValue"
-                },
-                "total_requests": {
-                    "$ref": "#/definitions/SvcWatch_internal_storage.MetricValue"
-                }
-            }
-        },
-        "SvcWatch_internal_storage.StatusDistributionEntry": {
-            "type": "object",
-            "properties": {
-                "code_class": {
-                    "type": "string"
-                },
-                "count": {
+                "code": {
                     "type": "integer"
                 },
-                "percentage": {
-                    "type": "number"
-                }
-            }
-        },
-        "SvcWatch_internal_storage.StatusDistributionResult": {
-            "type": "object",
-            "properties": {
-                "distribution": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/SvcWatch_internal_storage.StatusDistributionEntry"
-                    }
-                },
-                "total": {
-                    "type": "integer"
+                "data": {},
+                "message": {
+                    "type": "string"
                 }
             }
         }
