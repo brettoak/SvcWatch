@@ -14,13 +14,15 @@ import (
 type MonitorService struct {
 	monitors []*monitor.Monitor
 	cfg      *config.Config
+	store    *storage.SqliteStorage
 }
 
 // NewMonitorService creates a new instance of MonitorService.
-func NewMonitorService(monitors []*monitor.Monitor, cfg *config.Config) *MonitorService {
+func NewMonitorService(monitors []*monitor.Monitor, cfg *config.Config, store *storage.SqliteStorage) *MonitorService {
 	return &MonitorService{
 		monitors: monitors,
 		cfg:      cfg,
+		store:    store,
 	}
 }
 
@@ -110,3 +112,27 @@ func (s *MonitorService) GetStatusDistribution(startT, endT time.Time, logFile s
 	}
 	return aggregated, nil
 }
+
+// GetLogs queries detailed logs with filtering, sorting, and pagination.
+func (s *MonitorService) GetLogs(sourceID string, filter storage.LogQueryFilter) (*storage.LogQueryResponse, error) {
+	var tableNames []string
+
+	// Determine which tables to query based on SourceID
+	for _, monInst := range s.monitors {
+		tableName := monInst.GetTableName()
+		logPath := monInst.GetLogPath()
+		
+		// If a generic SourceID was provided, skip non-matching tables
+		if sourceID != "" && tableName != sourceID && filepath.Base(logPath) != sourceID {
+			continue
+		}
+		tableNames = append(tableNames, tableName)
+	}
+
+	if len(tableNames) == 0 {
+		return &storage.LogQueryResponse{Total: 0, Page: filter.Page, Size: filter.Size, Items: []storage.LogQueryItem{}}, nil
+	}
+
+	return s.store.QueryLogs(tableNames, filter)
+}
+

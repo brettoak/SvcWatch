@@ -33,6 +33,8 @@ func SetupRouter(ctrl *controller.MonitorController, cfg *config.Config) *gin.En
 			private.GET("/overview", middleware.PermissionMiddleware(cfg.Auth.PermissionURL, cfg.Auth.SysCode, "view:overview"), ctrl.OverviewHandler)
 			// Status distribution endpoint
 			private.GET("/distribution", middleware.PermissionMiddleware(cfg.Auth.PermissionURL, cfg.Auth.SysCode, "view:distribution"), ctrl.StatusDistributionHandler)
+			// Log query endpoint
+			private.GET("/logs", middleware.PermissionMiddleware(cfg.Auth.PermissionURL, cfg.Auth.SysCode, "view:logs"), ctrl.LogsHandler)
 		}
 	}
 
