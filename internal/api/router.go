@@ -9,6 +9,7 @@ import (
 	"SvcWatch/internal/middleware"
 	"SvcWatch/internal/monitor"
 	"SvcWatch/internal/storage"
+	"SvcWatch/internal/utils"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
@@ -30,7 +31,7 @@ type APIController struct {
 // @Success 200 {object} map[string]interface{}
 // @Router /api/v1/sev/ping [get]
 func (ctrl *APIController) PingHandler(c *gin.Context) {
-	c.JSON(200, gin.H{
+	utils.Success(c, gin.H{
 		"message": "pong",
 	})
 }
@@ -49,7 +50,7 @@ func (ctrl *APIController) StatsHandler(c *gin.Context) {
 		tableName := ctrl.cfg.Targets[i].Table
 		stats[tableName] = monInst.GetStats()["total_logs"]
 	}
-	c.JSON(200, stats)
+	utils.Success(c, stats)
 }
 
 // OverviewHandler Get business overview key metrics
@@ -69,7 +70,7 @@ func (ctrl *APIController) OverviewHandler(c *gin.Context) {
 	logFile := c.Query("log_file") // Optional
 
 	if startTimeStr == "" || endTimeStr == "" {
-		c.JSON(400, gin.H{"error": "start_time and end_time are required"})
+		utils.Error(c, 400, "start_time and end_time are required")
 		return
 	}
 
@@ -84,29 +85,29 @@ func (ctrl *APIController) OverviewHandler(c *gin.Context) {
 
 	startT, err := parseTime(startTimeStr)
 	if err != nil {
-		c.JSON(400, gin.H{"error": "invalid start_time format"})
+		utils.Error(c, 400, "invalid start_time format")
 		return
 	}
 
 	endT, err := parseTime(endTimeStr)
 	if err != nil {
-		c.JSON(400, gin.H{"error": "invalid end_time format"})
+		utils.Error(c, 400, "invalid end_time format")
 		return
 	}
 
 	now := time.Now()
 	if startT.After(now) {
-		c.JSON(400, gin.H{"error": "start_time cannot be in the future"})
+		utils.Error(c, 400, "start_time cannot be in the future")
 		return
 	}
 
 	if !endT.After(startT) {
-		c.JSON(400, gin.H{"error": "end_time must be after start_time"})
+		utils.Error(c, 400, "end_time must be after start_time")
 		return
 	}
 
 	if endT.Sub(startT) > 366*24*time.Hour {
-		c.JSON(400, gin.H{"error": "time range cannot exceed 1 year"})
+		utils.Error(c, 400, "time range cannot exceed 1 year")
 		return
 	}
 
@@ -125,7 +126,7 @@ func (ctrl *APIController) OverviewHandler(c *gin.Context) {
 
 		stats, err := monInst.GetOverviewStats(startTimeStr, endTimeStr)
 		if err != nil {
-			c.JSON(500, gin.H{"error": fmt.Sprintf("failed to get stats for %s: %v", tableName, err)})
+			utils.Error(c, 500, fmt.Sprintf("failed to get stats for %s: %v", tableName, err))
 			return
 		}
 
@@ -152,7 +153,7 @@ func (ctrl *APIController) OverviewHandler(c *gin.Context) {
 		aggregated = &storage.OverviewStats{}
 	}
 
-	c.JSON(200, aggregated)
+	utils.Success(c, aggregated)
 }
 
 // StatusDistributionHandler Get distribution of HTTP status codes
@@ -172,7 +173,7 @@ func (ctrl *APIController) StatusDistributionHandler(c *gin.Context) {
 	logFile := c.Query("log_file")
 
 	if startTimeStr == "" || endTimeStr == "" {
-		c.JSON(400, gin.H{"error": "start_time and end_time are required"})
+		utils.Error(c, 400, "start_time and end_time are required")
 		return
 	}
 
@@ -186,23 +187,23 @@ func (ctrl *APIController) StatusDistributionHandler(c *gin.Context) {
 
 	startT, err := parseTime(startTimeStr)
 	if err != nil {
-		c.JSON(400, gin.H{"error": "invalid start_time format"})
+		utils.Error(c, 400, "invalid start_time format")
 		return
 	}
 
 	endT, err := parseTime(endTimeStr)
 	if err != nil {
-		c.JSON(400, gin.H{"error": "invalid end_time format"})
+		utils.Error(c, 400, "invalid end_time format")
 		return
 	}
 
 	if startT.After(time.Now()) {
-		c.JSON(400, gin.H{"error": "start_time cannot be in the future"})
+		utils.Error(c, 400, "start_time cannot be in the future")
 		return
 	}
 
 	if !endT.After(startT) {
-		c.JSON(400, gin.H{"error": "end_time must be after start_time"})
+		utils.Error(c, 400, "end_time must be after start_time")
 		return
 	}
 
@@ -217,7 +218,7 @@ func (ctrl *APIController) StatusDistributionHandler(c *gin.Context) {
 
 		result, err := monInst.GetStatusDistribution(startT, endT)
 		if err != nil {
-			c.JSON(500, gin.H{"error": fmt.Sprintf("failed to get distribution for %s: %v", tableName, err)})
+			utils.Error(c, 500, fmt.Sprintf("failed to get distribution for %s: %v", tableName, err))
 			return
 		}
 
@@ -245,7 +246,7 @@ func (ctrl *APIController) StatusDistributionHandler(c *gin.Context) {
 		}
 	}
 
-	c.JSON(200, aggregated)
+	utils.Success(c, aggregated)
 }
 
 // SetupRouter initializes and configures the Gin API router.

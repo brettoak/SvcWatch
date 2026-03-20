@@ -22,14 +22,14 @@ func TokenAuthMiddleware(passportURL string) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		authHeader := c.GetHeader("Authorization")
 		if authHeader == "" {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "Authorization header required"})
+			utils.Error(c, http.StatusUnauthorized, "Authorization header required")
 			c.Abort()
 			return
 		}
 
 		parts := strings.SplitN(authHeader, " ", 2)
 		if len(parts) != 2 || strings.ToLower(parts[0]) != "bearer" {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "Authorization header format must be Bearer {token}"})
+			utils.Error(c, http.StatusUnauthorized, "Authorization header format must be Bearer {token}")
 			c.Abort()
 			return
 		}
@@ -40,7 +40,7 @@ func TokenAuthMiddleware(passportURL string) gin.HandlerFunc {
 		reqPayload := tokenRequest{Token: token}
 		jsonData, err := json.Marshal(reqPayload)
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to encode token request"})
+			utils.Error(c, http.StatusInternalServerError, "Failed to encode token request")
 			c.Abort()
 			return
 		}
@@ -48,7 +48,7 @@ func TokenAuthMiddleware(passportURL string) gin.HandlerFunc {
 		// Make request to external passport service
 		req, err := http.NewRequest(http.MethodPost, passportURL, bytes.NewBuffer(jsonData))
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create verification request"})
+			utils.Error(c, http.StatusInternalServerError, "Failed to create verification request")
 			c.Abort()
 			return
 		}
@@ -62,7 +62,7 @@ func TokenAuthMiddleware(passportURL string) gin.HandlerFunc {
 		resp, err := client.Do(req)
 		if err != nil {
 			// Network error
-			c.JSON(http.StatusServiceUnavailable, gin.H{"error": fmt.Sprintf("Authentication service unavailable: %v", err)})
+			utils.Error(c, http.StatusServiceUnavailable, fmt.Sprintf("Authentication service unavailable: %v", err))
 			c.Abort()
 			return
 		}
@@ -70,7 +70,7 @@ func TokenAuthMiddleware(passportURL string) gin.HandlerFunc {
 
 		if resp.StatusCode != http.StatusOK {
 			// HTTP layer check failed
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "Failed to connect to passport service or token rejected"})
+			utils.Error(c, http.StatusUnauthorized, "Failed to connect to passport service or token rejected")
 			c.Abort()
 			return
 		}
@@ -85,13 +85,13 @@ func TokenAuthMiddleware(passportURL string) gin.HandlerFunc {
 		}
 
 		if err := json.NewDecoder(resp.Body).Decode(&passportResp); err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to parse authentication response"})
+			utils.Error(c, http.StatusInternalServerError, "Failed to parse authentication response")
 			c.Abort()
 			return
 		}
 
 		if passportResp.Code != 200 || !passportResp.Data.Active || !passportResp.Data.Valid {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "Token validation failed or token is inactive"})
+			utils.Error(c, http.StatusUnauthorized, "Token validation failed or token is inactive")
 			c.Abort()
 			return
 		}
@@ -116,14 +116,14 @@ func PermissionMiddleware(permissionURL, sysCode, requiredPermission string) gin
 	return func(c *gin.Context) {
 		authHeader := c.GetHeader("Authorization")
 		if authHeader == "" {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "Authorization header required"})
+			utils.Error(c, http.StatusUnauthorized, "Authorization header required")
 			c.Abort()
 			return
 		}
 
 		parts := strings.SplitN(authHeader, " ", 2)
 		if len(parts) != 2 || strings.ToLower(parts[0]) != "bearer" {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "Authorization header format must be Bearer {token}"})
+			utils.Error(c, http.StatusUnauthorized, "Authorization header format must be Bearer {token}")
 			c.Abort()
 			return
 		}
@@ -140,14 +140,14 @@ func PermissionMiddleware(permissionURL, sysCode, requiredPermission string) gin
 
 		jsonData, err := json.Marshal(reqPayload)
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to encode permission request"})
+			utils.Error(c, http.StatusInternalServerError, "Failed to encode permission request")
 			c.Abort()
 			return
 		}
 
 		req, err := http.NewRequest(http.MethodPost, permissionURL, bytes.NewBuffer(jsonData))
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create permission request"})
+			utils.Error(c, http.StatusInternalServerError, "Failed to create permission request")
 			c.Abort()
 			return
 		}
@@ -162,14 +162,14 @@ func PermissionMiddleware(permissionURL, sysCode, requiredPermission string) gin
 		}
 		resp, err := client.Do(req)
 		if err != nil {
-			c.JSON(http.StatusServiceUnavailable, gin.H{"error": fmt.Sprintf("Permission service unavailable: %v", err)})
+			utils.Error(c, http.StatusServiceUnavailable, fmt.Sprintf("Permission service unavailable: %v", err))
 			c.Abort()
 			return
 		}
 		defer resp.Body.Close()
 
 		if resp.StatusCode != http.StatusOK {
-			c.JSON(http.StatusForbidden, gin.H{"error": "Forbidden: Permission denied by passport service"})
+			utils.Error(c, http.StatusForbidden, "Forbidden: Permission denied by passport service")
 			c.Abort()
 			return
 		}
@@ -184,13 +184,13 @@ func PermissionMiddleware(permissionURL, sysCode, requiredPermission string) gin
 		}
 
 		if err := json.NewDecoder(resp.Body).Decode(&passportResp); err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to parse permission response"})
+			utils.Error(c, http.StatusInternalServerError, "Failed to parse permission response")
 			c.Abort()
 			return
 		}
 
 		if passportResp.Code != 200 || !passportResp.Data.Valid || !passportResp.Data.HasPermission {
-			c.JSON(http.StatusForbidden, gin.H{"error": "Forbidden: Insufficient permissions or token invalid"})
+			utils.Error(c, http.StatusForbidden, "Forbidden: Insufficient permissions or token invalid")
 			c.Abort()
 			return
 		}
