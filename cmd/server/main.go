@@ -3,7 +3,9 @@ package main
 import (
 	"SvcWatch/internal/api"
 	"SvcWatch/internal/config"
+	"SvcWatch/internal/controller"
 	mon "SvcWatch/internal/monitor" // Import the local module
+	"SvcWatch/internal/service"
 	storage "SvcWatch/internal/storage"
 	"log"
 
@@ -45,7 +47,13 @@ func main() {
 		monitors = append(monitors, monitor)
 	}
 
+	// Initialize Services
+	monitorSvc := service.NewMonitorService(monitors, cfg)
+
+	// Initialize Controllers
+	monitorCtrl := controller.NewMonitorController(monitorSvc)
+
 	// Setup and start the router
-	router := api.SetupRouter(monitors, cfg)
+	router := api.SetupRouter(monitorCtrl, cfg)
 	router.Run() // listens on 0.0.0.0:8080 by default
 }
