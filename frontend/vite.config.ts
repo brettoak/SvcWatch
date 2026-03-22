@@ -4,6 +4,10 @@ import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import vueDevTools from 'vite-plugin-vue-devtools'
 
+// Service URLs
+const PASSPORT_SERVICE_URL = 'http://127.0.0.1:8089'
+const BACKEND_SERVICE_URL = 'http://127.0.0.1:8080'
+
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [
@@ -18,7 +22,7 @@ export default defineConfig({
   server: {
     proxy: {
       '/api/passport': {
-        target: 'http://127.0.0.1:8089',
+        target: PASSPORT_SERVICE_URL,
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api\/passport/, '/api/v1'),
         configure: (proxy) => {
@@ -28,7 +32,7 @@ export default defineConfig({
         }
       },
       '/api/sev': {
-        target: 'http://127.0.0.1:8080',
+        target: BACKEND_SERVICE_URL,
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api\/sev/, '/api/v1/sev'),
       },
