@@ -15,4 +15,18 @@ export default defineConfig({
       '@': fileURLToPath(new URL('./src', import.meta.url))
     },
   },
+  server: {
+    proxy: {
+      '/api/auth': {
+        target: 'http://127.0.0.1:8089',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/auth/, '/api/v1/auth'),
+      },
+      '/api/sev': {
+        target: 'http://127.0.0.1:8080',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/sev/, '/api/v1/sev'),
+      },
+    },
+  },
 })
