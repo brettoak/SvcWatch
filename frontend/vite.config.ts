@@ -21,6 +21,11 @@ export default defineConfig({
         target: 'http://127.0.0.1:8089',
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api\/auth/, '/api/v1/auth'),
+        configure: (proxy) => {
+          proxy.on('proxyReq', (proxyReq) => {
+            proxyReq.removeHeader('Origin')
+          })
+        }
       },
       '/api/sev': {
         target: 'http://127.0.0.1:8080',
