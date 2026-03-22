@@ -99,12 +99,12 @@ onMounted(() => {
 .page-header h1 {
   font-size: 1.875rem;
   font-weight: 700;
-  color: #1e293b;
+  color: var(--text-primary);
   margin-bottom: 0.5rem;
 }
 
 .page-header p {
-  color: #64748b;
+  color: var(--text-secondary);
   font-size: 1rem;
 }
 
@@ -114,9 +114,9 @@ onMounted(() => {
   align-items: center;
   justify-content: center;
   padding: 4rem;
-  background: white;
+  background: var(--bg-secondary);
   border-radius: 12px;
-  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+  box-shadow: var(--card-shadow);
   gap: 1rem;
 }
 
@@ -127,8 +127,8 @@ onMounted(() => {
 .loading-spinner {
   width: 40px;
   height: 40px;
-  border: 3px solid #f3f3f3;
-  border-top: 3px solid #2563eb;
+  border: 3px solid var(--border-color);
+  border-top: 3px solid var(--primary-blue);
   border-radius: 50%;
   animation: spin 1s linear infinite;
 }
@@ -140,7 +140,7 @@ onMounted(() => {
 
 .retry-btn {
   padding: 0.5rem 1rem;
-  background-color: #2563eb;
+  background-color: var(--primary-blue);
   color: white;
   border: none;
   border-radius: 6px;
@@ -148,25 +148,25 @@ onMounted(() => {
 }
 
 .profile-card {
-  background: white;
+  background: var(--bg-secondary);
   border-radius: 12px;
-  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--card-shadow);
   overflow: hidden;
 }
 
 .card-header {
   padding: 2.5rem;
-  background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+  background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);
   display: flex;
   align-items: center;
   gap: 1.5rem;
-  border-bottom: 1px solid #e2e8f0;
+  border-bottom: 1px solid var(--border-color);
 }
 
 .avatar-placeholder {
   width: 80px;
   height: 80px;
-  background-color: #2563eb;
+  background-color: var(--primary-blue);
   color: white;
   border-radius: 50%;
   display: flex;
@@ -174,25 +174,24 @@ onMounted(() => {
   justify-content: center;
   font-size: 2rem;
   font-weight: 700;
-  box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.2);
 }
 
 .header-info h2 {
   font-size: 1.5rem;
   font-weight: 700;
-  color: #1e293b;
+  color: var(--text-primary);
   margin-bottom: 0.25rem;
 }
 
 .role-badge {
   display: inline-block;
   padding: 0.25rem 0.75rem;
-  background-color: white;
-  color: #2563eb;
+  background-color: var(--bg-secondary);
+  color: var(--primary-blue);
   font-size: 0.75rem;
   font-weight: 600;
   border-radius: 9999px;
-  border: 1px solid #bfdbfe;
+  border: 1px solid var(--border-color);
 }
 
 .card-body {
@@ -212,12 +211,12 @@ onMounted(() => {
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: #94a3b8;
+  color: var(--text-secondary);
 }
 
 .info-value {
   font-size: 1rem;
-  color: #1e293b;
+  color: var(--text-primary);
   font-weight: 500;
 }
 

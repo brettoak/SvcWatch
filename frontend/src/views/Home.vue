@@ -19,22 +19,22 @@
 }
 
 .welcome-card {
-  background-color: #ffffff;
+  background-color: var(--bg-secondary);
   border-radius: 12px;
   padding: 2.5rem;
-  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--card-shadow);
   text-align: center;
 }
 
 .welcome-card h1 {
-  color: #1e293b;
+  color: var(--text-primary);
   font-size: 1.875rem;
   font-weight: 700;
   margin-bottom: 0.75rem;
 }
 
 .welcome-card p {
-  color: #64748b;
+  color: var(--text-secondary);
   font-size: 1.125rem;
 }
 </style>
