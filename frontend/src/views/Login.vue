@@ -11,6 +11,11 @@ const email = ref('')
 const password = ref('')
 const error = ref('')
 const isLoading = ref(false)
+const showPassword = ref(false)
+
+const togglePassword = () => {
+  showPassword.value = !showPassword.value
+}
 
 const handleLogin = async () => {
   if (!email.value || !password.value) {
@@ -72,13 +77,58 @@ const handleLogin = async () => {
 
         <div class="form-group">
           <label for="password">Password</label>
-          <input
-            id="password"
-            v-model="password"
-            type="password"
-            placeholder="••••••••"
-            :disabled="isLoading"
-          />
+          <div class="password-input-wrapper">
+            <input
+              id="password"
+              v-model="password"
+              :type="showPassword ? 'text' : 'password'"
+              placeholder="••••••••"
+              :disabled="isLoading"
+            />
+            <button
+              type="button"
+              class="toggle-password"
+              @click="togglePassword"
+              :disabled="isLoading"
+              tabindex="-1"
+            >
+              <svg
+                v-if="showPassword"
+                xmlns="http://www.w3.org/2000/svg"
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path d="M9.88 9.88l-3.29-3.29m7.53 7.53l3.29 3.29M3 3l18 18" />
+                <path
+                  d="M10.12 10.12a3 3 0 0 0 3.76 3.76M14.73 9.27A3 3 0 0 0 12.03 7.27"
+                />
+                <path
+                  d="M19.62 12.58a10.63 10.63 0 0 0-4-6.35M16.27 16.27A10.75 10.75 0 0 1 12 18c-4.14 0-7.79-2.51-9.38-6.16"
+                />
+              </svg>
+              <svg
+                v-else
+                xmlns="http://www.w3.org/2000/svg"
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                <circle cx="12" cy="12" r="3" />
+              </svg>
+            </button>
+          </div>
         </div>
 
         <div v-if="error" class="error-message">
@@ -152,7 +202,36 @@ const handleLogin = async () => {
   border: 1px solid #e2e8f0;
   border-radius: 6px;
   font-size: 1rem;
+  width: 100%;
   transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.password-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.password-input-wrapper input {
+  padding-right: 2.5rem;
+}
+
+.toggle-password {
+  position: absolute;
+  right: 0.75rem;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  color: #64748b;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.2s;
+}
+
+.toggle-password:hover:not(:disabled) {
+  color: #2563eb;
 }
 
 .form-group input:focus {
