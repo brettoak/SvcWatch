@@ -41,11 +41,25 @@ api.interceptors.response.use(
 
 export default api
 
-// Special client for auth-related requests (e.g., login)
-export const authApi = axios.create({
-  baseURL: '/api/auth', // Proxied via Vite
+// Special client for passport service requests (auth, users, etc.)
+export const passportApi = axios.create({
+  baseURL: '/api/passport', // Proxied via Vite
   headers: {
     'Content-Type': 'application/json',
     'Accept': 'application/json',
   },
 })
+
+// Add interceptor to passportApi as well for protected endpoints like /users/profile
+passportApi.interceptors.request.use(
+  (config) => {
+    const authStore = useAuthStore()
+    if (authStore.token) {
+      config.headers.Authorization = `Bearer ${authStore.token}`
+    }
+    return config
+  },
+  (error) => {
+    return Promise.reject(error)
+  }
+)

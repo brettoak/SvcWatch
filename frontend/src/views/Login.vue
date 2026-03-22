@@ -2,7 +2,7 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
-import { authApi } from '@/services/api'
+import { passportApi } from '@/services/api'
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -27,7 +27,7 @@ const handleLogin = async () => {
   isLoading.value = true
 
   try {
-    const response = await authApi.post('/login', {
+    const response = await passportApi.post('/auth/login', {
       email: email.value,
       password: password.value,
     })

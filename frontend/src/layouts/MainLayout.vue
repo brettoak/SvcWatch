@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { ref, h } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import { useRouter, useRoute } from 'vue-router'
 
@@ -6,16 +7,32 @@ const authStore = useAuthStore()
 const router = useRouter()
 const route = useRoute()
 
+const isSidebarCollapsed = ref(false)
+
 const handleLogout = () => {
   authStore.logout()
   router.push('/login')
 }
 
+const toggleSidebar = () => {
+  isSidebarCollapsed.value = !isSidebarCollapsed.value
+}
+
+// Icons as render functions to avoid extra dependencies
+const OverviewIcon = h('svg', { xmlns: 'http://www.w3.org/2000/svg', width: '20', height: '20', viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', 'stroke-width': '2', 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }, [
+  h('rect', { x: '3', y: '3', width: '18', height: '18', rx: '2', ry: '2' }),
+  h('line', { x1: '3', y1: '9', x2: '21', y2: '9' }),
+  h('line', { x1: '9', y1: '21', x2: '9', y2: '9' }),
+])
+
+const ProfileIcon = h('svg', { xmlns: 'http://www.w3.org/2000/svg', width: '20', height: '20', viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', 'stroke-width': '2', 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }, [
+  h('path', { d: 'M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2' }),
+  h('circle', { cx: '12', cy: '7', r: '4' }),
+])
+
 const navItems = [
-  { name: 'Overview', path: '/' },
-  // Future items:
-  // { name: 'Stats', path: '/stats' },
-  // { name: 'Logs', path: '/logs' },
+  { name: 'Overview', path: '/', icon: OverviewIcon },
+  { name: 'Profile', path: '/profile', icon: ProfileIcon },
 ]
 </script>
 
@@ -23,7 +40,16 @@ const navItems = [
   <div class="layout-container">
     <!-- Top Navigation Bar -->
     <header class="top-nav">
-      <div class="logo">SvcWatch</div>
+      <div class="header-left">
+        <button @click="toggleSidebar" class="toggle-btn" title="Toggle Sidebar">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="3" y1="12" x2="21" y2="12"></line>
+            <line x1="3" y1="6" x2="21" y2="6"></line>
+            <line x1="3" y1="18" x2="21" y2="18"></line>
+          </svg>
+        </button>
+        <div class="logo">SvcWatch</div>
+      </div>
       <div class="user-actions">
         <span class="user-greeting">Hello, {{ authStore.user?.username || authStore.user?.email || 'Admin' }}</span>
         <button @click="handleLogout" class="logout-btn" title="Logout">
@@ -38,7 +64,7 @@ const navItems = [
 
     <div class="main-body">
       <!-- Left Sidebar -->
-      <aside class="sidebar">
+      <aside class="sidebar" :class="{ collapsed: isSidebarCollapsed }">
         <nav class="side-nav">
           <router-link
             v-for="item in navItems"
@@ -46,8 +72,12 @@ const navItems = [
             :to="item.path"
             class="nav-link"
             :class="{ active: route.path === item.path }"
+            :title="isSidebarCollapsed ? item.name : ''"
           >
-            {{ item.name }}
+            <span class="nav-icon-wrapper">
+              <component :is="item.icon" />
+            </span>
+            <span class="nav-text" v-show="!isSidebarCollapsed">{{ item.name }}</span>
           </router-link>
         </nav>
       </aside>
@@ -84,10 +114,34 @@ const navItems = [
   z-index: 20;
 }
 
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.toggle-btn {
+  background: none;
+  border: none;
+  color: #64748b;
+  cursor: pointer;
+  padding: 0.5rem;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.toggle-btn:hover {
+  background-color: #f1f5f9;
+  color: #1e40af;
+}
+
 .logo {
   font-size: 1.5rem;
   font-weight: 700;
-  color: #1e40af; /* Primary Blue */
+  color: #1e40af;
   letter-spacing: -0.025em;
 }
 
@@ -136,24 +190,57 @@ const navItems = [
   display: flex;
   flex-direction: column;
   z-index: 10;
+  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.sidebar.collapsed {
+  width: 72px;
+}
+
+.sidebar.collapsed .side-nav {
+  padding: 1rem 0.5rem;
+}
+
+.sidebar.collapsed .nav-link {
+  padding: 0.75rem 0;
+  justify-content: center;
 }
 
 .side-nav {
-  padding: 1.5rem 1rem;
+  padding: 1rem;
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
 }
 
 .nav-link {
-  display: block;
-  padding: 0.75rem 1rem;
+  display: flex;
+  align-items: center;
+  padding: 0.75rem;
   color: #475569;
   text-decoration: none;
   border-radius: 8px;
   font-weight: 500;
   font-size: 0.95rem;
+  white-space: nowrap;
   transition: all 0.2s;
+}
+
+.nav-icon-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 40px;
+}
+
+.nav-text {
+  margin-left: 0.25rem;
+  transition: opacity 0.2s;
+}
+
+.sidebar.collapsed .nav-text {
+  opacity: 0;
+  pointer-events: none;
 }
 
 .nav-link:hover {
@@ -162,8 +249,8 @@ const navItems = [
 }
 
 .nav-link.active {
-  background-color: #eff6ff; /* Light Blue BG */
-  color: #2563eb; /* Primary Blue Text */
+  background-color: #eff6ff;
+  color: #2563eb;
 }
 
 /* Content Area */
@@ -175,7 +262,6 @@ const navItems = [
 
 .content-wrapper {
   padding: 2rem;
-  max-width: 1400px;
-  margin: 0 auto;
 }
 </style>
+
