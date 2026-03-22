@@ -1,84 +1,41 @@
 <script setup lang="ts">
-import { useAuthStore } from '@/stores/auth'
-import { useRouter } from 'vue-router'
-
-const authStore = useAuthStore()
-const router = useRouter()
-
-const handleLogout = () => {
-  authStore.logout()
-  router.push('/login')
-}
+// Logic for the dashboard overview will go here
 </script>
 
 <template>
-  <div class="home-container">
-    <header class="header">
-      <div class="logo">SvcWatch</div>
-      <div class="user-info">
-        <span>Logged in as: {{ authStore.user?.email || 'Admin' }}</span>
-        <button @click="handleLogout" class="logout-button">Logout</button>
-      </div>
-    </header>
-    <main class="content">
-      <h1>Welcome to SvcWatch</h1>
-      <p>Your service monitoring dashboard is ready.</p>
-    </main>
+  <div class="home-content">
+    <div class="welcome-card">
+      <h1>Welcome to SvcWatch Dashboard</h1>
+      <p>Your service monitoring overview will be displayed here.</p>
+    </div>
   </div>
 </template>
 
 <style scoped>
-.home-container {
-  min-height: 100vh;
-  background-color: #f8fafc;
-}
-
-.header {
+.home-content {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 1rem 2rem;
-  background: white;
-  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+  flex-direction: column;
+  gap: 1.5rem;
 }
 
-.logo {
-  font-size: 1.5rem;
-  font-weight: 700;
-  color: #1e40af;
-}
-
-.user-info {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-}
-
-.logout-button {
-  padding: 0.5rem 1rem;
-  background-color: #ef4444;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  transition: background-color 0.2s;
-}
-
-.logout-button:hover {
-  background-color: #dc2626;
-}
-
-.content {
-  padding: 2rem;
+.welcome-card {
+  background-color: #ffffff;
+  border-radius: 12px;
+  padding: 2.5rem;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1);
   text-align: center;
 }
 
-.content h1 {
+.welcome-card h1 {
   color: #1e293b;
-  margin-bottom: 1rem;
+  font-size: 1.875rem;
+  font-weight: 700;
+  margin-bottom: 0.75rem;
 }
 
-.content p {
+.welcome-card p {
   color: #64748b;
+  font-size: 1.125rem;
 }
 </style>
+
