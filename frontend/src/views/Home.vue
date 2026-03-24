@@ -125,14 +125,67 @@ const formatPercent = (val: number) => {
   return `${prefix}${val.toFixed(2)}%`
 }
 
+const getStatusLabel = (codeClass: string) => {
+  switch (codeClass) {
+    case '1xx': return 'Informational'
+    case '2xx': return 'Success'
+    case '3xx': return 'Redirect'
+    case '4xx': return 'Error'
+    case '5xx': return 'Server'
+    default: return 'Unknown'
+  }
+}
+
 const getStatusColor = (codeClass: string) => {
   switch (codeClass) {
     case '2xx': return '#10b981'
-    case '3xx': return '#3b82f6'
+    case '3xx': return '#0ea5e9'
     case '4xx': return '#f59e0b'
     case '5xx': return '#ef4444'
     default: return '#6b7280'
   }
+}
+
+// Donut Chart Helpers
+const chartSize = 180
+const radius = 75
+const strokeWidth = 18
+const center = chartSize / 2
+const circumference = 2 * Math.PI * radius
+
+const getDonutSegments = () => {
+  if (!distributionData.value?.distribution) return []
+  
+  // Sort to ensure segments are rendered in order (2xx, 3xx, 4xx, 5xx)
+  const sorted = [...distributionData.value.distribution].sort((a, b) => a.code_class.localeCompare(b.code_class))
+  
+  let currentOffset = 0
+  return sorted
+    .filter(item => item.percentage > 0)
+    .map(item => {
+      const percentage = item.percentage
+      const segmentLength = (percentage / 100) * circumference
+      // We add a tiny gap for the rounded caps to be visible if needed, 
+      // but the design shows them touching. stroke-linecap: round will 
+      // add length beyond the dash, so we should slightly reduce DashArray if we want exact 100%.
+      // Actually, for simplicity and "touching" look, we just use the calculated length.
+      const dashArray = `${segmentLength} ${circumference}`
+      const dashOffset = -currentOffset
+      currentOffset += segmentLength
+      
+      return {
+        ...item,
+        dashArray,
+        dashOffset,
+        color: getStatusColor(item.code_class)
+      }
+    })
+}
+
+const getSuccessRate = () => {
+  if (!distributionData.value?.distribution) return '0.0'
+  const successItem = distributionData.value.distribution.find(i => i.code_class === '2xx')
+  return successItem ? successItem.percentage.toFixed(1) : '0.0'
 }
 </script>
 
@@ -245,20 +298,52 @@ const getStatusColor = (codeClass: string) => {
     <!-- Status Code Distribution Card -->
     <div class="distribution-card stat-card" :class="{ 'is-loading': loading }">
        <h3 class="stat-title">Status Code Distribution<span class="stat-icon">📊</span></h3>
-       <div class="distribution-content">
-          <div v-for="item in distributionData?.distribution" :key="item.code_class" class="distribution-row">
-             <div class="dist-info">
-                <span class="dist-label">{{ item.code_class }}</span>
-                <span class="dist-count">{{ item.count }}</span>
-                <span class="dist-percent">{{ item.percentage }}%</span>
-             </div>
-             <div class="dist-bar-bg">
-                <div class="dist-bar" :style="{ width: item.percentage + '%', backgroundColor: getStatusColor(item.code_class) }"></div>
-             </div>
+       <div class="distribution-vertical">
+          <!-- Donut Chart Top -->
+          <div class="chart-section">
+            <svg :width="chartSize" :height="chartSize" viewBox="0 0 180 180" class="donut-svg">
+              <circle 
+                :cx="center" :cy="center" :r="radius" 
+                fill="transparent" stroke="rgba(255,255,255,0.03)" :stroke-width="strokeWidth" 
+              />
+              <circle 
+                v-for="seg in getDonutSegments()" :key="seg.code_class"
+                :cx="center" :cy="center" :r="radius" 
+                fill="transparent" 
+                :stroke="seg.color" 
+                :stroke-width="strokeWidth" 
+                :stroke-dasharray="seg.dashArray" 
+                :stroke-dashoffset="seg.dashOffset"
+                stroke-linecap="round"
+                class="donut-segment"
+                transform="rotate(-90 90 90)"
+              />
+              <text :x="center" :y="center + 5" text-anchor="middle" class="chart-main-value">{{ getSuccessRate() }}%</text>
+              <text :x="center" :y="center + 25" text-anchor="middle" class="chart-sub-label">Success</text>
+            </svg>
           </div>
-       </div>
-       <div v-if="!distributionData?.distribution?.length" class="empty-state">
-          No data available for this range
+
+          <!-- Detailed List Bottom -->
+          <div class="distribution-list">
+              <div v-for="item in distributionData?.distribution" :key="item.code_class" class="distribution-row">
+                 <div class="dist-row-main">
+                    <div class="dist-label-info">
+                       <span class="dist-bullet" :style="{ backgroundColor: getStatusColor(item.code_class) }"></span>
+                       <span class="dist-code">{{ item.code_class }}</span>
+                       <span class="dist-desc">{{ getStatusLabel(item.code_class) }}</span>
+                    </div>
+                    <div class="dist-bar-wrapper">
+                       <div class="dist-bar-bg">
+                          <div class="dist-bar-fill" :style="{ width: item.percentage + '%', backgroundColor: getStatusColor(item.code_class) }"></div>
+                       </div>
+                    </div>
+                    <div class="dist-percent-val">{{ item.percentage }}%</div>
+                 </div>
+              </div>
+              <div v-if="!distributionData?.distribution?.length" class="empty-state">
+                No data available for this range
+              </div>
+          </div>
        </div>
     </div>
   </div>
@@ -575,62 +660,111 @@ const getStatusColor = (codeClass: string) => {
 
 .distribution-card {
   width: 100%;
-  padding: 2rem;
+  padding: 2.5rem;
   margin-top: 1rem;
 }
 
-.distribution-content {
+.distribution-vertical {
+  display: flex;
+  flex-direction: column;
+  gap: 2.5rem;
+  align-items: center;
+  margin-top: 1rem;
+}
+
+.chart-section {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.donut-svg {
+  filter: drop-shadow(0 6px 16px rgba(0,0,0,0.3));
+}
+
+.donut-segment {
+  transition: stroke-dashoffset 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.chart-main-value {
+  fill: var(--text-primary);
+  font-size: 1.75rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.chart-sub-label {
+  fill: var(--text-secondary);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.distribution-list {
+  width: 100%;
   display: flex;
   flex-direction: column;
   gap: 1.25rem;
-  margin-top: 0.5rem;
+  max-width: 600px;
 }
 
-.distribution-row {
+.dist-row-main {
   display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.dist-info {
-  display: flex;
-  justify-content: space-between;
   align-items: center;
-  font-size: 0.875rem;
-  font-weight: 600;
+  gap: 1.5rem;
 }
 
-.dist-label {
-  width: 40px;
+.dist-label-info {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-width: 130px;
+}
+
+.dist-bullet {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+
+.dist-code {
+  font-size: 0.9375rem;
+  font-weight: 700;
   color: var(--text-primary);
 }
 
-.dist-count {
-  flex: 1;
-  text-align: right;
-  margin-right: 1.5rem;
+.dist-desc {
+  font-size: 0.8125rem;
   color: var(--text-secondary);
-  font-feature-settings: "tnum";
+  font-weight: 500;
 }
 
-.dist-percent {
-  width: 50px;
-  text-align: right;
-  color: var(--text-primary);
+.dist-bar-wrapper {
+  flex: 1;
 }
 
 .dist-bar-bg {
-  height: 8px;
+  height: 4px;
   background-color: rgba(255, 255, 255, 0.05);
-  border-radius: 4px;
+  border-radius: 2px;
   overflow: hidden;
 }
 
-.dist-bar {
+.dist-bar-fill {
   height: 100%;
-  border-radius: 4px;
-  transition: width 1s cubic-bezier(0.34, 1.56, 0.64, 1);
-  box-shadow: 0 0 10px rgba(0,0,0,0.2);
+  border-radius: 2px;
+  transition: width 1s ease-in-out;
+}
+
+.dist-percent-val {
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  min-width: 50px;
+  text-align: right;
+  font-feature-settings: "tnum";
 }
 
 .empty-state {
@@ -654,4 +788,3 @@ const getStatusColor = (codeClass: string) => {
   animation: fadeIn 0.3s ease-out;
 }
 </style>
-
