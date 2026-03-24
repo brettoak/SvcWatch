@@ -184,8 +184,9 @@ const getDonutSegments = () => {
 
 const getSuccessRate = () => {
   if (!distributionData.value?.distribution) return '0.0'
-  const successItem = distributionData.value.distribution.find(i => i.code_class === '2xx')
-  return successItem ? successItem.percentage.toFixed(1) : '0.0'
+  const s2xx = distributionData.value.distribution.find(i => i.code_class === '2xx')?.percentage || 0
+  const s3xx = distributionData.value.distribution.find(i => i.code_class === '3xx')?.percentage || 0
+  return (s2xx + s3xx).toFixed(1)
 }
 </script>
 
