@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { ref, watch, onMounted } from 'vue'
-import { getDashboardOverview } from '@/services/api'
-import type { DashboardOverviewResponse } from '@/services/api'
+import { getDashboardOverview, getStatusDistribution } from '@/services/api'
+import type { DashboardOverviewResponse, StatusDistributionResponse } from '@/services/api'
 
 type DashboardData = DashboardOverviewResponse['data']
+type DistributionData = StatusDistributionResponse['data']
 
 const timeFilter = ref('5m')
 const timeOptions = [
@@ -20,6 +21,7 @@ const customStartTime = ref('')
 const customEndTime = ref('')
 
 const dashboardData = ref<DashboardData | null>(null)
+const distributionData = ref<DistributionData | null>(null)
 const loading = ref(false)
 const lastUpdated = ref('')
 const errorMsg = ref('')
@@ -35,8 +37,6 @@ const calculateTimeRange = () => {
 
   if (timeFilter.value === 'custom') {
     if (!customStartTime.value || !customEndTime.value) return null
-    // datetime-local value is formatted as YYYY-MM-DDTHH:mm
-    // Constructing Date objects from these strings interprets them as local time
     return {
       startStr: new Date(customStartTime.value).toISOString(),
       endStr: new Date(customEndTime.value).toISOString()
@@ -69,13 +69,20 @@ const fetchData = async () => {
   loading.value = true
   
   try {
-    const response = await getDashboardOverview(range.startStr, range.endStr)
-    if (response.data && response.data.code === 200) {
-      dashboardData.value = response.data.data
-      lastUpdated.value = formatDateStr(new Date())
-    } else {
-      errorMsg.value = response.data.message || 'Failed to fetch data'
+    const [overviewResp, distResp] = await Promise.all([
+      getDashboardOverview(range.startStr, range.endStr),
+      getStatusDistribution(range.startStr, range.endStr)
+    ])
+
+    if (overviewResp.data && overviewResp.data.code === 200) {
+      dashboardData.value = overviewResp.data.data
     }
+    
+    if (distResp.data && distResp.data.code === 200) {
+      distributionData.value = distResp.data.data
+    }
+
+    lastUpdated.value = formatDateStr(new Date())
   } catch (err: any) {
     errorMsg.value = err.response?.data?.message || err.message || 'API request failed'
   } finally {
@@ -107,17 +114,25 @@ onMounted(() => {
 
 const getTrendClass = (val: number, isErrorRate = false) => {
   if (val === 0) return 'trend-neutral'
-  // For error rates, higher is worse (red), lower is better (green)
   if (isErrorRate) {
     return val > 0 ? 'trend-down' : 'trend-up'
   }
-  // For others, higher is better (green), lower is worse (red)
   return val > 0 ? 'trend-up' : 'trend-down'
 }
 
 const formatPercent = (val: number) => {
   const prefix = val > 0 ? '+' : ''
   return `${prefix}${val.toFixed(2)}%`
+}
+
+const getStatusColor = (codeClass: string) => {
+  switch (codeClass) {
+    case '2xx': return '#10b981'
+    case '3xx': return '#3b82f6'
+    case '4xx': return '#f59e0b'
+    case '5xx': return '#ef4444'
+    default: return '#6b7280'
+  }
 }
 </script>
 
@@ -164,6 +179,7 @@ const formatPercent = (val: number) => {
       {{ errorMsg }}
     </div>
 
+    <!-- Main Metric Cards -->
     <div class="stats-grid" :class="{ 'is-loading': loading }">
       <!-- Total Requests -->
       <div class="stat-card total-req-card">
@@ -224,6 +240,26 @@ const formatPercent = (val: number) => {
         </div>
         <div class="card-glow"></div>
       </div>
+    </div>
+
+    <!-- Status Code Distribution Card -->
+    <div class="distribution-card stat-card" :class="{ 'is-loading': loading }">
+       <h3 class="stat-title">Status Code Distribution<span class="stat-icon">📊</span></h3>
+       <div class="distribution-content">
+          <div v-for="item in distributionData?.distribution" :key="item.code_class" class="distribution-row">
+             <div class="dist-info">
+                <span class="dist-label">{{ item.code_class }}</span>
+                <span class="dist-count">{{ item.count }}</span>
+                <span class="dist-percent">{{ item.percentage }}%</span>
+             </div>
+             <div class="dist-bar-bg">
+                <div class="dist-bar" :style="{ width: item.percentage + '%', backgroundColor: getStatusColor(item.code_class) }"></div>
+             </div>
+          </div>
+       </div>
+       <div v-if="!distributionData?.distribution?.length" class="empty-state">
+          No data available for this range
+       </div>
     </div>
   </div>
 </template>
@@ -429,7 +465,7 @@ const formatPercent = (val: number) => {
   display: flex;
   flex-direction: column;
   gap: 1.25rem;
-  transition: transform 0.3sease, box-shadow 0.3s ease;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
   backdrop-filter: blur(12px);
   overflow: hidden;
   z-index: 1;
@@ -457,7 +493,6 @@ const formatPercent = (val: number) => {
   opacity: 1;
 }
 
-/* Subtle accent borders for different cards */
 .total-req-card { border-bottom: 3px solid #3b82f6; }
 .success-rate-card { border-bottom: 3px solid #10b981; }
 .error-rate-card { border-bottom: 3px solid #ef4444; }
@@ -538,7 +573,73 @@ const formatPercent = (val: number) => {
   color: var(--text-secondary);
 }
 
-/* Animations */
+.distribution-card {
+  width: 100%;
+  padding: 2rem;
+  margin-top: 1rem;
+}
+
+.distribution-content {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  margin-top: 0.5rem;
+}
+
+.distribution-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.dist-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.dist-label {
+  width: 40px;
+  color: var(--text-primary);
+}
+
+.dist-count {
+  flex: 1;
+  text-align: right;
+  margin-right: 1.5rem;
+  color: var(--text-secondary);
+  font-feature-settings: "tnum";
+}
+
+.dist-percent {
+  width: 50px;
+  text-align: right;
+  color: var(--text-primary);
+}
+
+.dist-bar-bg {
+  height: 8px;
+  background-color: rgba(255, 255, 255, 0.05);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.dist-bar {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 1s cubic-bezier(0.34, 1.56, 0.64, 1);
+  box-shadow: 0 0 10px rgba(0,0,0,0.2);
+}
+
+.empty-state {
+  text-align: center;
+  color: var(--text-secondary);
+  padding: 2rem;
+  font-style: italic;
+}
+
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(10px); }
   to { opacity: 1; transform: translateY(0); }

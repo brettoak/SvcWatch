@@ -98,8 +98,30 @@ export interface DashboardOverviewResponse {
   }
 }
 
+export interface StatusDistributionResponse {
+  code: number
+  message: string
+  data: {
+    total: number
+    distribution: Array<{
+      code_class: string
+      count: number
+      percentage: number
+    }>
+  }
+}
+
 export const getDashboardOverview = (startTime: string, endTime: string) => {
   return api.get<DashboardOverviewResponse>('/overview', {
+    params: {
+      start_time: startTime,
+      end_time: endTime,
+    },
+  })
+}
+
+export const getStatusDistribution = (startTime: string, endTime: string) => {
+  return api.get<StatusDistributionResponse>('/distribution', {
     params: {
       start_time: startTime,
       end_time: endTime,
