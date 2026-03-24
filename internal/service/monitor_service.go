@@ -106,8 +106,8 @@ func (s *MonitorService) GetStatusDistribution(startT, endT time.Time, logFile s
 		}
 	} else if aggregated.Total > 0 {
 		for i := range aggregated.Distribution {
-			perc := float64(aggregated.Distribution[i].Count) / float64(aggregated.Total)
-			aggregated.Distribution[i].Percentage = math.Round(perc*1000) / 1000
+			perc := (float64(aggregated.Distribution[i].Count) / float64(aggregated.Total)) * 100
+			aggregated.Distribution[i].Percentage = math.Round(perc*10) / 10
 		}
 	}
 	return aggregated, nil
