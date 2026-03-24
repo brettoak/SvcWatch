@@ -15,7 +15,12 @@ api.interceptors.request.use(
   (config) => {
     const authStore = useAuthStore()
     if (authStore.token) {
-      config.headers.Authorization = `Bearer ${authStore.token}`
+      if (config.headers && typeof config.headers.set === 'function') {
+        config.headers.set('Authorization', `Bearer ${authStore.token}`)
+      } else {
+        config.headers = config.headers || {}
+        config.headers.Authorization = `Bearer ${authStore.token}`
+      }
     }
     return config
   },
@@ -55,7 +60,12 @@ passportApi.interceptors.request.use(
   (config) => {
     const authStore = useAuthStore()
     if (authStore.token) {
-      config.headers.Authorization = `Bearer ${authStore.token}`
+      if (config.headers && typeof config.headers.set === 'function') {
+        config.headers.set('Authorization', `Bearer ${authStore.token}`)
+      } else {
+        config.headers = config.headers || {}
+        config.headers.Authorization = `Bearer ${authStore.token}`
+      }
     }
     return config
   },
@@ -63,3 +73,36 @@ passportApi.interceptors.request.use(
     return Promise.reject(error)
   }
 )
+
+export interface DashboardOverviewResponse {
+  code: number
+  message: string
+  data: {
+    total_requests: {
+      value: number
+      compare_percent: number
+    }
+    success_rate: {
+      value: number
+      compare_percent: number
+    }
+    error_rate: {
+      value: number
+      compare_percent: number
+    }
+    avg_response_time: {
+      value: number
+      compare_percent: number
+    }
+    compare_type: string
+  }
+}
+
+export const getDashboardOverview = (startTime: string, endTime: string) => {
+  return api.get<DashboardOverviewResponse>('/overview', {
+    params: {
+      start_time: startTime,
+      end_time: endTime,
+    },
+  })
+}
