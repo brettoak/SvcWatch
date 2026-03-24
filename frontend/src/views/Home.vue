@@ -253,7 +253,7 @@ const getSuccessRate = () => {
       <div class="stat-card success-rate-card">
         <h3 class="stat-title">Success Rate<span class="stat-icon">✨</span></h3>
         <div class="stat-main">
-          <span class="stat-value">{{ dashboardData?.success_rate?.value || 0 }}<span class="unit">%</span></span>
+          <span class="stat-value">{{ (dashboardData?.success_rate?.value || 0).toFixed(1) }}<span class="unit">%</span></span>
         </div>
         <div class="stat-footer">
           <span class="compare-label">{{ dashboardData?.compare_type || 'vs yesterday' }}</span>
@@ -268,7 +268,7 @@ const getSuccessRate = () => {
       <div class="stat-card error-rate-card">
         <h3 class="stat-title">Error Rate<span class="stat-icon">⚠️</span></h3>
         <div class="stat-main">
-          <span class="stat-value">{{ dashboardData?.error_rate?.value || 0 }}<span class="unit">%</span></span>
+          <span class="stat-value">{{ (dashboardData?.error_rate?.value || 0).toFixed(1) }}<span class="unit">%</span></span>
         </div>
         <div class="stat-footer">
           <span class="compare-label">{{ dashboardData?.compare_type || 'vs yesterday' }}</span>
@@ -283,7 +283,7 @@ const getSuccessRate = () => {
       <div class="stat-card latency-card">
         <h3 class="stat-title">Avg Latency<span class="stat-icon">⚡</span></h3>
         <div class="stat-main">
-          <span class="stat-value">{{ dashboardData?.avg_response_time?.value || 0 }}<span class="unit">ms</span></span>
+          <span class="stat-value">{{ (dashboardData?.avg_response_time?.value || 0).toFixed(1) }}<span class="unit">ms</span></span>
         </div>
         <div class="stat-footer">
           <span class="compare-label">{{ dashboardData?.compare_type || 'vs yesterday' }}</span>
@@ -338,7 +338,7 @@ const getSuccessRate = () => {
                           <div class="dist-bar-fill" :style="{ width: item.percentage + '%', backgroundColor: getStatusColor(item.code_class) }"></div>
                        </div>
                     </div>
-                    <div class="dist-percent-val">{{ item.percentage }}%</div>
+                    <div class="dist-percent-val">{{ (item.percentage || 0).toFixed(1) }}%</div>
                  </div>
               </div>
               <div v-if="!distributionData?.distribution?.length" class="empty-state">
@@ -482,7 +482,6 @@ const getSuccessRate = () => {
   border-radius: 6px;
   font-size: 0.875rem;
   outline: none;
-  color-scheme: dark;
   transition: border-color 0.2s;
 }
 
