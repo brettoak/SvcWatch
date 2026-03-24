@@ -21,6 +21,7 @@ watchEffect(() => {
 
 <style>
 :root {
+  color-scheme: light;
   --bg-primary: #f8fafc;
   --bg-secondary: #ffffff;
   --text-primary: #1e293b;
@@ -33,6 +34,7 @@ watchEffect(() => {
 }
 
 .dark {
+  color-scheme: dark;
   --bg-primary: #0f172a;
   --bg-secondary: #1e293b;
   --text-primary: #f1f5f9;
