@@ -664,6 +664,12 @@ const getSuccessRate = () => {
   margin-top: 1rem;
 }
 
+@media (min-width: 1024px) {
+  .distribution-card {
+    width: 50%;
+  }
+}
+
 .distribution-vertical {
   display: flex;
   flex-direction: column;
