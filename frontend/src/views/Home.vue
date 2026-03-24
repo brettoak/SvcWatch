@@ -138,11 +138,11 @@ const getStatusLabel = (codeClass: string) => {
 
 const getStatusColor = (codeClass: string) => {
   switch (codeClass) {
-    case '2xx': return '#10b981'
-    case '3xx': return '#0ea5e9'
-    case '4xx': return '#f59e0b'
-    case '5xx': return '#ef4444'
-    default: return '#6b7280'
+    case '2xx': return '#10b981' // Vibrant Emerald
+    case '3xx': return '#06b6d4' // Vibrant Cyan
+    case '4xx': return '#f59e0b' // Amber
+    case '5xx': return '#ef4444' // Red
+    default: return '#94a3b8'
   }
 }
 
@@ -304,7 +304,8 @@ const getSuccessRate = () => {
             <svg :width="chartSize" :height="chartSize" viewBox="0 0 180 180" class="donut-svg">
               <circle 
                 :cx="center" :cy="center" :r="radius" 
-                fill="transparent" stroke="rgba(255,255,255,0.03)" :stroke-width="strokeWidth" 
+                fill="transparent" :stroke-width="strokeWidth" 
+                class="donut-bg-circle"
               />
               <circle 
                 v-for="seg in getDonutSegments()" :key="seg.code_class"
@@ -685,11 +686,17 @@ const getSuccessRate = () => {
 }
 
 .donut-svg {
-  filter: drop-shadow(0 6px 16px rgba(0,0,0,0.3));
+  filter: drop-shadow(0 0 8px rgba(0, 242, 254, 0.2));
+}
+
+.donut-bg-circle {
+  stroke: var(--text-secondary);
+  stroke-opacity: 0.15;
 }
 
 .donut-segment {
   transition: stroke-dashoffset 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
+  filter: drop-shadow(0 0 4px rgba(255, 255, 255, 0.1));
 }
 
 .chart-main-value {
