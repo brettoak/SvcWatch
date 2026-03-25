@@ -7,38 +7,44 @@ name: Build and Deploy
 # new environment. Failure to do so will break the CI/CD pipeline.
 #
 # Required Secrets (Settings -> Secrets and variables -> Actions):
-# - DEPLOY_TARGETS      : JSON array of server configs (see format below)
+#
+# Server access:
+# - SERVER_SSH_KEY      : Private SSH key (shared; must be authorized on all servers)
+#                         ⚠️ Keep this as a dedicated secret — SSH keys contain newlines
+#                            which would break JSON parsing if embedded in DEPLOY_TARGETS.
+#
+# App config (shared across all servers):
 # - AUTH_PASSPORT_URL   : Auth service token check endpoint
 # - AUTH_PERMISSION_URL : Auth service permission check endpoint
 # - AUTH_SYS_CODE       : System code identifier
 # - REDIS_ADDR          : Redis address (host:port)
 # - REDIS_PASSWORD      : Redis password
 #
-# DEPLOY_TARGETS format (store this JSON as a single secret):
-# [
-#   {
-#     "host": "1.2.3.4",
-#     "user": "ubuntu",
-#     "ssh_key": "-----BEGIN OPENSSH PRIVATE KEY-----\n...",
-#     "sudo_password": "yourpassword",
-#     "domain": "passport.dongyuhan.com",
-#     "log_nginx": "/var/log/nginx/access.log",
-#     "log_api": "/var/log/nginx/access_api.log"
-#   },
-#   {
-#     "host": "5.6.7.8",
-#     "user": "ubuntu",
-#     "ssh_key": "-----BEGIN OPENSSH PRIVATE KEY-----\n...",
-#     "sudo_password": "yourpassword",
-#     "domain": "laravel.dongyuhan.com",
-#     "log_nginx": "/var/log/nginx/access.log",
-#     "log_api": "/var/log/nginx/access_api.log"
-#   }
-# ]
+# Per-server config:
+# - DEPLOY_TARGETS: JSON array, example:
+#   [
+#     {
+#       "host": "1.2.3.4",
+#       "user": "ubuntu",
+#       "sudo_password": "yourpassword",
+#       "domain": "passport.dongyuhan.com",
+#       "log_nginx": "/var/log/nginx/access.log",
+#       "log_api": "/var/log/nginx/access_api.log"
+#     },
+#     {
+#       "host": "5.6.7.8",
+#       "user": "ubuntu",
+#       "sudo_password": "yourpassword",
+#       "domain": "laravel.dongyuhan.com",
+#       "log_nginx": "/var/log/nginx/access.log",
+#       "log_api": "/var/log/nginx/access_api.log"
+#     }
+#   ]
 #
 # Required Manual Steps on FIRST deploy to each server:
 # - Point DNS: <domain> → server IP
 # - Issue SSL cert: certbot --nginx -d <domain>
+# - Add the public key of SERVER_SSH_KEY to ~/.ssh/authorized_keys on each server
 # - SvcWatch will be accessible at: https://<domain>:8080
 # ==========================================
 
@@ -73,7 +79,7 @@ jobs:
 
   # ------------------------------------------
   # Job 2: Build the deploy target matrix
-  # Each server in DEPLOY_TARGETS gets its own parallel deploy job
+  # Use EOF delimiter to safely handle multiline secrets
   # ------------------------------------------
   setup-matrix:
     runs-on: ubuntu-latest
@@ -81,7 +87,12 @@ jobs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
     steps:
       - id: set-matrix
-        run: echo "matrix=${{ secrets.DEPLOY_TARGETS }}" >> $GITHUB_OUTPUT
+        run: |
+          {
+            echo 'matrix<<MATRIX_EOF'
+            echo '${{ secrets.DEPLOY_TARGETS }}'
+            echo 'MATRIX_EOF'
+          } >> $GITHUB_OUTPUT
 
   # ------------------------------------------
   # Job 3: Deploy to each server in parallel
@@ -93,7 +104,7 @@ jobs:
     strategy:
       matrix:
         server: ${{ fromJson(needs.setup-matrix.outputs.matrix) }}
-      fail-fast: false  # continue deploying to other servers if one fails
+      fail-fast: false
 
     steps:
       - uses: actions/checkout@v4
@@ -109,7 +120,7 @@ jobs:
         with:
           host: ${{ matrix.server.host }}
           username: ${{ matrix.server.user }}
-          key: ${{ matrix.server.ssh_key }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
           script: |
             pkill -f svcwatch || true
             sleep 2
@@ -119,7 +130,7 @@ jobs:
         with:
           host: ${{ matrix.server.host }}
           username: ${{ matrix.server.user }}
-          key: ${{ matrix.server.ssh_key }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
           source: "svcwatch"
           target: "/home/${{ matrix.server.user }}/app"
 
@@ -128,7 +139,7 @@ jobs:
         with:
           host: ${{ matrix.server.host }}
           username: ${{ matrix.server.user }}
-          key: ${{ matrix.server.ssh_key }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
           source: "config/config.production.yaml"
           target: "/home/${{ matrix.server.user }}/app"
 
@@ -137,17 +148,15 @@ jobs:
         with:
           host: ${{ matrix.server.host }}
           username: ${{ matrix.server.user }}
-          key: ${{ matrix.server.ssh_key }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
           script: |
             APP_DIR="/home/${{ matrix.server.user }}/app"
             DOMAIN="${{ matrix.server.domain }}"
 
-            # Make binary executable
             chmod +x $APP_DIR/svcwatch
 
-            # Generate nginx config dynamically using this server's domain
-            # Each server has its own domain and SSL cert issued by Certbot
-            cat > /tmp/svcwatch_nginx.conf << EOF
+            # Generate nginx config for this server's domain
+            cat > /tmp/svcwatch_nginx.conf << NGINX_EOF
             server {
                 server_name $DOMAIN;
 
@@ -167,13 +176,12 @@ jobs:
                     proxy_set_header X-Forwarded-Proto \$scheme;
                 }
             }
-            EOF
+            NGINX_EOF
 
             echo "${{ matrix.server.sudo_password }}" | sudo -S cp /tmp/svcwatch_nginx.conf /etc/nginx/conf.d/svcwatch.conf
             echo "${{ matrix.server.sudo_password }}" | sudo -S nginx -t && \
             echo "${{ matrix.server.sudo_password }}" | sudo -S nginx -s reload
 
-            # Start the application with this server's env vars
             cd $APP_DIR
             nohup env \
               APP_ENV=production \
