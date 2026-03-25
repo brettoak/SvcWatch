@@ -21,18 +21,25 @@ name: Build and Deploy
 #     "user": "ubuntu",
 #     "ssh_key": "-----BEGIN OPENSSH PRIVATE KEY-----\n...",
 #     "sudo_password": "yourpassword",
+#     "domain": "passport.dongyuhan.com",
 #     "log_nginx": "/var/log/nginx/access.log",
 #     "log_api": "/var/log/nginx/access_api.log"
 #   },
 #   {
 #     "host": "5.6.7.8",
-#     ...
+#     "user": "ubuntu",
+#     "ssh_key": "-----BEGIN OPENSSH PRIVATE KEY-----\n...",
+#     "sudo_password": "yourpassword",
+#     "domain": "laravel.dongyuhan.com",
+#     "log_nginx": "/var/log/nginx/access.log",
+#     "log_api": "/var/log/nginx/access_api.log"
 #   }
 # ]
 #
-# Required Manual Steps on first deploy to each server:
-# - Point DNS: passport.dongyuhan.com → server IP
-# - Issue SSL cert: certbot --nginx -d passport.dongyuhan.com
+# Required Manual Steps on FIRST deploy to each server:
+# - Point DNS: <domain> → server IP
+# - Issue SSL cert: certbot --nginx -d <domain>
+# - SvcWatch will be accessible at: https://<domain>:8080
 # ==========================================
 
 on:
@@ -125,16 +132,7 @@ jobs:
           source: "config/config.production.yaml"
           target: "/home/${{ matrix.server.user }}/app"
 
-      - name: Copy Nginx config to ${{ matrix.server.host }}
-        uses: appleboy/scp-action@master
-        with:
-          host: ${{ matrix.server.host }}
-          username: ${{ matrix.server.user }}
-          key: ${{ matrix.server.ssh_key }}
-          source: "nginx/passport.dongyuhan.com.conf"
-          target: "/home/${{ matrix.server.user }}/app/nginx"
-
-      - name: Configure Nginx & Start App on ${{ matrix.server.host }}
+      - name: Generate Nginx config & Start App on ${{ matrix.server.host }}
         uses: appleboy/ssh-action@master
         with:
           host: ${{ matrix.server.host }}
@@ -142,18 +140,40 @@ jobs:
           key: ${{ matrix.server.ssh_key }}
           script: |
             APP_DIR="/home/${{ matrix.server.user }}/app"
+            DOMAIN="${{ matrix.server.domain }}"
 
             # Make binary executable
             chmod +x $APP_DIR/svcwatch
 
-            # Deploy nginx config
-            echo "${{ matrix.server.sudo_password }}" | sudo -S cp \
-              $APP_DIR/nginx/passport.dongyuhan.com.conf \
-              /etc/nginx/conf.d/passport.dongyuhan.com.conf
+            # Generate nginx config dynamically using this server's domain
+            # Each server has its own domain and SSL cert issued by Certbot
+            cat > /tmp/svcwatch_nginx.conf << EOF
+            server {
+                server_name $DOMAIN;
+
+                listen 8080 ssl;
+                listen [::]:8080 ssl;
+
+                ssl_certificate /etc/letsencrypt/live/$DOMAIN/fullchain.pem;
+                ssl_certificate_key /etc/letsencrypt/live/$DOMAIN/privkey.pem;
+                include /etc/letsencrypt/options-ssl-nginx.conf;
+                ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
+
+                location / {
+                    proxy_pass http://localhost:8081;
+                    proxy_set_header Host \$host;
+                    proxy_set_header X-Real-IP \$remote_addr;
+                    proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+                    proxy_set_header X-Forwarded-Proto \$scheme;
+                }
+            }
+            EOF
+
+            echo "${{ matrix.server.sudo_password }}" | sudo -S cp /tmp/svcwatch_nginx.conf /etc/nginx/conf.d/svcwatch.conf
             echo "${{ matrix.server.sudo_password }}" | sudo -S nginx -t && \
             echo "${{ matrix.server.sudo_password }}" | sudo -S nginx -s reload
 
-            # Start the application — each server uses its own log paths
+            # Start the application with this server's env vars
             cd $APP_DIR
             nohup env \
               APP_ENV=production \
@@ -166,6 +186,6 @@ jobs:
               LOG_PATH_API='${{ matrix.server.log_api }}' \
               ./svcwatch > app.log 2>&1 &
 
-            echo "✅ SvcWatch deployed to ${{ matrix.server.host }}"
+            echo "✅ SvcWatch deployed to https://$DOMAIN:8080"
             sleep 2
             pgrep -f svcwatch && echo "Process is running." || echo "⚠️ Process not found!"
