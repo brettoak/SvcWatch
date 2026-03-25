@@ -1,0 +1,171 @@
+name: Build and Deploy
+
+# ==========================================
+# ⚠️ DEPLOYMENT & MIGRATION WARNING ⚠️
+# If you are migrating this application to a new server or environment,
+# you MUST update the corresponding GitHub Repository Secrets to match the
+# new environment. Failure to do so will break the CI/CD pipeline.
+#
+# Required Secrets (Settings -> Secrets and variables -> Actions):
+# - DEPLOY_TARGETS      : JSON array of server configs (see format below)
+# - AUTH_PASSPORT_URL   : Auth service token check endpoint
+# - AUTH_PERMISSION_URL : Auth service permission check endpoint
+# - AUTH_SYS_CODE       : System code identifier
+# - REDIS_ADDR          : Redis address (host:port)
+# - REDIS_PASSWORD      : Redis password
+#
+# DEPLOY_TARGETS format (store this JSON as a single secret):
+# [
+#   {
+#     "host": "1.2.3.4",
+#     "user": "ubuntu",
+#     "ssh_key": "-----BEGIN OPENSSH PRIVATE KEY-----\n...",
+#     "sudo_password": "yourpassword",
+#     "log_nginx": "/var/log/nginx/access.log",
+#     "log_api": "/var/log/nginx/access_api.log"
+#   },
+#   {
+#     "host": "5.6.7.8",
+#     ...
+#   }
+# ]
+#
+# Required Manual Steps on first deploy to each server:
+# - Point DNS: passport.dongyuhan.com → server IP
+# - Issue SSL cert: certbot --nginx -d passport.dongyuhan.com
+# ==========================================
+
+on:
+  push:
+    branches: [ "main" ]
+
+jobs:
+  # ------------------------------------------
+  # Job 1: Build the Go binary
+  # ------------------------------------------
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Build binary (linux/amd64)
+        run: |
+          CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build -o svcwatch ./cmd/server
+
+      - name: Upload binary artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: svcwatch-binary
+          path: svcwatch
+
+  # ------------------------------------------
+  # Job 2: Build the deploy target matrix
+  # Each server in DEPLOY_TARGETS gets its own parallel deploy job
+  # ------------------------------------------
+  setup-matrix:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
+    steps:
+      - id: set-matrix
+        run: echo "matrix=${{ secrets.DEPLOY_TARGETS }}" >> $GITHUB_OUTPUT
+
+  # ------------------------------------------
+  # Job 3: Deploy to each server in parallel
+  # ------------------------------------------
+  deploy:
+    needs: [ build, setup-matrix ]
+    runs-on: ubuntu-latest
+    environment: production
+    strategy:
+      matrix:
+        server: ${{ fromJson(needs.setup-matrix.outputs.matrix) }}
+      fail-fast: false  # continue deploying to other servers if one fails
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download binary
+        uses: actions/download-artifact@v4
+        with:
+          name: svcwatch-binary
+          path: ./
+
+      - name: Stop existing process on ${{ matrix.server.host }}
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ matrix.server.host }}
+          username: ${{ matrix.server.user }}
+          key: ${{ matrix.server.ssh_key }}
+          script: |
+            pkill -f svcwatch || true
+            sleep 2
+
+      - name: Copy binary to ${{ matrix.server.host }}
+        uses: appleboy/scp-action@master
+        with:
+          host: ${{ matrix.server.host }}
+          username: ${{ matrix.server.user }}
+          key: ${{ matrix.server.ssh_key }}
+          source: "svcwatch"
+          target: "/home/${{ matrix.server.user }}/app"
+
+      - name: Copy production config to ${{ matrix.server.host }}
+        uses: appleboy/scp-action@master
+        with:
+          host: ${{ matrix.server.host }}
+          username: ${{ matrix.server.user }}
+          key: ${{ matrix.server.ssh_key }}
+          source: "config/config.production.yaml"
+          target: "/home/${{ matrix.server.user }}/app"
+
+      - name: Copy Nginx config to ${{ matrix.server.host }}
+        uses: appleboy/scp-action@master
+        with:
+          host: ${{ matrix.server.host }}
+          username: ${{ matrix.server.user }}
+          key: ${{ matrix.server.ssh_key }}
+          source: "nginx/passport.dongyuhan.com.conf"
+          target: "/home/${{ matrix.server.user }}/app/nginx"
+
+      - name: Configure Nginx & Start App on ${{ matrix.server.host }}
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ matrix.server.host }}
+          username: ${{ matrix.server.user }}
+          key: ${{ matrix.server.ssh_key }}
+          script: |
+            APP_DIR="/home/${{ matrix.server.user }}/app"
+
+            # Make binary executable
+            chmod +x $APP_DIR/svcwatch
+
+            # Deploy nginx config
+            echo "${{ matrix.server.sudo_password }}" | sudo -S cp \
+              $APP_DIR/nginx/passport.dongyuhan.com.conf \
+              /etc/nginx/conf.d/passport.dongyuhan.com.conf
+            echo "${{ matrix.server.sudo_password }}" | sudo -S nginx -t && \
+            echo "${{ matrix.server.sudo_password }}" | sudo -S nginx -s reload
+
+            # Start the application — each server uses its own log paths
+            cd $APP_DIR
+            nohup env \
+              APP_ENV=production \
+              AUTH_PASSPORT_URL='${{ secrets.AUTH_PASSPORT_URL }}' \
+              AUTH_PERMISSION_URL='${{ secrets.AUTH_PERMISSION_URL }}' \
+              AUTH_SYS_CODE='${{ secrets.AUTH_SYS_CODE }}' \
+              REDIS_ADDR='${{ secrets.REDIS_ADDR }}' \
+              REDIS_PASSWORD='${{ secrets.REDIS_PASSWORD }}' \
+              LOG_PATH_NGINX='${{ matrix.server.log_nginx }}' \
+              LOG_PATH_API='${{ matrix.server.log_api }}' \
+              ./svcwatch > app.log 2>&1 &
+
+            echo "✅ SvcWatch deployed to ${{ matrix.server.host }}"
+            sleep 2
+            pgrep -f svcwatch && echo "Process is running." || echo "⚠️ Process not found!"

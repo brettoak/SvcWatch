@@ -65,5 +65,7 @@ func main() {
 
 	// Setup and start the router
 	router := api.SetupRouter(monitorCtrl, cfg)
-	router.Run() // listens on 0.0.0.0:8080 by default
+	addr := fmt.Sprintf(":%d", cfg.Server.Port)
+	log.Printf("Starting server on %s", addr)
+	router.Run(addr)
 }

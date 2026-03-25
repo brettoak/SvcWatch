@@ -7,10 +7,14 @@ import (
 )
 
 type Config struct {
+	Server   ServerConfig   `yaml:"server"`
 	Targets  []TargetConfig `yaml:"targets"`
 	Database DatabaseConfig `yaml:"database"`
 	Auth     AuthConfig     `yaml:"auth"`
-	// Other fields can be added here later (Server, Redis, etc.)
+}
+
+type ServerConfig struct {
+	Port int `yaml:"port"`
 }
 
 type AuthConfig struct {

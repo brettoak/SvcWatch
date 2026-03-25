@@ -1,5 +1,5 @@
 server:
-  port: 8080
+  port: 8081  # internal port; nginx :8080 (SSL) proxies to this
 
 auth:
   passport_url: "${AUTH_PASSPORT_URL}"
