@@ -9,24 +9,22 @@ name: Build and Deploy
 # Required Secrets (Settings -> Secrets and variables -> Actions):
 #
 # Server access:
-# - SERVER_SSH_KEY      : Private SSH key (shared; must be authorized on all servers)
-#                         ⚠️ Keep this as a dedicated secret — SSH keys contain newlines
-#                            which would break JSON parsing if embedded in DEPLOY_TARGETS.
+# - SERVER_SSH_KEY       : (Secret) Private SSH key — must be authorized on all servers
 #
-# App config (shared across all servers):
-# - AUTH_PASSPORT_URL   : Auth service token check endpoint
-# - AUTH_PERMISSION_URL : Auth service permission check endpoint
-# - AUTH_SYS_CODE       : System code identifier
-# - REDIS_ADDR          : Redis address (host:port)
-# - REDIS_PASSWORD      : Redis password
+# App config:
+# - AUTH_PASSPORT_URL   : (Secret) Auth service token check endpoint
+# - AUTH_PERMISSION_URL : (Secret) Auth service permission check endpoint
+# - AUTH_SYS_CODE       : (Secret) System code identifier
+# - REDIS_ADDR          : (Secret) Redis address (host:port)
+# - REDIS_PASSWORD      : (Secret) Redis password
 #
-# Per-server config:
+# Per-server config — stored as a REPOSITORY VARIABLE (not Secret):
+# ⚠️  Go to Settings → Secrets and variables → Actions → Variables tab
 # - DEPLOY_TARGETS: JSON array, example:
 #   [
 #     {
 #       "host": "1.2.3.4",
 #       "user": "ubuntu",
-#       "sudo_password": "yourpassword",
 #       "domain": "passport.dongyuhan.com",
 #       "log_nginx": "/var/log/nginx/access.log",
 #       "log_api": "/var/log/nginx/access_api.log"
@@ -34,12 +32,16 @@ name: Build and Deploy
 #     {
 #       "host": "5.6.7.8",
 #       "user": "ubuntu",
-#       "sudo_password": "yourpassword",
 #       "domain": "laravel.dongyuhan.com",
 #       "log_nginx": "/var/log/nginx/access.log",
 #       "log_api": "/var/log/nginx/access_api.log"
 #     }
 #   ]
+#
+# Why Variable and not Secret?
+# GitHub masks Secret values in job outputs. If DEPLOY_TARGETS were a Secret,
+# the setup-matrix output would be redacted as *** and fromJson() would fail.
+# DEPLOY_TARGETS contains no sensitive data (IPs/domains/paths are non-secret).
 #
 # Required Manual Steps on FIRST deploy to each server:
 # - Point DNS: <domain> → server IP
@@ -90,7 +92,7 @@ jobs:
         run: |
           {
             echo 'matrix<<MATRIX_EOF'
-            echo '${{ secrets.DEPLOY_TARGETS }}'
+            echo '${{ vars.DEPLOY_TARGETS }}'
             echo 'MATRIX_EOF'
           } >> $GITHUB_OUTPUT
 
@@ -178,9 +180,8 @@ jobs:
             }
             NGINX_EOF
 
-            echo "${{ matrix.server.sudo_password }}" | sudo -S cp /tmp/svcwatch_nginx.conf /etc/nginx/conf.d/svcwatch.conf
-            echo "${{ matrix.server.sudo_password }}" | sudo -S nginx -t && \
-            echo "${{ matrix.server.sudo_password }}" | sudo -S nginx -s reload
+            sudo cp /tmp/svcwatch_nginx.conf /etc/nginx/conf.d/svcwatch.conf
+            sudo nginx -t && sudo nginx -s reload
 
             cd $APP_DIR
             nohup env \
