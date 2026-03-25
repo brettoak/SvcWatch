@@ -29,15 +29,19 @@ type DatabaseConfig struct {
 }
 
 // LoadConfig reads and parses the YAML configuration file.
+// Values in the form ${VAR_NAME} are expanded from environment variables,
+// which allows CI/CD pipelines (e.g. GitHub Actions) to inject secrets at runtime.
 func LoadConfig(path string) (*Config, error) {
-	bytes, err := os.ReadFile(path)
+	raw, err := os.ReadFile(path)
 	if err != nil {
 		return nil, err
 	}
 
+	// Expand ${VAR} / $VAR placeholders using the current process environment.
+	expanded := os.ExpandEnv(string(raw))
+
 	var cfg Config
-	err = yaml.Unmarshal(bytes, &cfg)
-	if err != nil {
+	if err = yaml.Unmarshal([]byte(expanded), &cfg); err != nil {
 		return nil, err
 	}
 

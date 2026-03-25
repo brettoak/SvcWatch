@@ -31,3 +31,4 @@ nginx-log-monitor/nginx_logs.db
 nginx-log-monitor/main
 svcwatch
 tmp
+config/config.development.yaml

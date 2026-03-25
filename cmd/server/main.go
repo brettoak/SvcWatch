@@ -7,7 +7,9 @@ import (
 	mon "SvcWatch/internal/monitor" // Import the local module
 	"SvcWatch/internal/service"
 	storage "SvcWatch/internal/storage"
+	"fmt"
 	"log"
+	"os"
 
 	_ "SvcWatch/docs"
 )
@@ -23,7 +25,15 @@ import (
 // @description Type "Bearer" followed by a space and JWT token.
 func main() {
 	// Load configuration
-	cfg, err := config.LoadConfig("config/config.yaml")
+	// Resolve config file based on APP_ENV (development / staging / production)
+	// Defaults to "development" if not set.
+	env := os.Getenv("APP_ENV")
+	if env == "" {
+		env = "development"
+	}
+	configPath := fmt.Sprintf("config/config.%s.yaml", env)
+	log.Printf("Loading config: %s (APP_ENV=%s)", configPath, env)
+	cfg, err := config.LoadConfig(configPath)
 	if err != nil {
 		log.Fatalf("Failed to load config: %v", err)
 	}

@@ -1,0 +1,21 @@
+server:
+  port: 8080
+
+auth:
+  passport_url: "${AUTH_PASSPORT_URL}"
+  permission_url: "${AUTH_PERMISSION_URL}"
+  sys_code: "${AUTH_SYS_CODE}"
+
+targets:
+  - path: "${LOG_PATH_NGINX}"
+    table: "nginx_logs"
+  - path: "${LOG_PATH_API}"
+    table: "api_logs"
+
+redis:
+  addr: "${REDIS_ADDR}"
+  password: "${REDIS_PASSWORD}"
+  db: 1
+
+database:
+  clear_on_startup: false
