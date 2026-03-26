@@ -124,9 +124,9 @@ jobs:
           host: ${{ matrix.server.host }}
           username: ${{ matrix.server.user }}
           key: ${{ secrets.SERVER_SSH_KEY }}
-          debug: true
           script: |
-            pkill -f svcwatch || true
+            # Kill by exact process name to avoid matching the SSH command string
+            pkill svcwatch || true
             sleep 1
             # Ensure app directories exist
             mkdir -p /home/${{ matrix.server.user }}/app/config
@@ -137,7 +137,6 @@ jobs:
           host: ${{ matrix.server.host }}
           username: ${{ matrix.server.user }}
           key: ${{ secrets.SERVER_SSH_KEY }}
-          debug: true
           source: "svcwatch"
           target: "/home/${{ matrix.server.user }}/app"
 
@@ -147,7 +146,6 @@ jobs:
           host: ${{ matrix.server.host }}
           username: ${{ matrix.server.user }}
           key: ${{ secrets.SERVER_SSH_KEY }}
-          debug: true
           source: "config/config.production.yaml"
           target: "/home/${{ matrix.server.user }}/app"
 
@@ -157,7 +155,6 @@ jobs:
           host: ${{ matrix.server.host }}
           username: ${{ matrix.server.user }}
           key: ${{ secrets.SERVER_SSH_KEY }}
-          debug: true
           script: |
             APP_DIR="/home/${{ matrix.server.user }}/app"
             DOMAIN="${{ matrix.server.domain }}"
