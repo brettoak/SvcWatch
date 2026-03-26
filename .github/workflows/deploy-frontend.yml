@@ -92,6 +92,10 @@ jobs:
             CERT_DIR="/etc/letsencrypt/live/$DOMAIN"
             FRONTEND_DIR="/home/${{ secrets.FRONTEND_USER }}/app/frontend/dist"
 
+            # Fix permissions: Nginx needs +x on the home dir tree and 755 on the app dir
+            sudo chmod +x /home/${{ secrets.FRONTEND_USER }}
+            sudo chmod -R 755 /home/${{ secrets.FRONTEND_USER }}/app/frontend
+
             if sudo test -f "$CERT_DIR/fullchain.pem"; then
               cat > /tmp/svcwatch_frontend.conf << NGINX_EOF
             server {
