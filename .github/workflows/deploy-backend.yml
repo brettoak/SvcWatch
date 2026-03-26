@@ -167,6 +167,8 @@ jobs:
                 }
             }
             NGINX_EOF
+              # Remove legacy config if it exists to avoid duplication
+              sudo rm -f /etc/nginx/conf.d/svcwatch.conf
               sudo cp /tmp/svcwatch_nginx.conf /etc/nginx/conf.d/svcwatch-backend.conf
               sudo nginx -t && sudo nginx -s reload
               echo "✅ Nginx configured for https://$DOMAIN:8080"
