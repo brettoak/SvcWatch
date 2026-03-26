@@ -1,5 +1,22 @@
 name: Build and Deploy Frontend
 
+# ==============================================================================
+# 🚀 SvcWatch Frontend Deployment Workflow
+# ==============================================================================
+# ⚠️ MIGRATION & SETUP CHECKS:
+# When moving to a new server, ensure these are configured in GitHub Settings:
+#
+# 1️⃣ REPOSITORY SECRETS (Settings → Secrets and variables → Actions → Secrets)
+# - SERVER_SSH_KEY : (Private Key) Must be authorized on the target server.
+# - FRONTEND_HOST  : IP address or hostname of the frontend server.
+# - FRONTEND_USER  : SSH username (e.g. ubuntu).
+#
+# 2️⃣ SERVER PREREQUISITES:
+# - DNS must point watch.dongyuhan.com to the FRONTEND_HOST IP.
+# - SSL cert must be issued via: sudo certbot --nginx -d watch.dongyuhan.com
+# - User must have passwordless sudo for Nginx reloads.
+# ==============================================================================
+
 on:
   push:
     branches: [ "main" ]
@@ -8,7 +25,7 @@ on:
       - ".github/workflows/deploy-frontend.yml"
 
 jobs:
-  build-frontend:
+  build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -32,27 +49,73 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: frontend-dist
-          path: frontend/dist # 或者 frontend/build
+          path: frontend/dist
 
-  deploy-frontend:
-    needs: build-frontend
+  deploy:
+    needs: build
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        server: ${{ fromJson(vars.DEPLOY_TARGETS) }} # 如果不需要动态处理，可以直接从 vars 读取
     steps:
+      - uses: actions/checkout@v4
+
       - name: Download frontend dist
         uses: actions/download-artifact@v4
         with:
           name: frontend-dist
           path: ./dist
 
-      # 这里的部署步骤需要根据你的具体前端部署方式（如 Nginx 静态文件）来配置
-      # - name: Deploy to server
-      #   uses: appleboy/scp-action@master
-      #   with:
-      #     host: ${{ matrix.server.host }}
-      #     username: ${{ matrix.server.user }}
-      #     key: ${{ secrets.SERVER_SSH_KEY }}
-      #     source: "dist/*"
-      #     target: "/var/www/html/svcwatch-frontend"
+      - name: Ensure target directory exists on server
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.FRONTEND_HOST }}
+          username: ${{ secrets.FRONTEND_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          script: |
+             mkdir -p /home/${{ secrets.FRONTEND_USER }}/app/frontend
+
+      - name: Copy frontend dist to server
+        uses: appleboy/scp-action@master
+        with:
+          host: ${{ secrets.FRONTEND_HOST }}
+          username: ${{ secrets.FRONTEND_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          source: "dist/*"
+          target: "/home/${{ secrets.FRONTEND_USER }}/app/frontend"
+
+      - name: Configure Nginx & Reload
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.FRONTEND_HOST }}
+          username: ${{ secrets.FRONTEND_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          script: |
+            DOMAIN="watch.dongyuhan.com"
+            CERT_DIR="/etc/letsencrypt/live/$DOMAIN"
+            FRONTEND_DIR="/home/${{ secrets.FRONTEND_USER }}/app/frontend/dist"
+
+            if sudo test -f "$CERT_DIR/fullchain.pem"; then
+              cat > /tmp/svcwatch_frontend.conf << NGINX_EOF
+            server {
+                listen 443 ssl;
+                listen [::]:443 ssl;
+                server_name $DOMAIN;
+
+                ssl_certificate $CERT_DIR/fullchain.pem;
+                ssl_certificate_key $CERT_DIR/privkey.pem;
+                include /etc/letsencrypt/options-ssl-nginx.conf;
+                ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
+
+                root $FRONTEND_DIR;
+                index index.html;
+
+                location / {
+                    try_files \$uri \$uri/ /index.html;
+                }
+            }
+            NGINX_EOF
+              sudo cp /tmp/svcwatch_frontend.conf /etc/nginx/conf.d/svcwatch-frontend.conf
+              sudo nginx -t && sudo nginx -s reload
+              echo "✅ Nginx configured for https://$DOMAIN"
+            else
+              echo "⚠️ SSL cert not found for $DOMAIN — skipping nginx config."
+              echo "   Run: sudo certbot --nginx -d $DOMAIN  to issue the cert."
+            fi
