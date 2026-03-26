@@ -125,6 +125,7 @@ jobs:
           host: ${{ matrix.server.host }}
           username: ${{ matrix.server.user }}
           key: ${{ secrets.SERVER_SSH_KEY }}
+          debug: true
           script: |
             pkill -f svcwatch || true
             sleep 1
@@ -137,6 +138,7 @@ jobs:
           host: ${{ matrix.server.host }}
           username: ${{ matrix.server.user }}
           key: ${{ secrets.SERVER_SSH_KEY }}
+          debug: true
           source: "svcwatch"
           target: "/home/${{ matrix.server.user }}/app"
 
@@ -146,6 +148,7 @@ jobs:
           host: ${{ matrix.server.host }}
           username: ${{ matrix.server.user }}
           key: ${{ secrets.SERVER_SSH_KEY }}
+          debug: true
           source: "config/config.production.yaml"
           target: "/home/${{ matrix.server.user }}/app"
 
@@ -155,6 +158,7 @@ jobs:
           host: ${{ matrix.server.host }}
           username: ${{ matrix.server.user }}
           key: ${{ secrets.SERVER_SSH_KEY }}
+          debug: true
           script: |
             APP_DIR="/home/${{ matrix.server.user }}/app"
             DOMAIN="${{ matrix.server.domain }}"
@@ -195,8 +199,11 @@ jobs:
             fi
 
             # Start the application
+            # Use setsid + disown to fully detach from the SSH session.
+            # drone-ssh sends SIGTERM to the process group on exit (status 143);
+            # setsid creates a new session, disown removes it from the job table.
             cd $APP_DIR
-            nohup env \
+            setsid env \
               APP_ENV=production \
               AUTH_PASSPORT_URL='${{ secrets.AUTH_PASSPORT_URL }}' \
               AUTH_PERMISSION_URL='${{ secrets.AUTH_PERMISSION_URL }}' \
@@ -205,7 +212,8 @@ jobs:
               REDIS_PASSWORD='${{ secrets.REDIS_PASSWORD }}' \
               LOG_PATH_NGINX='${{ matrix.server.log_nginx }}' \
               LOG_PATH_API='${{ matrix.server.log_api }}' \
-              ./svcwatch > app.log 2>&1 &
+              ./svcwatch < /dev/null > app.log 2>&1 &
+            disown $!
 
             sleep 2
             pgrep -f svcwatch && echo "✅ SvcWatch is running" || echo "⚠️ Process not found — check app.log"
