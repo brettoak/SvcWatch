@@ -104,7 +104,6 @@ jobs:
   deploy:
     needs: [ build, setup-matrix ]
     runs-on: ubuntu-latest
-    environment: production
     strategy:
       matrix:
         server: ${{ fromJson(needs.setup-matrix.outputs.matrix) }}
