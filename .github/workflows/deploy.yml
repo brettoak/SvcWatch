@@ -164,7 +164,7 @@ jobs:
 
             # Only configure nginx if SSL cert exists
             # Run: certbot --nginx -d <domain>  on first deploy to issue the cert
-            if [ -f "$CERT_DIR/fullchain.pem" ]; then
+            if sudo test -f "$CERT_DIR/fullchain.pem"; then
               cat > /tmp/svcwatch_nginx.conf << NGINX_EOF
             server {
                 server_name $DOMAIN;
