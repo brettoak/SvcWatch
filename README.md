@@ -1,98 +1,61 @@
-# SvcWatch
+# SvcWatch 🚀
 
-SvcWatch is a lightweight, real-time Nginx log monitoring system written in Go.
+SvcWatch is a professional, full-stack Nginx log monitoring and analytics dashboard. It "tails" Nginx access logs in real-time, parses them into structured metrics, provides an authorized REST API, and visualizes data on a modern, responsive web dashboard.
 
-## Overview
+## 🏗️ Monorepo Structure
 
-SvcWatch is designed to monitor Nginx access logs in real-time. It acts as an intelligent agent that "tails" your log files, parses them on-the-fly into structured data, and exposes statistics via a RESTful API.
+The project is organized as a monorepo for clean separation of concerns:
 
-It is built with a modular architecture, making it easy to extend for different storage backends (Redis, Kafka) or logic requirements.
+- **`/backend`**: High-performance Go service using [Gin](https://github.com/gin-gonic/gin) and [Redis](https://redis.io/).
+- **`/frontend`**: Modern analytics dashboard built with [Vue 3](https://vuejs.org/), [Vite](https://vitejs.dev/), and [TypeScript](https://www.typescriptlang.org/).
+- **`/.github`**: Multi-server parallel deployment workflows with GitHub Actions.
 
-## Features
+## ✨ Key Features
 
-- **Real-time Tailing**: Continuously watches log files for new entries, handling file rotation (logrotate) automatically.
-- **Regex Parsing**: Robust parsing of the default Nginx access log format.
-- **Thread-Safe Storage**: Implements concurrency-safe in-memory storage for high-throughput environments.
-- **REST API**: Provides HTTP endpoints to query system status and log statistics (built with [Gin](https://github.com/gin-gonic/gin)).
+- **📡 Real-time Analytics**: Intelligent agent that tails logs, handles log rotation automatically, and parses entries on-the-fly using robust regex.
+- **📊 Modern Dashboard**: Visualize QPS, status code distributions, and traffic spikes with interactive charts and real-time updates.
+- **🔐 Secure API**: Integrated with external Auth services for per-request permission validation for all monitoring endpoints.
+- **💾 Redis Persistence**: Efficient data storage for long-term metric aggregation and persistence across service restarts.
+- **⚙️ Matrix Deployment**: Automatic, parallel deployment to multiple production servers via GitHub Actions Matrix strategy.
+- **🛡️ Nginx Reverse Proxy**: Secure HTTPS/SSL mapping via Nginx (port 8080) with automated configuration and Certbot integration.
 
-## Architecture
+## 🚀 Getting Started
 
-The project is organized into modular components:
+### Backend (Go)
 
-- **Collector** (`internal/collector`): Responsible for file I/O and tailing.
-- **Parser** (`internal/parser`): Transforms raw log lines into structured `LogEntry` objects.
-- **Storage** (`internal/storage`): Interface-driven storage layer. Currently supports in-memory storage.
-- **Monitor** (`nginx-log-monitor/monitor.go`): The facade that orchestrates these components.
+1.  Navigate to the `backend/` directory.
+2.  Install dependencies: `go mod tidy`.
+3.  Configure your environment in `config/config.yaml`.
+4.  Run natively: `go run cmd/server/main.go`.
 
-## Getting Started
+### Frontend (Vue)
 
-### Prerequisites
+1.  Navigate to the `frontend/` directory.
+2.  Install dependencies: `npm install`.
+3.  Start the development server: `npm run dev`.
 
-- Go 1.22 or higher.
+## 📦 Deployment (CI/CD)
 
-### Installation
+The project includes pre-configured CI/CD pipelines for automated, targeted deployments.
 
-```bash
-# Clone the repository
-git clone https://github.com/your-repo/SvcWatch.git
-cd SvcWatch
+1.  **Backend Deployment**: [deploy-backend.yml](.github/workflows/deploy-backend.yml) triggers only on `backend/**` changes.
+2.  **Frontend Deployment**: [deploy-frontend.yml](.github/workflows/deploy-frontend.yml) triggers only on `frontend/**` changes.
 
-# Download dependencies
-go mod tidy
-```
+### Required Setup
+To use the CI/CD pipeline, configure the following in GitHub:
 
-### Usage
+**Repository Variables (Settings → Secrets and variables → Actions → Variables):**
+- `DEPLOY_TARGETS`: JSON array of server metadata (IP, domain, log paths).
 
-1. **Prepare a Log File**  
-   The application monitors `./access.log` by default. You can create a dummy file to test:
-   ```bash
-   echo '127.0.0.1 - - [24/Jan/2026:15:00:00 +1100] "GET / HTTP/1.1" 200 612 "-" "-"' >> access.log
-   ```
+**Repository Secrets (Settings → Secrets and variables → Actions → Secrets):**
+- `SERVER_SSH_KEY`: Private RSA/ED25519 key for SSH access.
+- `AUTH_PASSPORT_URL`, `AUTH_PERMISSION_URL`, `AUTH_SYS_CODE`: Authentication service integration.
+- `REDIS_ADDR`, `REDIS_PASSWORD`: Redis connection credentials.
 
-2. **Run the Application**
-   ```bash
-   go run main.go
-   ```
-   *Note: If you encounter permission issues with dependencies, try `export GOMODCACHE=/tmp/gomodcache` before running.*
+## 🛠️ Tech Stack
 
-3. **Check Status**
-   The server listens on `localhost:8080`.
-   
-   - **Health Check**:
-     ```bash
-     curl http://localhost:8080/ping
-     # Output: {"message":"pong"}
-     ```
-   
-   - **Log Statistics**:
-     ```bash
-     curl http://localhost:8080/stats
-     # Output: {"total_logs": 1}
-     ```
-
-## Project Structure
-
-```text
-SvcWatch/
-├── main.go                 # Entry point
-├── go.mod                  # Root module definition
-├── nginx-log-monitor/      # Core logic module
-│   ├── monitor.go          # Public Façade
-│   ├── config/             # Configuration
-│   └── internal/           # Private internal components
-│       ├── collector/      # Log tailing implementation
-│       ├── parser/         # Log parsing logic
-│       ├── storage/        # Data storage layers (Memory, etc.)
-│       ├── model/          # Data models
-│       └── service/        # Business logic
-└── README.md
-```
-
-## Roadmap
-
-- [x] Basic Log Tailing & Parsing
-- [x] In-Memory Storage
-- [ ] Redis Integration for Persistence
-- [ ] Kafka Producer for Log Streaming
-- [ ] Advanced Layout/Metrics (QPS, Latency P99)
-- [ ] Web Dashboard
+- **Languages**: [Go](https://go.dev/), [TypeScript](https://www.typescriptlang.org/)
+- **Backend Framework**: [Gin Gonic](https://github.com/gin-gonic/gin)
+- **Frontend Framework**: [Vue 3](https://vuejs.org/) + [Vite](https://vitejs.dev/)
+- **Storage**: Redis, In-Memory
+- **Automation**: GitHub Actions, Nginx, Certbot

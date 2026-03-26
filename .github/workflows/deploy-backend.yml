@@ -1,23 +1,36 @@
 name: Build and Deploy Backend
 
-# ==========================================
-# ⚠️ DEPLOYMENT & MIGRATION WARNING ⚠️
-# If you are migrating this application to a new server or environment,
-# you MUST update the corresponding GitHub Repository Secrets to match the
-# new environment. Failure to do so will break the CI/CD pipeline.
+# ==============================================================================
+# 🚀 SvcWatch Backend Deployment Workflow
+# ==============================================================================
+# ⚠️ MIGRATION & SETUP CHECKS:
+# When moving to a new server, ensure these are configured in GitHub Settings:
 #
-# Required Secrets (Settings -> Secrets and variables -> Actions):
+# 1️⃣ REPOSITORY VARIABLES (Settings → Secrets and variables → Actions → Variables)
+# - DEPLOY_TARGETS : JSON array of server configs. Example format:
+#   [
+#     {
+#       "host": "1.1.1.1",
+#       "user": "ubuntu",
+#       "domain": "api.example.com",
+#       "log_nginx": "/var/log/nginx/access.log",
+#       "log_api": "/var/log/nginx/access_api.log"
+#     }
+#   ]
 #
-# Server access:
-# - SERVER_SSH_KEY       : (Secret) Private SSH key — must be authorized on all servers
+# 2️⃣ REPOSITORY SECRETS (Settings → Secrets and variables → Actions → Secrets)
+# - SERVER_SSH_KEY      : (Private Key) Must be authorized on target servers.
+# - AUTH_PASSPORT_URL   : Auth service token check endpoint.
+# - AUTH_PERMISSION_URL : Auth service permission check endpoint.
+# - AUTH_SYS_CODE       : System code identifier for auth service.
+# - REDIS_ADDR          : Redis address (host:port).
+# - REDIS_PASSWORD      : Redis password.
 #
-# App config:
-# - AUTH_PASSPORT_URL   : (Secret) Auth service token check endpoint
-# - AUTH_PERMISSION_URL : (Secret) Auth service permission check endpoint
-# - AUTH_SYS_CODE       : (Secret) System code identifier
-# - REDIS_ADDR          : (Secret) Redis address (host:port)
-# - REDIS_PASSWORD      : (Secret) Redis password
-# ==========================================
+# 3️⃣ SERVER PREREQUISITES:
+# - DNS must point <domain> to the server IP.
+# - SSL cert must be issued via: sudo certbot --nginx -d <domain>
+# - User (e.g. ubuntu) must have passwordless sudo for Nginx reloads.
+# ==============================================================================
 
 on:
   push:
@@ -154,7 +167,7 @@ jobs:
                 }
             }
             NGINX_EOF
-              sudo cp /tmp/svcwatch_nginx.conf /etc/nginx/conf.d/svcwatch.conf
+              sudo cp /tmp/svcwatch_nginx.conf /etc/nginx/conf.d/svcwatch-backend.conf
               sudo nginx -t && sudo nginx -s reload
               echo "✅ Nginx configured for https://$DOMAIN:8080"
             else
