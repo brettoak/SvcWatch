@@ -60,6 +60,8 @@ jobs:
   # ------------------------------------------
   build:
     runs-on: ubuntu-latest
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
     steps:
       - uses: actions/checkout@v4
 
@@ -125,7 +127,9 @@ jobs:
           key: ${{ secrets.SERVER_SSH_KEY }}
           script: |
             pkill -f svcwatch || true
-            sleep 2
+            sleep 1
+            # Ensure app directories exist
+            mkdir -p /home/${{ matrix.server.user }}/app/config
 
       - name: Copy binary to ${{ matrix.server.host }}
         uses: appleboy/scp-action@master
@@ -154,19 +158,22 @@ jobs:
           script: |
             APP_DIR="/home/${{ matrix.server.user }}/app"
             DOMAIN="${{ matrix.server.domain }}"
+            CERT_DIR="/etc/letsencrypt/live/$DOMAIN"
 
             chmod +x $APP_DIR/svcwatch
 
-            # Generate nginx config for this server's domain
-            cat > /tmp/svcwatch_nginx.conf << NGINX_EOF
+            # Only configure nginx if SSL cert exists
+            # Run: certbot --nginx -d <domain>  on first deploy to issue the cert
+            if [ -f "$CERT_DIR/fullchain.pem" ]; then
+              cat > /tmp/svcwatch_nginx.conf << NGINX_EOF
             server {
                 server_name $DOMAIN;
 
                 listen 8080 ssl;
                 listen [::]:8080 ssl;
 
-                ssl_certificate /etc/letsencrypt/live/$DOMAIN/fullchain.pem;
-                ssl_certificate_key /etc/letsencrypt/live/$DOMAIN/privkey.pem;
+                ssl_certificate $CERT_DIR/fullchain.pem;
+                ssl_certificate_key $CERT_DIR/privkey.pem;
                 include /etc/letsencrypt/options-ssl-nginx.conf;
                 ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
 
@@ -179,10 +186,15 @@ jobs:
                 }
             }
             NGINX_EOF
+              sudo cp /tmp/svcwatch_nginx.conf /etc/nginx/conf.d/svcwatch.conf
+              sudo nginx -t && sudo nginx -s reload
+              echo "✅ Nginx configured for https://$DOMAIN:8080"
+            else
+              echo "⚠️  SSL cert not found at $CERT_DIR — skipping nginx config."
+              echo "   Run: sudo certbot --nginx -d $DOMAIN  to issue the cert."
+            fi
 
-            sudo cp /tmp/svcwatch_nginx.conf /etc/nginx/conf.d/svcwatch.conf
-            sudo nginx -t && sudo nginx -s reload
-
+            # Start the application
             cd $APP_DIR
             nohup env \
               APP_ENV=production \
@@ -195,6 +207,5 @@ jobs:
               LOG_PATH_API='${{ matrix.server.log_api }}' \
               ./svcwatch > app.log 2>&1 &
 
-            echo "✅ SvcWatch deployed to https://$DOMAIN:8080"
             sleep 2
-            pgrep -f svcwatch && echo "Process is running." || echo "⚠️ Process not found!"
+            pgrep -f svcwatch && echo "✅ SvcWatch is running" || echo "⚠️ Process not found — check app.log"
