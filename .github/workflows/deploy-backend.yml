@@ -1,4 +1,4 @@
-name: Build and Deploy
+name: Build and Deploy Backend
 
 # ==========================================
 # ⚠️ DEPLOYMENT & MIGRATION WARNING ⚠️
@@ -17,42 +17,14 @@ name: Build and Deploy
 # - AUTH_SYS_CODE       : (Secret) System code identifier
 # - REDIS_ADDR          : (Secret) Redis address (host:port)
 # - REDIS_PASSWORD      : (Secret) Redis password
-#
-# Per-server config — stored as a REPOSITORY VARIABLE (not Secret):
-# ⚠️  Go to Settings → Secrets and variables → Actions → Variables tab
-# - DEPLOY_TARGETS: JSON array, example:
-#   [
-#     {
-#       "host": "1.2.3.4",
-#       "user": "ubuntu",
-#       "domain": "passport.dongyuhan.com",
-#       "log_nginx": "/var/log/nginx/access.log",
-#       "log_api": "/var/log/nginx/access_api.log"
-#     },
-#     {
-#       "host": "5.6.7.8",
-#       "user": "ubuntu",
-#       "domain": "laravel.dongyuhan.com",
-#       "log_nginx": "/var/log/nginx/access.log",
-#       "log_api": "/var/log/nginx/access_api.log"
-#     }
-#   ]
-#
-# Why Variable and not Secret?
-# GitHub masks Secret values in job outputs. If DEPLOY_TARGETS were a Secret,
-# the setup-matrix output would be redacted as *** and fromJson() would fail.
-# DEPLOY_TARGETS contains no sensitive data (IPs/domains/paths are non-secret).
-#
-# Required Manual Steps on FIRST deploy to each server:
-# - Point DNS: <domain> → server IP
-# - Issue SSL cert: certbot --nginx -d <domain>
-# - Add the public key of SERVER_SSH_KEY to ~/.ssh/authorized_keys on each server
-# - SvcWatch will be accessible at: https://<domain>:8080
 # ==========================================
 
 on:
   push:
     branches: [ "main" ]
+    paths:
+      - "backend/**"
+      - ".github/workflows/deploy-backend.yml"
 
 jobs:
   # ------------------------------------------
@@ -62,13 +34,16 @@ jobs:
     runs-on: ubuntu-latest
     env:
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+    defaults:
+      run:
+        working-directory: backend
     steps:
       - uses: actions/checkout@v4
 
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version-file: go.mod
+          go-version-file: backend/go.mod
           cache: true
 
       - name: Build binary (linux/amd64)
@@ -79,11 +54,10 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: svcwatch-binary
-          path: svcwatch
+          path: backend/svcwatch
 
   # ------------------------------------------
   # Job 2: Build the deploy target matrix
-  # Use EOF delimiter to safely handle multiline secrets
   # ------------------------------------------
   setup-matrix:
     runs-on: ubuntu-latest
@@ -125,10 +99,8 @@ jobs:
           username: ${{ matrix.server.user }}
           key: ${{ secrets.SERVER_SSH_KEY }}
           script: |
-            # Kill by exact process name to avoid matching the SSH command string
             pkill svcwatch || true
             sleep 1
-            # Ensure app directories exist
             mkdir -p /home/${{ matrix.server.user }}/app/config
 
       - name: Copy binary to ${{ matrix.server.host }}
@@ -146,8 +118,9 @@ jobs:
           host: ${{ matrix.server.host }}
           username: ${{ matrix.server.user }}
           key: ${{ secrets.SERVER_SSH_KEY }}
-          source: "config/config.production.yaml"
+          source: "backend/config/config.production.yaml"
           target: "/home/${{ matrix.server.user }}/app"
+          strip_components: 2
 
       - name: Generate Nginx config & Start App on ${{ matrix.server.host }}
         uses: appleboy/ssh-action@master
@@ -162,21 +135,16 @@ jobs:
 
             chmod +x $APP_DIR/svcwatch
 
-            # Only configure nginx if SSL cert exists
-            # Run: certbot --nginx -d <domain>  on first deploy to issue the cert
             if sudo test -f "$CERT_DIR/fullchain.pem"; then
               cat > /tmp/svcwatch_nginx.conf << NGINX_EOF
             server {
                 server_name $DOMAIN;
-
                 listen 8080 ssl;
                 listen [::]:8080 ssl;
-
                 ssl_certificate $CERT_DIR/fullchain.pem;
                 ssl_certificate_key $CERT_DIR/privkey.pem;
                 include /etc/letsencrypt/options-ssl-nginx.conf;
                 ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
-
                 location / {
                     proxy_pass http://localhost:8081;
                     proxy_set_header Host \$host;
@@ -190,14 +158,9 @@ jobs:
               sudo nginx -t && sudo nginx -s reload
               echo "✅ Nginx configured for https://$DOMAIN:8080"
             else
-              echo "⚠️  SSL cert not found at $CERT_DIR — skipping nginx config."
-              echo "   Run: sudo certbot --nginx -d $DOMAIN  to issue the cert."
+              echo "⚠️ SSL cert not found at $CERT_DIR — skipping nginx config."
             fi
 
-            # Start the application
-            # Use setsid + disown to fully detach from the SSH session.
-            # drone-ssh sends SIGTERM to the process group on exit (status 143);
-            # setsid creates a new session, disown removes it from the job table.
             cd $APP_DIR
             setsid env \
               APP_ENV=production \
@@ -212,4 +175,4 @@ jobs:
             disown $!
 
             sleep 2
-            pgrep -f svcwatch && echo "✅ SvcWatch is running" || echo "⚠️ Process not found — check app.log"
+            pgrep -f svcwatch && echo "✅ SvcWatch is running" || echo "⚠️ Process not found!"
