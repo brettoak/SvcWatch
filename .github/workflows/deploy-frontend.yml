@@ -91,6 +91,10 @@ jobs:
             DOMAIN="watch.dongyuhan.com"
             CERT_DIR="/etc/letsencrypt/live/$DOMAIN"
             FRONTEND_DIR="/home/${{ secrets.FRONTEND_USER }}/app/frontend/dist"
+            
+            # Service URLs (Matched to production requirements)
+            PASSPORT_SERVICE_URL="http://127.0.0.1:8089"
+            BACKEND_SERVICE_URL="http://127.0.0.1:8081"
 
             # Fix permissions: Nginx needs +x on the home dir tree and 755 on the app dir
             sudo chmod +x /home/${{ secrets.FRONTEND_USER }}
@@ -113,6 +117,24 @@ jobs:
 
                 location / {
                     try_files \$uri \$uri/ /index.html;
+                }
+
+                # Proxy to Passport Service
+                location /api/passport/ {
+                    proxy_pass $PASSPORT_SERVICE_URL/api/v1/;
+                    proxy_set_header Host \$host;
+                    proxy_set_header X-Real-IP \$remote_addr;
+                    proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+                    proxy_set_header X-Forwarded-Proto \$scheme;
+                }
+
+                # Proxy to Backend Service
+                location /api/sev/ {
+                    proxy_pass $BACKEND_SERVICE_URL/api/v1/sev/;
+                    proxy_set_header Host \$host;
+                    proxy_set_header X-Real-IP \$remote_addr;
+                    proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+                    proxy_set_header X-Forwarded-Proto \$scheme;
                 }
             }
             NGINX_EOF
