@@ -8,6 +8,7 @@
 #   {{DOMAIN}}  →  e.g. passport.dongyuhan.com / laravel.dongyuhan.com
 # ==============================================================
 
+
 server {
     server_name {{DOMAIN}};
 
