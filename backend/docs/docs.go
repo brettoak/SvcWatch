@@ -58,7 +58,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/SvcWatch_internal_utils.Response"
+                            "$ref": "#/definitions/controller.StatusDistributionResponseWrapper"
                         }
                     }
                 }
@@ -179,7 +179,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/SvcWatch_internal_utils.Response"
+                            "$ref": "#/definitions/controller.LogsResponseWrapper"
                         }
                     }
                 }
@@ -228,7 +228,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/SvcWatch_internal_utils.Response"
+                            "$ref": "#/definitions/controller.OverviewResponseWrapper"
                         }
                     }
                 }
@@ -248,7 +248,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/SvcWatch_internal_utils.Response"
+                            "$ref": "#/definitions/utils.Response"
                         }
                     }
                 }
@@ -273,7 +273,89 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/SvcWatch_internal_utils.Response"
+                            "$ref": "#/definitions/controller.StatsResponseWrapper"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/sev/stats/timeseries": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Get time-series data for a metric (qps, error_rate, latency_p99, bandwidth). Range cannot exceed 1 year. Returns max 20 points.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Monitor"
+                ],
+                "summary": "Get trend data for charts",
+                "parameters": [
+                    {
+                        "enum": [
+                            "qps",
+                            "error_rate",
+                            "latency_p99",
+                            "bandwidth"
+                        ],
+                        "type": "string",
+                        "description": "Metric type",
+                        "name": "metric",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "enum": [
+                            "1m",
+                            "5m",
+                            "1h",
+                            "6h",
+                            "1d",
+                            "1w",
+                            "1M"
+                        ],
+                        "type": "string",
+                        "description": "Aggregation interval (may be overridden if unreasonable)",
+                        "name": "interval",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "example": "2026-03-19 00:00:00",
+                        "description": "Start Time",
+                        "name": "start_time",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "example": "2026-03-20 00:00:00",
+                        "description": "End Time",
+                        "name": "end_time",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "collectionFormat": "csv",
+                        "description": "List of Source IDs or Log Files to aggregate",
+                        "name": "source_ids",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controller.TimeSeriesResponseWrapper"
                         }
                     }
                 }
@@ -281,7 +363,239 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "SvcWatch_internal_utils.Response": {
+        "controller.LogsResponseWrapper": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 200
+                },
+                "data": {
+                    "$ref": "#/definitions/storage.LogQueryResponse"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "success"
+                }
+            }
+        },
+        "controller.OverviewResponseWrapper": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 200
+                },
+                "data": {
+                    "$ref": "#/definitions/storage.OverviewStats"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "success"
+                }
+            }
+        },
+        "controller.StatsResponseWrapper": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 200
+                },
+                "data": {
+                    "type": "object",
+                    "additionalProperties": true
+                },
+                "message": {
+                    "type": "string",
+                    "example": "success"
+                }
+            }
+        },
+        "controller.StatusDistributionResponseWrapper": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 200
+                },
+                "data": {
+                    "$ref": "#/definitions/storage.StatusDistributionResult"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "success"
+                }
+            }
+        },
+        "controller.TimeSeriesResponseWrapper": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 200
+                },
+                "data": {
+                    "$ref": "#/definitions/storage.TimeSeriesResult"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "success"
+                }
+            }
+        },
+        "model.LogEntry": {
+            "type": "object",
+            "properties": {
+                "body_bytes_sent": {
+                    "type": "integer"
+                },
+                "http_referer": {
+                    "type": "string"
+                },
+                "http_user_agent": {
+                    "type": "string"
+                },
+                "remote_addr": {
+                    "type": "string"
+                },
+                "remote_user": {
+                    "type": "string"
+                },
+                "request": {
+                    "type": "string"
+                },
+                "request_time": {
+                    "type": "number"
+                },
+                "status": {
+                    "type": "integer"
+                },
+                "time_local": {
+                    "type": "string"
+                }
+            }
+        },
+        "storage.LogQueryItem": {
+            "type": "object",
+            "properties": {
+                "entry": {
+                    "$ref": "#/definitions/model.LogEntry"
+                },
+                "source_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "storage.LogQueryResponse": {
+            "type": "object",
+            "properties": {
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/storage.LogQueryItem"
+                    }
+                },
+                "page": {
+                    "type": "integer"
+                },
+                "size": {
+                    "type": "integer"
+                },
+                "total": {
+                    "type": "integer"
+                }
+            }
+        },
+        "storage.MetricValue": {
+            "type": "object",
+            "properties": {
+                "compare_percent": {
+                    "type": "number"
+                },
+                "value": {
+                    "type": "number"
+                }
+            }
+        },
+        "storage.OverviewStats": {
+            "type": "object",
+            "properties": {
+                "avg_response_time": {
+                    "$ref": "#/definitions/storage.MetricValue"
+                },
+                "compare_type": {
+                    "description": "e.g., \"vs yesterday\" or \"vs previous period\"",
+                    "type": "string"
+                },
+                "error_rate": {
+                    "$ref": "#/definitions/storage.MetricValue"
+                },
+                "success_rate": {
+                    "$ref": "#/definitions/storage.MetricValue"
+                },
+                "total_requests": {
+                    "$ref": "#/definitions/storage.MetricValue"
+                }
+            }
+        },
+        "storage.StatusDistributionEntry": {
+            "type": "object",
+            "properties": {
+                "code_class": {
+                    "type": "string"
+                },
+                "count": {
+                    "type": "integer"
+                },
+                "percentage": {
+                    "type": "number"
+                }
+            }
+        },
+        "storage.StatusDistributionResult": {
+            "type": "object",
+            "properties": {
+                "distribution": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/storage.StatusDistributionEntry"
+                    }
+                },
+                "total": {
+                    "type": "integer"
+                }
+            }
+        },
+        "storage.TimeSeriesPoint": {
+            "type": "object",
+            "properties": {
+                "ts": {
+                    "type": "string"
+                },
+                "value": {
+                    "type": "number"
+                }
+            }
+        },
+        "storage.TimeSeriesResult": {
+            "type": "object",
+            "properties": {
+                "interval": {
+                    "type": "string"
+                },
+                "metric": {
+                    "type": "string"
+                },
+                "points": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/storage.TimeSeriesPoint"
+                    }
+                }
+            }
+        },
+        "utils.Response": {
             "type": "object",
             "properties": {
                 "code": {

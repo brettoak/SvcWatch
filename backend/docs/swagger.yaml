@@ -1,6 +1,160 @@
 basePath: /
 definitions:
-  SvcWatch_internal_utils.Response:
+  controller.LogsResponseWrapper:
+    properties:
+      code:
+        example: 200
+        type: integer
+      data:
+        $ref: '#/definitions/storage.LogQueryResponse'
+      message:
+        example: success
+        type: string
+    type: object
+  controller.OverviewResponseWrapper:
+    properties:
+      code:
+        example: 200
+        type: integer
+      data:
+        $ref: '#/definitions/storage.OverviewStats'
+      message:
+        example: success
+        type: string
+    type: object
+  controller.StatsResponseWrapper:
+    properties:
+      code:
+        example: 200
+        type: integer
+      data:
+        additionalProperties: true
+        type: object
+      message:
+        example: success
+        type: string
+    type: object
+  controller.StatusDistributionResponseWrapper:
+    properties:
+      code:
+        example: 200
+        type: integer
+      data:
+        $ref: '#/definitions/storage.StatusDistributionResult'
+      message:
+        example: success
+        type: string
+    type: object
+  controller.TimeSeriesResponseWrapper:
+    properties:
+      code:
+        example: 200
+        type: integer
+      data:
+        $ref: '#/definitions/storage.TimeSeriesResult'
+      message:
+        example: success
+        type: string
+    type: object
+  model.LogEntry:
+    properties:
+      body_bytes_sent:
+        type: integer
+      http_referer:
+        type: string
+      http_user_agent:
+        type: string
+      remote_addr:
+        type: string
+      remote_user:
+        type: string
+      request:
+        type: string
+      request_time:
+        type: number
+      status:
+        type: integer
+      time_local:
+        type: string
+    type: object
+  storage.LogQueryItem:
+    properties:
+      entry:
+        $ref: '#/definitions/model.LogEntry'
+      source_id:
+        type: string
+    type: object
+  storage.LogQueryResponse:
+    properties:
+      items:
+        items:
+          $ref: '#/definitions/storage.LogQueryItem'
+        type: array
+      page:
+        type: integer
+      size:
+        type: integer
+      total:
+        type: integer
+    type: object
+  storage.MetricValue:
+    properties:
+      compare_percent:
+        type: number
+      value:
+        type: number
+    type: object
+  storage.OverviewStats:
+    properties:
+      avg_response_time:
+        $ref: '#/definitions/storage.MetricValue'
+      compare_type:
+        description: e.g., "vs yesterday" or "vs previous period"
+        type: string
+      error_rate:
+        $ref: '#/definitions/storage.MetricValue'
+      success_rate:
+        $ref: '#/definitions/storage.MetricValue'
+      total_requests:
+        $ref: '#/definitions/storage.MetricValue'
+    type: object
+  storage.StatusDistributionEntry:
+    properties:
+      code_class:
+        type: string
+      count:
+        type: integer
+      percentage:
+        type: number
+    type: object
+  storage.StatusDistributionResult:
+    properties:
+      distribution:
+        items:
+          $ref: '#/definitions/storage.StatusDistributionEntry'
+        type: array
+      total:
+        type: integer
+    type: object
+  storage.TimeSeriesPoint:
+    properties:
+      ts:
+        type: string
+      value:
+        type: number
+    type: object
+  storage.TimeSeriesResult:
+    properties:
+      interval:
+        type: string
+      metric:
+        type: string
+      points:
+        items:
+          $ref: '#/definitions/storage.TimeSeriesPoint'
+        type: array
+    type: object
+  utils.Response:
     properties:
       code:
         type: integer
@@ -40,7 +194,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/SvcWatch_internal_utils.Response'
+            $ref: '#/definitions/controller.StatusDistributionResponseWrapper'
       security:
       - BearerAuth: []
       summary: Get HTTP status code distribution
@@ -124,7 +278,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/SvcWatch_internal_utils.Response'
+            $ref: '#/definitions/controller.LogsResponseWrapper'
       security:
       - BearerAuth: []
       summary: Query detailed logs
@@ -156,7 +310,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/SvcWatch_internal_utils.Response'
+            $ref: '#/definitions/controller.OverviewResponseWrapper'
       security:
       - BearerAuth: []
       summary: Get business overview key metrics
@@ -171,7 +325,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/SvcWatch_internal_utils.Response'
+            $ref: '#/definitions/utils.Response'
       summary: Health Check
       tags:
       - System
@@ -184,10 +338,69 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/SvcWatch_internal_utils.Response'
+            $ref: '#/definitions/controller.StatsResponseWrapper'
       security:
       - BearerAuth: []
       summary: Get aggregated logs statistics
+      tags:
+      - Monitor
+  /api/v1/sev/stats/timeseries:
+    get:
+      description: Get time-series data for a metric (qps, error_rate, latency_p99,
+        bandwidth). Range cannot exceed 1 year. Returns max 20 points.
+      parameters:
+      - description: Metric type
+        enum:
+        - qps
+        - error_rate
+        - latency_p99
+        - bandwidth
+        in: query
+        name: metric
+        required: true
+        type: string
+      - description: Aggregation interval (may be overridden if unreasonable)
+        enum:
+        - 1m
+        - 5m
+        - 1h
+        - 6h
+        - 1d
+        - 1w
+        - 1M
+        in: query
+        name: interval
+        required: true
+        type: string
+      - description: Start Time
+        example: "2026-03-19 00:00:00"
+        in: query
+        name: start_time
+        required: true
+        type: string
+      - description: End Time
+        example: "2026-03-20 00:00:00"
+        in: query
+        name: end_time
+        required: true
+        type: string
+      - collectionFormat: csv
+        description: List of Source IDs or Log Files to aggregate
+        in: query
+        items:
+          type: string
+        name: source_ids
+        type: array
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.TimeSeriesResponseWrapper'
+      security:
+      - BearerAuth: []
+      summary: Get trend data for charts
       tags:
       - Monitor
 securityDefinitions:
