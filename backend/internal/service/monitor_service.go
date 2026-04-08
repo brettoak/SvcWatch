@@ -8,6 +8,7 @@ import (
 	"SvcWatch/internal/config"
 	"SvcWatch/internal/monitor"
 	"SvcWatch/internal/storage"
+	"SvcWatch/internal/utils"
 )
 
 // MonitorService handles the business logic for monitor statistics.
@@ -163,32 +164,12 @@ func (s *MonitorService) GetTimeSeriesStats(metric, interval, startTime, endTime
 		return &storage.TimeSeriesResult{Metric: metric, Interval: interval, Points: []storage.TimeSeriesPoint{}}, nil
 	}
 
-	// Helper to parse multiple time formats
-	parseTime := func(s string) (time.Time, error) {
-		t, err := time.Parse(time.RFC3339, s)
-		if err != nil {
-			t, err = time.Parse("2006-01-02 15:04:05", s)
-		}
-		return t, err
+	startT, endT, err := utils.ParseAndValidateRange(startTime, endTime, utils.MaxTimeRangeLimit)
+	if err != nil {
+		return nil, err
 	}
 
-	startT, err := parseTime(startTime)
-	if err != nil {
-		return nil, fmt.Errorf("invalid start_time format: %s", startTime)
-	}
-	endT, err := parseTime(endTime)
-	if err != nil {
-		return nil, fmt.Errorf("invalid end_time format: %s", endTime)
-	}
-
-	// Logic to auto-select/validate interval based on duration to limit points to <= 20
 	duration := endT.Sub(startT)
-	if duration < 0 {
-		return nil, fmt.Errorf("end_time must be after start_time")
-	}
-	if duration > 366*24*time.Hour {
-		return nil, fmt.Errorf("time range cannot exceed 1 year")
-	}
 
 	type tier struct {
 		name string
