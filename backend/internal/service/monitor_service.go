@@ -186,6 +186,9 @@ func (s *MonitorService) GetTimeSeriesStats(metric, interval, startTime, endTime
 	if duration < 0 {
 		return nil, fmt.Errorf("end_time must be after start_time")
 	}
+	if duration > 366*24*time.Hour {
+		return nil, fmt.Errorf("time range cannot exceed 1 year")
+	}
 
 	type tier struct {
 		name string
@@ -197,6 +200,8 @@ func (s *MonitorService) GetTimeSeriesStats(metric, interval, startTime, endTime
 		{"1h", 3600},
 		{"6h", 21600},
 		{"1d", 86400},
+		{"1w", 604800},
+		{"1M", 2592000},
 	}
 
 	// Find the smallest interval that results in <= 20 points

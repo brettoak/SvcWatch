@@ -349,6 +349,12 @@ func (s *SqliteStorage) GetTimeSeries(tableNames []string, metric string, interv
 	case "1d":
 		timeFormat = "%Y-%m-%dT00:00:00Z"
 		intervalSec = 86400
+	case "1w":
+		// Custom format for weekly rounding (starts on Monday)
+		intervalSec = 604800
+	case "1M":
+		// Custom format for monthly rounding
+		intervalSec = 2592000
 	default:
 		return nil, fmt.Errorf("unsupported interval: %s", interval)
 	}
@@ -361,6 +367,12 @@ func (s *SqliteStorage) GetTimeSeries(tableNames []string, metric string, interv
 	} else if interval == "6h" {
 		// Example: 2024-01-01T07:00:00Z -> 2024-01-01T06:00:00Z
 		timeExpr = "strftime('%Y-%m-%dT', time_local) || printf('%02d', (strftime('%H', time_local) / 6) * 6) || ':00:00Z'"
+	} else if interval == "1w" {
+		// Group by week starting on Monday
+		timeExpr = "date(time_local, 'weekday 0', '-6 days') || 'T00:00:00Z'"
+	} else if interval == "1M" {
+		// Group by the first day of the month
+		timeExpr = "strftime('%Y-%m-01T00:00:00Z', time_local)"
 	} else {
 		timeExpr = fmt.Sprintf("strftime('%s', time_local)", timeFormat)
 	}
