@@ -55,7 +55,7 @@ func (ctrl *MonitorController) PingHandler(c *gin.Context) {
 // @Tags Monitor
 // @Produce json
 // @Security BearerAuth
-// @Success 200 {object} utils.Response
+// @Success 200 {object} StatsResponseWrapper
 // @Router /api/v1/sev/stats [get]
 func (ctrl *MonitorController) StatsHandler(c *gin.Context) {
 	stats := ctrl.svc.GetStats()
@@ -71,7 +71,7 @@ func (ctrl *MonitorController) StatsHandler(c *gin.Context) {
 // @Param start_time query string true "Start Time" default(2026-03-19 00:00:00)
 // @Param end_time query string true "End Time" default(2026-03-20 00:00:00)
 // @Param log_file query string false "Log File or Source ID (optional)"
-// @Success 200 {object} utils.Response
+// @Success 200 {object} OverviewResponseWrapper
 // @Router /api/v1/sev/overview [get]
 func (ctrl *MonitorController) OverviewHandler(c *gin.Context) {
 	var req TimeRangeRequest
@@ -103,7 +103,7 @@ func (ctrl *MonitorController) OverviewHandler(c *gin.Context) {
 // @Param start_time query string true "Start Time" default(2026-03-19 00:00:00)
 // @Param end_time query string true "End Time" default(2026-03-20 00:00:00)
 // @Param log_file query string false "Log File or Source ID (optional)"
-// @Success 200 {object} utils.Response
+// @Success 200 {object} StatusDistributionResponseWrapper
 // @Router /api/v1/sev/distribution [get]
 func (ctrl *MonitorController) StatusDistributionHandler(c *gin.Context) {
 	var req TimeRangeRequest
@@ -163,7 +163,7 @@ type LogQueryRequest struct {
 // @Param min_latency query int false "Minimum Latency in ms" example(100)
 // @Param max_latency query int false "Maximum Latency in ms" example(5000)
 // @Param sort query string false "Sort order (time_desc or latency_desc)" Enums(time_desc, latency_desc) default(time_desc)
-// @Success 200 {object} utils.Response
+// @Success 200 {object} LogsResponseWrapper
 // @Router /api/v1/sev/logs [get]
 func (ctrl *MonitorController) LogsHandler(c *gin.Context) {
 	var req LogQueryRequest
@@ -207,7 +207,7 @@ func (ctrl *MonitorController) LogsHandler(c *gin.Context) {
 // @Param start_time query string true "Start Time" example(2026-03-19 00:00:00)
 // @Param end_time query string true "End Time" example(2026-03-20 00:00:00)
 // @Param source_ids query []string false "List of Source IDs or Log Files to aggregate"
-// @Success 200 {object} utils.Response
+// @Success 200 {object} TimeSeriesResponseWrapper
 // @Router /api/v1/sev/stats/timeseries [get]
 func (ctrl *MonitorController) TimeSeriesHandler(c *gin.Context) {
 	var req TimeSeriesRequest
