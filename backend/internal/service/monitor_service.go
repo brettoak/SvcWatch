@@ -136,3 +136,51 @@ func (s *MonitorService) GetLogs(sourceID string, filter storage.LogQueryFilter)
 	return s.store.QueryLogs(tableNames, filter)
 }
 
+// GetTimeSeriesStats aggregates trend data for a specific metric and interval across multiple source IDs.
+func (s *MonitorService) GetTimeSeriesStats(metric, interval, startTime, endTime string, sourceIDs []string) (*storage.TimeSeriesResult, error) {
+	var tableNames []string
+
+	// Map sourceIDs to table names for efficient lookup
+	sourceMap := make(map[string]bool)
+	for _, id := range sourceIDs {
+		sourceMap[id] = true
+	}
+
+	for _, monInst := range s.monitors {
+		tableName := monInst.GetTableName()
+		logPath := monInst.GetLogPath()
+		
+		// If sourceIDs are provided, filter by matching table name or log file base name
+		if len(sourceIDs) > 0 {
+			if !sourceMap[tableName] && !sourceMap[filepath.Base(logPath)] {
+				continue
+			}
+		}
+		tableNames = append(tableNames, tableName)
+	}
+
+	if len(tableNames) == 0 {
+		return &storage.TimeSeriesResult{Metric: metric, Interval: interval, Points: []storage.TimeSeriesPoint{}}, nil
+	}
+
+	// Helper to parse multiple time formats
+	parseTime := func(s string) (time.Time, error) {
+		t, err := time.Parse(time.RFC3339, s)
+		if err != nil {
+			t, err = time.Parse("2006-01-02 15:04:05", s)
+		}
+		return t, err
+	}
+
+	startT, err := parseTime(startTime)
+	if err != nil {
+		return nil, fmt.Errorf("invalid start_time format: %s", startTime)
+	}
+	endT, err := parseTime(endTime)
+	if err != nil {
+		return nil, fmt.Errorf("invalid end_time format: %s", endTime)
+	}
+
+	return s.store.GetTimeSeries(tableNames, metric, interval, startT, endT)
+}
+

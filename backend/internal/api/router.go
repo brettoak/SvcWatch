@@ -29,6 +29,8 @@ func SetupRouter(ctrl *controller.MonitorController, cfg *config.Config) *gin.En
 		{
 			// Example permission required to view stats
 			private.GET("/stats", middleware.PermissionMiddleware(cfg.Auth.PermissionURL, cfg.Auth.SysCode, "view:stats"), ctrl.StatsHandler)
+			// Time series stats endpoint
+			private.GET("/stats/timeseries", middleware.PermissionMiddleware(cfg.Auth.PermissionURL, cfg.Auth.SysCode, "view:stats"), ctrl.TimeSeriesHandler)
 			// Overview endpoint
 			private.GET("/overview", middleware.PermissionMiddleware(cfg.Auth.PermissionURL, cfg.Auth.SysCode, "view:overview"), ctrl.OverviewHandler)
 			// Status distribution endpoint

@@ -35,6 +35,15 @@ type ParsedTimeRange struct {
 	EndT   time.Time
 }
 
+// TimeSeriesRequest represents query parameters for trend data.
+type TimeSeriesRequest struct {
+	Metric    string   `form:"metric" binding:"required,oneof=qps error_rate latency_p99 bandwidth"`
+	Interval  string   `form:"interval" binding:"required,oneof=1m 5m 1h"`
+	StartTime string   `form:"start_time" binding:"required"`
+	EndTime   string   `form:"end_time" binding:"required"`
+	SourceIDs []string `form:"source_ids"`
+}
+
 // PingHandler Health Check
 // @Summary Health Check
 // @Description Returns pong message to check if API is alive
@@ -193,6 +202,40 @@ func (ctrl *MonitorController) LogsHandler(c *gin.Context) {
 	}
 
 	utils.Success(c, resp)
+}
+
+// TimeSeriesHandler Get trend data for charts
+// @Summary Get trend data for charts
+// @Description Get time-series data for a metric (qps, error_rate, latency_p99, bandwidth) over a time range
+// @Tags Monitor
+// @Produce json
+// @Security BearerAuth
+// @Param metric query string true "Metric type" Enums(qps, error_rate, latency_p99, bandwidth)
+// @Param interval query string true "Aggregation interval" Enums(1m, 5m, 1h)
+// @Param start_time query string true "Start Time" example(2026-03-19 00:00:00)
+// @Param end_time query string true "End Time" example(2026-03-20 00:00:00)
+// @Param source_ids query []string false "List of Source IDs or Log Files to aggregate"
+// @Success 200 {object} utils.Response
+// @Router /api/v1/sev/stats/timeseries [get]
+func (ctrl *MonitorController) TimeSeriesHandler(c *gin.Context) {
+	var req TimeSeriesRequest
+	if err := c.ShouldBindQuery(&req); err != nil {
+		utils.Error(c, 400, err.Error())
+		return
+	}
+
+	if _, err := ctrl.validateTimeRange(req.StartTime, req.EndTime); err != nil {
+		utils.Error(c, 400, err.Error())
+		return
+	}
+
+	result, err := ctrl.svc.GetTimeSeriesStats(req.Metric, req.Interval, req.StartTime, req.EndTime, req.SourceIDs)
+	if err != nil {
+		utils.Error(c, 500, err.Error())
+		return
+	}
+
+	utils.Success(c, result)
 }
 
 // validateTimeRange parses and validates the time strings.

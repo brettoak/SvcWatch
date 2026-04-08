@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"math"
+	"strings"
 	"time"
 	"SvcWatch/internal/model"
 
@@ -123,6 +124,19 @@ type StatusDistributionEntry struct {
 type StatusDistributionResult struct {
 	Total        int                       `json:"total"`
 	Distribution []StatusDistributionEntry `json:"distribution"`
+}
+
+// TimeSeriesPoint represents a single data point in a time series chart.
+type TimeSeriesPoint struct {
+	Timestamp string  `json:"ts"`
+	Value     float64 `json:"value"`
+}
+
+// TimeSeriesResult represents the complete response for a time series query.
+type TimeSeriesResult struct {
+	Metric   string            `json:"metric"`
+	Interval string            `json:"interval"`
+	Points   []TimeSeriesPoint `json:"points"`
 }
 
 // BaseMetrics contains raw metric counts for a specific time period.
@@ -308,6 +322,112 @@ func (s *SqliteStorage) GetStatusDistribution(tableName string, startTime, endTi
 	}
 
 	return result, nil
+}
+
+// GetTimeSeries retrieves trend data for a specific metric and interval across multiple tables.
+func (s *SqliteStorage) GetTimeSeries(tableNames []string, metric string, interval string, startTime, endTime time.Time) (*TimeSeriesResult, error) {
+	if len(tableNames) == 0 {
+		return &TimeSeriesResult{Metric: metric, Interval: interval, Points: []TimeSeriesPoint{}}, nil
+	}
+
+	var timeFormat string
+	var intervalSec float64
+	switch interval {
+	case "1m":
+		timeFormat = "%Y-%m-%dT%H:%M:00Z"
+		intervalSec = 60
+	case "5m":
+		// Custom format for 5m rounding
+		timeFormat = "%Y-%m-%dT%H:"
+		intervalSec = 300
+	case "1h":
+		timeFormat = "%Y-%m-%dT%H:00:00Z"
+		intervalSec = 3600
+	default:
+		return nil, fmt.Errorf("unsupported interval: %s", interval)
+	}
+
+	// For 5m, we need a special grouping expression
+	var timeExpr string
+	if interval == "5m" {
+		// Example: 2024-01-01T00:07:00Z -> 2024-01-01T00:05:00Z
+		timeExpr = "strftime('%Y-%m-%dT%H:', time_local) || printf('%02d', (strftime('%M', time_local) / 5) * 5) || ':00Z'"
+	} else {
+		timeExpr = fmt.Sprintf("strftime('%s', time_local)", timeFormat)
+	}
+
+	// Construct UNION query for multiple tables
+	var unions []string
+	for _, tableName := range tableNames {
+		unions = append(unions, fmt.Sprintf("SELECT time_local, status, body_bytes_sent, request_time FROM %s WHERE time_local >= ? AND time_local <= ?", tableName))
+	}
+	unionQuery := strings.Join(unions, " UNION ALL ")
+
+	var finalQuery string
+	switch metric {
+	case "qps":
+		finalQuery = fmt.Sprintf(`
+			SELECT ts, COUNT(*) / %f as val
+			FROM (SELECT %s as ts FROM (%s))
+			GROUP BY ts ORDER BY ts
+		`, intervalSec, timeExpr, unionQuery)
+	case "error_rate":
+		finalQuery = fmt.Sprintf(`
+			SELECT ts, (SUM(CASE WHEN status >= 400 THEN 1 ELSE 0 END) * 100.0 / COUNT(*)) as val
+			FROM (SELECT %s as ts, status FROM (%s))
+			GROUP BY ts ORDER BY ts
+		`, timeExpr, unionQuery)
+	case "bandwidth":
+		// Bandwidth as bytes/sec
+		finalQuery = fmt.Sprintf(`
+			SELECT ts, SUM(body_bytes_sent) / %f as val
+			FROM (SELECT %s as ts, body_bytes_sent FROM (%s))
+			GROUP BY ts ORDER BY ts
+		`, intervalSec, timeExpr, unionQuery)
+	case "latency_p99":
+		finalQuery = fmt.Sprintf(`
+			SELECT ts, MAX(request_time) as val
+			FROM (
+				SELECT ts, request_time, 
+				       ROW_NUMBER() OVER (PARTITION BY ts ORDER BY request_time) as rn,
+				       COUNT(*) OVER (PARTITION BY ts) as cnt
+				FROM (SELECT %s as ts, request_time FROM (%s))
+			)
+			WHERE rn >= (cnt * 0.99)
+			GROUP BY ts ORDER BY ts
+		`, timeExpr, unionQuery)
+	default:
+		return nil, fmt.Errorf("unsupported metric: %s", metric)
+	}
+
+	// Prepare arguments (each table needs startTime and endTime)
+	var args []interface{}
+	for range tableNames {
+		args = append(args, startTime, endTime)
+	}
+
+	rows, err := s.db.Query(finalQuery, args...)
+	if err != nil {
+		return nil, fmt.Errorf("query failed: %w", err)
+	}
+	defer rows.Close()
+
+	var points []TimeSeriesPoint
+	for rows.Next() {
+		var p TimeSeriesPoint
+		if err := rows.Scan(&p.Timestamp, &p.Value); err != nil {
+			return nil, fmt.Errorf("scan failed: %w", err)
+		}
+		// Round value to 2 decimal places
+		p.Value = math.Round(p.Value*100) / 100
+		points = append(points, p)
+	}
+
+	return &TimeSeriesResult{
+		Metric:   metric,
+		Interval: interval,
+		Points:   points,
+	}, nil
 }
 
 // Close closes the database connection.
