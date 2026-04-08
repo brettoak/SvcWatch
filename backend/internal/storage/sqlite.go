@@ -343,15 +343,24 @@ func (s *SqliteStorage) GetTimeSeries(tableNames []string, metric string, interv
 	case "1h":
 		timeFormat = "%Y-%m-%dT%H:00:00Z"
 		intervalSec = 3600
+	case "6h":
+		// Custom format for 6h rounding
+		intervalSec = 21600
+	case "1d":
+		timeFormat = "%Y-%m-%dT00:00:00Z"
+		intervalSec = 86400
 	default:
 		return nil, fmt.Errorf("unsupported interval: %s", interval)
 	}
 
-	// For 5m, we need a special grouping expression
+	// For custom intervals, we need a special grouping expression
 	var timeExpr string
 	if interval == "5m" {
 		// Example: 2024-01-01T00:07:00Z -> 2024-01-01T00:05:00Z
 		timeExpr = "strftime('%Y-%m-%dT%H:', time_local) || printf('%02d', (strftime('%M', time_local) / 5) * 5) || ':00Z'"
+	} else if interval == "6h" {
+		// Example: 2024-01-01T07:00:00Z -> 2024-01-01T06:00:00Z
+		timeExpr = "strftime('%Y-%m-%dT', time_local) || printf('%02d', (strftime('%H', time_local) / 6) * 6) || ':00:00Z'"
 	} else {
 		timeExpr = fmt.Sprintf("strftime('%s', time_local)", timeFormat)
 	}

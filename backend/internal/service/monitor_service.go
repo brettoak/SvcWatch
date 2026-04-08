@@ -181,6 +181,47 @@ func (s *MonitorService) GetTimeSeriesStats(metric, interval, startTime, endTime
 		return nil, fmt.Errorf("invalid end_time format: %s", endTime)
 	}
 
-	return s.store.GetTimeSeries(tableNames, metric, interval, startT, endT)
+	// Logic to auto-select/validate interval based on duration to limit points to <= 20
+	duration := endT.Sub(startT)
+	if duration < 0 {
+		return nil, fmt.Errorf("end_time must be after start_time")
+	}
+
+	type tier struct {
+		name string
+		sec  float64
+	}
+	tiers := []tier{
+		{"1m", 60},
+		{"5m", 300},
+		{"1h", 3600},
+		{"6h", 21600},
+		{"1d", 86400},
+	}
+
+	// Find the smallest interval that results in <= 20 points
+	bestInterval := tiers[len(tiers)-1].name
+	for _, t := range tiers {
+		if duration.Seconds()/t.sec <= 20 {
+			bestInterval = t.name
+			break
+		}
+	}
+
+	// Validate requested interval; override if it leads to > 20 points or is unsupported
+	selectedInterval := interval
+	reqIntervalSec := 0.0
+	for _, t := range tiers {
+		if t.name == interval {
+			reqIntervalSec = t.sec
+			break
+		}
+	}
+
+	if reqIntervalSec == 0 || duration.Seconds()/reqIntervalSec > 20 {
+		selectedInterval = bestInterval
+	}
+
+	return s.store.GetTimeSeries(tableNames, metric, selectedInterval, startT, endT)
 }
 
