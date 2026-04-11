@@ -1,3 +1,4 @@
+basePath: /
 definitions:
   controller.LogsResponseWrapper:
     properties:
@@ -163,6 +164,9 @@ definitions:
     type: object
 info:
   contact: {}
+  description: SvcWatch is a real-time Nginx log monitoring system.
+  title: SvcWatch API
+  version: "1.0"
 paths:
   /api/v1/sev/distribution:
     get:
@@ -401,4 +405,10 @@ paths:
       summary: Get trend data for charts
       tags:
       - Monitor
+securityDefinitions:
+  BearerAuth:
+    description: Type "Bearer" followed by a space and JWT token.
+    in: header
+    name: Authorization
+    type: apiKey
 swagger: "2.0"
