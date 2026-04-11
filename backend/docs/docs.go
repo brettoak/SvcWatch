@@ -49,6 +49,7 @@ const docTemplate = `{
                     },
                     {
                         "type": "string",
+                        "default": "access.log",
                         "description": "Log File or Source ID (optional)",
                         "name": "log_file",
                         "in": "query"
@@ -219,6 +220,7 @@ const docTemplate = `{
                     },
                     {
                         "type": "string",
+                        "default": "access.log",
                         "description": "Log File or Source ID (optional)",
                         "name": "log_file",
                         "in": "query"
@@ -607,25 +609,17 @@ const docTemplate = `{
                 }
             }
         }
-    },
-    "securityDefinitions": {
-        "BearerAuth": {
-            "description": "Type \"Bearer\" followed by a space and JWT token.",
-            "type": "apiKey",
-            "name": "Authorization",
-            "in": "header"
-        }
     }
 }`
 
 // SwaggerInfo holds exported Swagger Info so clients can modify it
 var SwaggerInfo = &swag.Spec{
-	Version:          "1.0",
+	Version:          "",
 	Host:             "",
-	BasePath:         "/",
+	BasePath:         "",
 	Schemes:          []string{},
-	Title:            "SvcWatch API",
-	Description:      "SvcWatch is a real-time Nginx log monitoring system.",
+	Title:            "",
+	Description:      "",
 	InfoInstanceName: "swagger",
 	SwaggerTemplate:  docTemplate,
 	LeftDelim:        "{{",

@@ -70,7 +70,7 @@ func (ctrl *MonitorController) StatsHandler(c *gin.Context) {
 // @Security BearerAuth
 // @Param start_time query string true "Start Time" default(2026-03-19 00:00:00)
 // @Param end_time query string true "End Time" default(2026-03-20 00:00:00)
-// @Param log_file query string false "Log File or Source ID (optional)"
+// @Param log_file query string false "Log File or Source ID (optional)" default(access.log)
 // @Success 200 {object} OverviewResponseWrapper
 // @Router /api/v1/sev/overview [get]
 func (ctrl *MonitorController) OverviewHandler(c *gin.Context) {
@@ -78,6 +78,10 @@ func (ctrl *MonitorController) OverviewHandler(c *gin.Context) {
 	if err := c.ShouldBindQuery(&req); err != nil {
 		utils.Error(c, 400, "start_time and end_time are required")
 		return
+	}
+
+	if req.LogFile == "" {
+		req.LogFile = "access.log"
 	}
 
 	if _, _, err := utils.ParseAndValidateRange(req.StartTime, req.EndTime, utils.MaxTimeRangeLimit); err != nil {
@@ -102,7 +106,7 @@ func (ctrl *MonitorController) OverviewHandler(c *gin.Context) {
 // @Security BearerAuth
 // @Param start_time query string true "Start Time" default(2026-03-19 00:00:00)
 // @Param end_time query string true "End Time" default(2026-03-20 00:00:00)
-// @Param log_file query string false "Log File or Source ID (optional)"
+// @Param log_file query string false "Log File or Source ID (optional)" default(access.log)
 // @Success 200 {object} StatusDistributionResponseWrapper
 // @Router /api/v1/sev/distribution [get]
 func (ctrl *MonitorController) StatusDistributionHandler(c *gin.Context) {
@@ -110,6 +114,10 @@ func (ctrl *MonitorController) StatusDistributionHandler(c *gin.Context) {
 	if err := c.ShouldBindQuery(&req); err != nil {
 		utils.Error(c, 400, "start_time and end_time are required")
 		return
+	}
+
+	if req.LogFile == "" {
+		req.LogFile = "access.log"
 	}
 
 	startT, endT, err := utils.ParseAndValidateRange(req.StartTime, req.EndTime, utils.MaxTimeRangeLimit)

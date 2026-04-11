@@ -1,12 +1,8 @@
 {
     "swagger": "2.0",
     "info": {
-        "description": "SvcWatch is a real-time Nginx log monitoring system.",
-        "title": "SvcWatch API",
-        "contact": {},
-        "version": "1.0"
+        "contact": {}
     },
-    "basePath": "/",
     "paths": {
         "/api/v1/sev/distribution": {
             "get": {
@@ -42,6 +38,7 @@
                     },
                     {
                         "type": "string",
+                        "default": "access.log",
                         "description": "Log File or Source ID (optional)",
                         "name": "log_file",
                         "in": "query"
@@ -212,6 +209,7 @@
                     },
                     {
                         "type": "string",
+                        "default": "access.log",
                         "description": "Log File or Source ID (optional)",
                         "name": "log_file",
                         "in": "query"
@@ -599,14 +597,6 @@
                     "type": "string"
                 }
             }
-        }
-    },
-    "securityDefinitions": {
-        "BearerAuth": {
-            "description": "Type \"Bearer\" followed by a space and JWT token.",
-            "type": "apiKey",
-            "name": "Authorization",
-            "in": "header"
         }
     }
 }
