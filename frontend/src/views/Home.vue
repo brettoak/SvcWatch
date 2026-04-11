@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { ref, watch, onMounted } from 'vue'
-import { getDashboardOverview, getStatusDistribution } from '@/services/api'
-import type { DashboardOverviewResponse, StatusDistributionResponse } from '@/services/api'
+import { getDashboardOverview, getStatusDistribution, getTimeSeriesStats } from '@/services/api'
+import type { DashboardOverviewResponse, StatusDistributionResponse, TimeSeriesResponse } from '@/services/api'
 
 type DashboardData = DashboardOverviewResponse['data']
 type DistributionData = StatusDistributionResponse['data']
+type TimeSeriesData = TimeSeriesResponse['data']
 
 const timeFilter = ref('5m')
 const timeOptions = [
@@ -22,7 +23,18 @@ const customEndTime = ref('')
 
 const dashboardData = ref<DashboardData | null>(null)
 const distributionData = ref<DistributionData | null>(null)
+const timeSeriesData = ref<TimeSeriesData | null>(null)
+
+const selectedMetric = ref('qps')
+const metricOptions = [
+  { label: 'QPS', value: 'qps' },
+  { label: 'Error Rate', value: 'error_rate' },
+  { label: 'Latency', value: 'latency_p99' },
+  { label: 'Bandwidth', value: 'bandwidth' },
+]
+
 const loading = ref(false)
+const tsLoading = ref(false)
 const lastUpdated = ref('')
 const errorMsg = ref('')
 
@@ -58,6 +70,22 @@ const calculateTimeRange = () => {
   }
 }
 
+const fetchTimeSeries = async () => {
+  const range = calculateTimeRange()
+  if (!range) return
+  tsLoading.value = true
+  try {
+    const tsResp = await getTimeSeriesStats(selectedMetric.value, '1m', range.startStr, range.endStr)
+    if (tsResp.data && tsResp.data.code === 200) {
+      timeSeriesData.value = tsResp.data.data
+    }
+  } catch (err: any) {
+    console.error('Timeseries load failed', err)
+  } finally {
+    tsLoading.value = false
+  }
+}
+
 const fetchData = async () => {
   const range = calculateTimeRange()
   if (!range) {
@@ -82,6 +110,8 @@ const fetchData = async () => {
       distributionData.value = distResp.data.data
     }
 
+    await fetchTimeSeries()
+
     lastUpdated.value = formatDateStr(new Date())
   } catch (err: any) {
     errorMsg.value = err.response?.data?.message || err.message || 'API request failed'
@@ -89,6 +119,10 @@ const fetchData = async () => {
     loading.value = false
   }
 }
+
+watch(selectedMetric, () => {
+  fetchTimeSeries()
+})
 
 watch(timeFilter, (newVal) => {
   if (newVal !== 'custom') {
@@ -186,6 +220,42 @@ const getSuccessRate = () => {
   if (!distributionData.value?.distribution) return '0.00'
   const s2xx = distributionData.value.distribution.find(i => i.code_class === '2xx')?.percentage || 0
   return s2xx.toFixed(2)
+}
+
+// Bar Chart Helpers
+const getTsBars = () => {
+  if (!timeSeriesData.value?.points || timeSeriesData.value.points.length === 0) return []
+  const pts = timeSeriesData.value.points
+  const maxVal = Math.max(...pts.map(p => p.value), 1)
+  const height = 150
+  const width = 600
+  const barWidth = Math.max((width / pts.length) - 8, 4)
+  const xSpan = width / pts.length
+  
+  return pts.map((p, i) => {
+    const h = (p.value / maxVal) * height
+    return {
+      x: i * xSpan + (xSpan - barWidth) / 2,
+      y: height - h,
+      w: barWidth,
+      h: Math.max(h, 2), // minimum height 2px to be visible
+      val: p.value,
+      // Format time based on interval roughly
+      ts: new Date(p.ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    }
+  })
+}
+
+const formatBarTooltip = (val: number) => {
+  if (selectedMetric.value === 'bandwidth') return Math.round(val / 1024) + ' KB/s'
+  if (selectedMetric.value === 'latency_p99') return val.toFixed(1) + ' ms'
+  if (selectedMetric.value === 'error_rate') return val.toFixed(2) + '%'
+  return val.toFixed(0) + ' req/s'
+}
+
+const getTsMaxVal = () => {
+  if (!timeSeriesData.value?.points || timeSeriesData.value.points.length === 0) return 0
+  return Math.max(...timeSeriesData.value.points.map(p => p.value))
 }
 </script>
 
@@ -295,9 +365,73 @@ const getSuccessRate = () => {
       </div>
     </div>
 
-    <!-- Status Code Distribution Card -->
-    <div class="distribution-card stat-card" :class="{ 'is-loading': loading }">
-       <h3 class="stat-title">Status Code Distribution<span class="stat-icon">📊</span></h3>
+    <div class="charts-row">
+      <!-- Timeseries Bar Chart Card -->
+      <div class="timeseries-card stat-card" :class="{ 'is-loading': loading || tsLoading }">
+        <div class="stat-title-row">
+          <h3 class="stat-title">Requests Over Time<span class="stat-icon">📈</span></h3>
+          <div class="metric-tabs">
+            <button 
+              v-for="opt in metricOptions" 
+              :key="opt.value"
+              :class="['metric-tab', { active: selectedMetric === opt.value }]"
+              @click="selectedMetric = opt.value"
+            >
+              {{ opt.label }}
+            </button>
+          </div>
+        </div>
+        <div class="timeseries-chart-container">
+          <svg v-if="timeSeriesData?.points?.length" viewBox="0 0 600 170" class="bar-chart-svg" preserveAspectRatio="none">
+            <!-- Grid lines -->
+            <g class="chart-grid">
+              <line x1="0" y1="42.5" x2="600" y2="42.5" stroke="rgba(255,255,255,0.03)" stroke-width="1"/>
+              <line x1="0" y1="85" x2="600" y2="85" stroke="rgba(255,255,255,0.03)" stroke-width="1"/>
+              <line x1="0" y1="127.5" x2="600" y2="127.5" stroke="rgba(255,255,255,0.03)" stroke-width="1"/>
+              <line x1="0" y1="170" x2="600" y2="170" stroke="rgba(255,255,255,0.1)" stroke-width="1"/>
+            </g>
+            
+            <!-- Bars -->
+            <g class="chart-bars">
+              <rect
+                v-for="(bar, idx) in getTsBars()" 
+                :key="idx"
+                :x="bar.x"
+                :y="bar.y"
+                :width="bar.w"
+                :height="bar.h"
+                fill="url(#barGradient)"
+                class="bar-rect"
+                rx="2"
+                ry="2"
+              >
+                <title>{{ bar.ts }} - {{ formatBarTooltip(bar.val) }}</title>
+              </rect>
+            </g>
+
+            <!-- Definitions -->
+            <defs>
+              <linearGradient id="barGradient" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#3b82f6" />
+                <stop offset="100%" stop-color="rgba(59, 130, 246, 0.2)" />
+              </linearGradient>
+            </defs>
+          </svg>
+          <div v-else class="empty-state">
+            No timeseries data available
+          </div>
+          
+          <div v-if="timeSeriesData?.points?.length" class="chart-labels">
+             <span class="x-axis-label">{{ getTsBars()[0]?.ts || '' }}</span>
+             <span class="x-axis-label">{{ getTsBars()[Math.floor(getTsBars().length / 2)]?.ts || '' }}</span>
+             <span class="x-axis-label">{{ getTsBars()[getTsBars().length - 1]?.ts || '' }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Status Code Distribution Card -->
+      <div class="distribution-card stat-card" :class="{ 'is-loading': loading }">
+         <h3 class="stat-title">Status Code Distribution<span class="stat-icon">📊</span></h3>
        <div class="distribution-vertical">
           <!-- Donut Chart Top -->
           <div class="chart-section">
@@ -346,6 +480,7 @@ const getSuccessRate = () => {
               </div>
           </div>
        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -658,16 +793,103 @@ const getSuccessRate = () => {
   color: var(--text-secondary);
 }
 
-.distribution-card {
+.charts-row {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
   width: 100%;
-  padding: 2.5rem;
   margin-top: 1rem;
 }
 
+.timeseries-card {
+  width: 100%;
+  padding: 2.5rem;
+}
+
+.distribution-card {
+  width: 100%;
+  padding: 2.5rem;
+}
+
 @media (min-width: 1024px) {
-  .distribution-card {
-    width: 50%;
+  .charts-row {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
   }
+}
+
+.stat-title-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.metric-tabs {
+  display: flex;
+  background-color: var(--bg-secondary);
+  border-radius: 8px;
+  padding: 3px;
+  border: 1px solid var(--border-color, rgba(255,255,255,0.05));
+}
+
+.metric-tab {
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.metric-tab:hover {
+  color: var(--text-primary);
+}
+
+.metric-tab.active {
+  background-color: var(--primary-color, #3b82f6);
+  color: white;
+  box-shadow: 0 2px 6px rgba(59, 130, 246, 0.3);
+}
+
+.timeseries-chart-container {
+  margin-top: 1.5rem;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.bar-chart-svg {
+  width: 100%;
+  height: 170px;
+  overflow: visible;
+  filter: drop-shadow(0 4px 6px rgba(0,0,0,0.1));
+}
+
+.bar-rect {
+  transition: height 0.8s ease-out, y 0.8s ease-out;
+}
+
+.bar-rect:hover {
+  fill: #60a5fa;
+  cursor: pointer;
+}
+
+.chart-labels {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+  padding: 0 5px;
+}
+
+.x-axis-label {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
 }
 
 .distribution-vertical {

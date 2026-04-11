@@ -111,6 +111,19 @@ export interface StatusDistributionResponse {
   }
 }
 
+export interface TimeSeriesResponse {
+  code: number
+  message: string
+  data: {
+    metric: string
+    interval: string
+    points: Array<{
+      ts: string
+      value: number
+    }>
+  }
+}
+
 export const getDashboardOverview = (startTime: string, endTime: string) => {
   return api.get<DashboardOverviewResponse>('/overview', {
     params: {
@@ -123,6 +136,17 @@ export const getDashboardOverview = (startTime: string, endTime: string) => {
 export const getStatusDistribution = (startTime: string, endTime: string) => {
   return api.get<StatusDistributionResponse>('/distribution', {
     params: {
+      start_time: startTime,
+      end_time: endTime,
+    },
+  })
+}
+
+export const getTimeSeriesStats = (metric: string, interval: string, startTime: string, endTime: string) => {
+  return api.get<TimeSeriesResponse>('/stats/timeseries', {
+    params: {
+      metric,
+      interval,
       start_time: startTime,
       end_time: endTime,
     },
