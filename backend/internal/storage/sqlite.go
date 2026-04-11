@@ -153,7 +153,7 @@ func (s *SqliteStorage) GetBaseMetrics(tableName string, startTime, endTime time
 	query := fmt.Sprintf(`
 		SELECT 
 			CAST(COUNT(*) AS REAL) as total_requests,
-			CAST(SUM(CASE WHEN status < 400 THEN 1 ELSE 0 END) AS REAL) as success_count,
+			CAST(SUM(CASE WHEN status >= 200 AND status < 300 THEN 1 ELSE 0 END) AS REAL) as success_count,
 			CAST(SUM(CASE WHEN status >= 400 THEN 1 ELSE 0 END) AS REAL) as error_count,
 			COALESCE(AVG(request_time), 0.0) as avg_response_time
 		FROM %s 
