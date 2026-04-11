@@ -370,14 +370,14 @@ paths:
         name: interval
         required: true
         type: string
-      - description: Start Time
-        example: "2026-03-19 00:00:00"
+      - default: "2026-03-19 00:00:00"
+        description: Start Time
         in: query
         name: start_time
         required: true
         type: string
-      - description: End Time
-        example: "2026-03-20 00:00:00"
+      - default: "2026-03-20 00:00:00"
+        description: End Time
         in: query
         name: end_time
         required: true

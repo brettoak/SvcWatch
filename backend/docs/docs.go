@@ -328,7 +328,7 @@ const docTemplate = `{
                     },
                     {
                         "type": "string",
-                        "example": "2026-03-19 00:00:00",
+                        "default": "2026-03-19 00:00:00",
                         "description": "Start Time",
                         "name": "start_time",
                         "in": "query",
@@ -336,7 +336,7 @@ const docTemplate = `{
                     },
                     {
                         "type": "string",
-                        "example": "2026-03-20 00:00:00",
+                        "default": "2026-03-20 00:00:00",
                         "description": "End Time",
                         "name": "end_time",
                         "in": "query",

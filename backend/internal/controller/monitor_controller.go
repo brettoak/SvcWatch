@@ -212,8 +212,8 @@ func (ctrl *MonitorController) LogsHandler(c *gin.Context) {
 // @Security BearerAuth
 // @Param metric query string true "Metric type" Enums(qps, error_rate, latency_p99, bandwidth)
 // @Param interval query string true "Aggregation interval (may be overridden if unreasonable)" Enums(1m, 5m, 1h, 6h, 1d, 1w, 1M)
-// @Param start_time query string true "Start Time" example(2026-03-19 00:00:00)
-// @Param end_time query string true "End Time" example(2026-03-20 00:00:00)
+// @Param start_time query string true "Start Time" default(2026-03-19 00:00:00)
+// @Param end_time query string true "End Time" default(2026-03-20 00:00:00)
 // @Param source_ids query []string false "List of Source IDs or Log Files to aggregate"
 // @Success 200 {object} TimeSeriesResponseWrapper
 // @Router /api/v1/sev/stats/timeseries [get]
