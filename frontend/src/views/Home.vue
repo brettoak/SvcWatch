@@ -183,10 +183,9 @@ const getDonutSegments = () => {
 }
 
 const getSuccessRate = () => {
-  if (!distributionData.value?.distribution) return '0.0'
+  if (!distributionData.value?.distribution) return '0.00'
   const s2xx = distributionData.value.distribution.find(i => i.code_class === '2xx')?.percentage || 0
-  const s3xx = distributionData.value.distribution.find(i => i.code_class === '3xx')?.percentage || 0
-  return (s2xx + s3xx).toFixed(1)
+  return s2xx.toFixed(2)
 }
 </script>
 
@@ -254,7 +253,7 @@ const getSuccessRate = () => {
       <div class="stat-card success-rate-card">
         <h3 class="stat-title">Success Rate<span class="stat-icon">✨</span></h3>
         <div class="stat-main">
-          <span class="stat-value">{{ (dashboardData?.success_rate?.value || 0).toFixed(1) }}<span class="unit">%</span></span>
+          <span class="stat-value">{{ (dashboardData?.success_rate?.value || 0).toFixed(2) }}<span class="unit">%</span></span>
         </div>
         <div class="stat-footer">
           <span class="compare-label">{{ dashboardData?.compare_type || 'vs yesterday' }}</span>
@@ -269,7 +268,7 @@ const getSuccessRate = () => {
       <div class="stat-card error-rate-card">
         <h3 class="stat-title">Error Rate<span class="stat-icon">⚠️</span></h3>
         <div class="stat-main">
-          <span class="stat-value">{{ (dashboardData?.error_rate?.value || 0).toFixed(1) }}<span class="unit">%</span></span>
+          <span class="stat-value">{{ (dashboardData?.error_rate?.value || 0).toFixed(2) }}<span class="unit">%</span></span>
         </div>
         <div class="stat-footer">
           <span class="compare-label">{{ dashboardData?.compare_type || 'vs yesterday' }}</span>
@@ -284,7 +283,7 @@ const getSuccessRate = () => {
       <div class="stat-card latency-card">
         <h3 class="stat-title">Avg Latency<span class="stat-icon">⚡</span></h3>
         <div class="stat-main">
-          <span class="stat-value">{{ (dashboardData?.avg_response_time?.value || 0).toFixed(1) }}<span class="unit">ms</span></span>
+          <span class="stat-value">{{ (dashboardData?.avg_response_time?.value || 0).toFixed(2) }}<span class="unit">ms</span></span>
         </div>
         <div class="stat-footer">
           <span class="compare-label">{{ dashboardData?.compare_type || 'vs yesterday' }}</span>
@@ -339,7 +338,7 @@ const getSuccessRate = () => {
                           <div class="dist-bar-fill" :style="{ width: item.percentage + '%', backgroundColor: getStatusColor(item.code_class) }"></div>
                        </div>
                     </div>
-                    <div class="dist-percent-val">{{ (item.percentage || 0).toFixed(1) }}%</div>
+                    <div class="dist-percent-val">{{ (item.percentage || 0).toFixed(2) }}%</div>
                  </div>
               </div>
               <div v-if="!distributionData?.distribution?.length" class="empty-state">
