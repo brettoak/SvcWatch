@@ -272,7 +272,7 @@ func (s *SqliteStorage) GetOverviewWithCompare(tableName string, startTimeStr, e
 			ComparePercent: calculateComparePercent(currErrorRate, prevErrorRate),
 		},
 		AvgResponseTime: MetricValue{
-			Value:          math.Round(currentMetrics.AvgResponseTime*1000) / 1000, // rounded to 3 decimals
+			Value:          math.Round(currentMetrics.AvgResponseTime*100) / 100, // rounded to 2 decimals
 			ComparePercent: calculateComparePercent(currentMetrics.AvgResponseTime, prevMetrics.AvgResponseTime),
 		},
 		CompareType: compareType,

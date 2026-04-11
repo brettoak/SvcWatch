@@ -69,6 +69,16 @@ func (s *MonitorService) GetOverview(startTime, endTime, logFile string) (*stora
 
 	if aggregated == nil {
 		aggregated = &storage.OverviewStats{}
+	} else {
+		// Round final values to 2 decimal places after aggregation
+		aggregated.SuccessRate.Value = math.Round(aggregated.SuccessRate.Value*100) / 100
+		aggregated.ErrorRate.Value = math.Round(aggregated.ErrorRate.Value*100) / 100
+		aggregated.AvgResponseTime.Value = math.Round(aggregated.AvgResponseTime.Value*100) / 100
+		
+		aggregated.TotalRequests.ComparePercent = math.Round(aggregated.TotalRequests.ComparePercent*100) / 100
+		aggregated.SuccessRate.ComparePercent = math.Round(aggregated.SuccessRate.ComparePercent*100) / 100
+		aggregated.ErrorRate.ComparePercent = math.Round(aggregated.ErrorRate.ComparePercent*100) / 100
+		aggregated.AvgResponseTime.ComparePercent = math.Round(aggregated.AvgResponseTime.ComparePercent*100) / 100
 	}
 	return aggregated, nil
 }
