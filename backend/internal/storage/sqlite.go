@@ -317,7 +317,7 @@ func (s *SqliteStorage) GetStatusDistribution(tableName string, startTime, endTi
 	if total > 0 {
 		for i := range result.Distribution {
 			perc := (float64(result.Distribution[i].Count) / float64(total)) * 100
-			result.Distribution[i].Percentage = math.Round(perc*10) / 10
+			result.Distribution[i].Percentage = math.Round(perc*100) / 100
 		}
 	}
 
