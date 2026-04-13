@@ -59,3 +59,4 @@ To use the CI/CD pipeline, configure the following in GitHub:
 - **Frontend Framework**: [Vue 3](https://vuejs.org/) + [Vite](https://vitejs.dev/)
 - **Storage**: Redis, In-Memory
 - **Automation**: GitHub Actions, Nginx, Certbot
+action
