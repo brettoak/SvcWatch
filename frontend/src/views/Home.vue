@@ -33,6 +33,18 @@ const metricOptions = [
   { label: 'Bandwidth', value: 'bandwidth' },
 ]
 
+const selectedInterval = ref('')
+const intervalOptions = [
+  { label: 'Auto', value: '' },
+  { label: '1m', value: '1m' },
+  { label: '5m', value: '5m' },
+  { label: '1h', value: '1h' },
+  { label: '6h', value: '6h' },
+  { label: '1d', value: '1d' },
+  { label: '1w', value: '1w' },
+  { label: '1M', value: '1M' },
+]
+
 const loading = ref(false)
 const tsLoading = ref(false)
 const lastUpdated = ref('')
@@ -75,7 +87,7 @@ const fetchTimeSeries = async () => {
   if (!range) return
   tsLoading.value = true
   try {
-    const tsResp = await getTimeSeriesStats(selectedMetric.value, '1m', range.startStr, range.endStr)
+    const tsResp = await getTimeSeriesStats(selectedMetric.value, selectedInterval.value || undefined, range.startStr, range.endStr)
     if (tsResp.data && tsResp.data.code === 200) {
       timeSeriesData.value = tsResp.data.data
     }
@@ -121,6 +133,10 @@ const fetchData = async () => {
 }
 
 watch(selectedMetric, () => {
+  fetchTimeSeries()
+})
+
+watch(selectedInterval, () => {
   fetchTimeSeries()
 })
 
@@ -370,15 +386,25 @@ const getTsMaxVal = () => {
       <div class="timeseries-card stat-card" :class="{ 'is-loading': loading || tsLoading }">
         <div class="stat-title-row">
           <h3 class="stat-title">Requests Over Time<span class="stat-icon">📈</span></h3>
-          <div class="metric-tabs">
-            <button 
-              v-for="opt in metricOptions" 
-              :key="opt.value"
-              :class="['metric-tab', { active: selectedMetric === opt.value }]"
-              @click="selectedMetric = opt.value"
-            >
-              {{ opt.label }}
-            </button>
+          <div class="header-actions">
+            <div class="interval-selector">
+              <span class="selector-label">Interval:</span>
+              <select v-model="selectedInterval" class="modern-select">
+                <option v-for="opt in intervalOptions" :key="opt.value" :value="opt.value">
+                  {{ opt.label }}
+                </option>
+              </select>
+            </div>
+            <div class="metric-tabs">
+              <button 
+                v-for="opt in metricOptions" 
+                :key="opt.value"
+                :class="['metric-tab', { active: selectedMetric === opt.value }]"
+                @click="selectedMetric = opt.value"
+              >
+                {{ opt.label }}
+              </button>
+            </div>
           </div>
         </div>
         <div class="timeseries-chart-container">
@@ -1022,3 +1048,48 @@ const getTsMaxVal = () => {
   animation: fadeIn 0.3s ease-out;
 }
 </style>
+.stat-title-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.interval-selector {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.selector-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+}
+
+.modern-select {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+  border-radius: 6px;
+  padding: 4px 8px;
+  font-size: 0.875rem;
+  outline: none;
+  cursor: pointer;
+}
+
+.modern-select:focus {
+  border-color: var(--primary-color, #3b82f6);
+}
+
+.metric-tabs {
+  display: flex;
+  gap: 0.5rem;
+}
