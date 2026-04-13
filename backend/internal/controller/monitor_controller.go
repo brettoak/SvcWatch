@@ -30,7 +30,7 @@ type TimeRangeRequest struct {
 // TimeSeriesRequest represents query parameters for trend data.
 type TimeSeriesRequest struct {
 	Metric    string   `form:"metric" binding:"required,oneof=qps error_rate latency_p99 bandwidth"`
-	Interval  string   `form:"interval" binding:"required,oneof=1m 5m 1h 6h 1d 1w 1M"`
+	Interval  string   `form:"interval" binding:"omitempty,oneof=1m 5m 1h 6h 1d 1w 1M"`
 	StartTime string   `form:"start_time" binding:"required"`
 	EndTime   string   `form:"end_time" binding:"required"`
 	SourceIDs []string `form:"source_ids"`
@@ -211,7 +211,7 @@ func (ctrl *MonitorController) LogsHandler(c *gin.Context) {
 // @Produce json
 // @Security BearerAuth
 // @Param metric query string true "Metric type" Enums(qps, error_rate, latency_p99, bandwidth)
-// @Param interval query string true "Aggregation interval (may be overridden if unreasonable)" Enums(1m, 5m, 1h, 6h, 1d, 1w, 1M)
+// @Param interval query string false "Aggregation interval (optional, automatically calculated if omitted)" Enums(1m, 5m, 1h, 6h, 1d, 1w, 1M)
 // @Param start_time query string true "Start Time" default(2026-03-19 00:00:00)
 // @Param end_time query string true "End Time" default(2026-03-20 00:00:00)
 // @Param source_ids query []string false "List of Source IDs or Log Files to aggregate"

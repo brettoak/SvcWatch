@@ -361,7 +361,7 @@ paths:
         name: metric
         required: true
         type: string
-      - description: Aggregation interval (may be overridden if unreasonable)
+      - description: Aggregation interval (optional, automatically calculated if omitted)
         enum:
         - 1m
         - 5m
@@ -372,7 +372,6 @@ paths:
         - 1M
         in: query
         name: interval
-        required: true
         type: string
       - default: "2026-03-19 00:00:00"
         description: Start Time

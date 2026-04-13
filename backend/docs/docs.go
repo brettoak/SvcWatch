@@ -321,10 +321,9 @@ const docTemplate = `{
                             "1M"
                         ],
                         "type": "string",
-                        "description": "Aggregation interval (may be overridden if unreasonable)",
+                        "description": "Aggregation interval (optional, automatically calculated if omitted)",
                         "name": "interval",
-                        "in": "query",
-                        "required": true
+                        "in": "query"
                     },
                     {
                         "type": "string",
