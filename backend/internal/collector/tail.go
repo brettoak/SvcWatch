@@ -2,6 +2,7 @@ package collector
 
 import (
 	"fmt"
+
 	"github.com/nxadm/tail"
 )
 
@@ -69,4 +70,5 @@ func (lc *LogCollector) Start() {
 func (lc *LogCollector) Stop() {
 	close(lc.stopChan)
 	lc.tail.Stop()
+
 }
