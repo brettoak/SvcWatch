@@ -181,42 +181,12 @@ func (s *MonitorService) GetTimeSeriesStats(metric, startTime, endTime string, s
 
 	duration := endT.Sub(startT)
 
-	type tier struct {
-		name string
-		sec  float64
-	}
-	tiers := []tier{
-		{"1m", 60},
-		{"2m", 120},
-		{"5m", 300},
-		{"10m", 600},
-		{"30m", 1800},
-		{"1h", 3600},
-		{"2h", 7200},
-		{"6h", 21600},
-		{"12h", 43200},
-		{"1d", 86400},
-		{"2d", 172800},
-		{"3d", 259200},
-		{"4d", 345600},
-		{"5d", 432000},
-		{"1w", 604800},
-		{"2w", 1209600},
-		{"1M", 2592000},
+	// Calculate exact interval required to get around 20 points
+	intervalSec := duration.Seconds() / 20
+	if intervalSec < 1 {
+		intervalSec = 1
 	}
 
-	// Find the interval that results in points count closest to 20
-	bestInterval := tiers[len(tiers)-1].name
-	minDiff := math.MaxFloat64
-	for _, t := range tiers {
-		pointsCount := duration.Seconds() / t.sec
-		diff := math.Abs(pointsCount - 20)
-		if diff < minDiff {
-			minDiff = diff
-			bestInterval = t.name
-		}
-	}
-
-	return s.store.GetTimeSeries(tableNames, metric, bestInterval, startT, endT)
+	return s.store.GetTimeSeries(tableNames, metric, fmt.Sprintf("%.0f", intervalSec), startT, endT)
 }
 

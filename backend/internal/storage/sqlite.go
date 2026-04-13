@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"math"
+	"strconv"
 	"strings"
 	"time"
 	"SvcWatch/internal/model"
@@ -339,6 +340,14 @@ func (s *SqliteStorage) GetTimeSeries(tableNames []string, metric string, interv
 
 	intervalSec, ok := intervalMap[interval]
 	if !ok {
+		// Try to parse as numeric seconds (e.g. from auto-calculation)
+		if s, err := strconv.ParseFloat(interval, 64); err == nil {
+			intervalSec = s
+			ok = true
+		}
+	}
+
+	if !ok {
 		return nil, fmt.Errorf("unsupported interval: %s", interval)
 	}
 
@@ -357,7 +366,8 @@ func (s *SqliteStorage) GetTimeSeries(tableNames []string, metric string, interv
 		timeExpr = "strftime('%Y-%m-01T00:00:00Z', time_local)"
 	} else {
 		// Generic math-based rounding for other intervals
-		timeExpr = fmt.Sprintf("strftime('%%Y-%%m-%%dT%%H:%%M:%%SZ', (strftime('%%s', time_local) / %.0f) * %.0f, 'unixepoch')", intervalSec, intervalSec)
+		// We use CAST to ensure integer division for clean buckets
+		timeExpr = fmt.Sprintf("strftime('%%Y-%%m-%%dT%%H:%%M:%%SZ', (CAST(strftime('%%s', time_local) AS INTEGER) / %.0f) * %.0f, 'unixepoch')", intervalSec, intervalSec)
 	}
 
 	// Construct UNION query for multiple tables
