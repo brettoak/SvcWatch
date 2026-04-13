@@ -152,3 +152,13 @@ export const getTimeSeriesStats = (metric: string, interval: string, startTime: 
     },
   })
 }
+
+export const uploadAvatar = (file: File) => {
+  const formData = new FormData()
+  formData.append('file', file)
+  return passportApi.post('/users/avatar', formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data'
+    }
+  })
+}

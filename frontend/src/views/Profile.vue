@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { passportApi } from '@/services/api'
+import { passportApi, uploadAvatar } from '@/services/api'
 
 interface UserProfile {
   id: number
@@ -8,12 +8,15 @@ interface UserProfile {
   email: string
   role: string
   status: string
+  avatarUrl?: string
   // Add other fields as per the actual API response
 }
 
 const profile = ref<UserProfile | null>(null)
 const isLoading = ref(true)
+const isUploadingAvatar = ref(false)
 const error = ref('')
+const avatarInput = ref<HTMLInputElement | null>(null)
 
 const fetchProfile = async () => {
   isLoading.value = true
@@ -30,6 +33,53 @@ const fetchProfile = async () => {
     console.error('Profile fetch error:', err)
   } finally {
     isLoading.value = false
+  }
+}
+
+const triggerAvatarUpload = () => {
+  if (avatarInput.value) {
+    avatarInput.value.click()
+  }
+}
+
+const handleAvatarUpload = async (event: Event) => {
+  const target = event.target as HTMLInputElement
+  const file = target.files?.[0]
+  
+  if (!file) return
+
+  // Basic validation
+  if (!file.type.startsWith('image/')) {
+    alert('Please select an image file')
+    return
+  }
+  
+  if (file.size > 2 * 1024 * 1024) {
+    alert('File size must be less than 2MB')
+    return
+  }
+
+  try {
+    isUploadingAvatar.value = true
+    const response = await uploadAvatar(file)
+    if (response.data && response.data.code === 200) {
+      // Assuming the backend returns the full user profile or the new avatar URL
+      if (profile.value) {
+        // We'll refetch the profile to get the updated data
+        await fetchProfile()
+      }
+    } else {
+      alert(response.data.message || 'Failed to upload avatar')
+    }
+  } catch (error: any) {
+    console.error('Avatar upload failed:', error)
+    alert(error.response?.data?.message || 'Failed to upload avatar')
+  } finally {
+    isUploadingAvatar.value = false
+    // Reset the input so the same file could be selected again if needed
+    if (target) {
+      target.value = ''
+    }
   }
 }
 
@@ -57,8 +107,27 @@ onMounted(() => {
 
     <div v-else-if="profile" class="profile-card">
       <div class="card-header">
-        <div class="avatar-placeholder">
-          {{ profile.username.charAt(0).toUpperCase() }}
+        <div class="avatar-container" @click="triggerAvatarUpload">
+          <input 
+            type="file" 
+            ref="avatarInput" 
+            class="hidden-input" 
+            accept="image/*" 
+            @change="handleAvatarUpload" 
+          />
+          <img 
+            v-if="profile.avatarUrl" 
+            :src="profile.avatarUrl" 
+            alt="User Avatar" 
+            class="user-avatar" 
+          />
+          <div v-else class="avatar-placeholder">
+            {{ profile.username.charAt(0).toUpperCase() }}
+          </div>
+          <div class="avatar-overlay" :class="{ 'uploading': isUploadingAvatar }">
+            <span v-if="isUploadingAvatar" class="upload-loader"></span>
+            <span v-else>Update</span>
+          </div>
         </div>
         <div class="header-info">
           <h2>{{ profile.username }}</h2>
@@ -163,9 +232,30 @@ onMounted(() => {
   border-bottom: 1px solid var(--border-color);
 }
 
-.avatar-placeholder {
+.avatar-container {
+  position: relative;
   width: 80px;
   height: 80px;
+  border-radius: 50%;
+  cursor: pointer;
+  overflow: hidden;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+.hidden-input {
+  display: none;
+}
+
+.user-avatar {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.avatar-placeholder {
+  width: 100%;
+  height: 100%;
   background-color: var(--primary-blue);
   color: white;
   border-radius: 50%;
@@ -174,6 +264,41 @@ onMounted(() => {
   justify-content: center;
   font-size: 2rem;
   font-weight: 700;
+}
+
+.avatar-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  font-weight: 600;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.avatar-container:hover .avatar-overlay {
+  opacity: 1;
+}
+
+.avatar-overlay.uploading {
+  opacity: 1;
+  background-color: rgba(0, 0, 0, 0.7);
+}
+
+.upload-loader {
+  width: 20px;
+  height: 20px;
+  border: 2px solid #ffffff;
+  border-top: 2px solid transparent;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
 }
 
 .header-info h2 {
