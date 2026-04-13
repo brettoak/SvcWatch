@@ -142,11 +142,10 @@ export const getStatusDistribution = (startTime: string, endTime: string) => {
   })
 }
 
-export const getTimeSeriesStats = (metric: string, interval: string | undefined, startTime: string, endTime: string) => {
+export const getTimeSeriesStats = (metric: string, startTime: string, endTime: string) => {
   return api.get<TimeSeriesResponse>('/stats/timeseries', {
     params: {
       metric,
-      interval,
       start_time: startTime,
       end_time: endTime,
     },

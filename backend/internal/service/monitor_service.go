@@ -148,7 +148,7 @@ func (s *MonitorService) GetLogs(sourceID string, filter storage.LogQueryFilter)
 }
 
 // GetTimeSeriesStats aggregates trend data for a specific metric and interval across multiple source IDs.
-func (s *MonitorService) GetTimeSeriesStats(metric, interval, startTime, endTime string, sourceIDs []string) (*storage.TimeSeriesResult, error) {
+func (s *MonitorService) GetTimeSeriesStats(metric, startTime, endTime string, sourceIDs []string) (*storage.TimeSeriesResult, error) {
 	var tableNames []string
 
 	// Map sourceIDs to table names for efficient lookup
@@ -171,7 +171,7 @@ func (s *MonitorService) GetTimeSeriesStats(metric, interval, startTime, endTime
 	}
 
 	if len(tableNames) == 0 {
-		return &storage.TimeSeriesResult{Metric: metric, Interval: interval, Points: []storage.TimeSeriesPoint{}}, nil
+		return &storage.TimeSeriesResult{Metric: metric, Interval: "auto", Points: []storage.TimeSeriesPoint{}}, nil
 	}
 
 	startT, endT, err := utils.ParseAndValidateRange(startTime, endTime, utils.MaxTimeRangeLimit)
@@ -187,37 +187,36 @@ func (s *MonitorService) GetTimeSeriesStats(metric, interval, startTime, endTime
 	}
 	tiers := []tier{
 		{"1m", 60},
+		{"2m", 120},
 		{"5m", 300},
+		{"10m", 600},
+		{"30m", 1800},
 		{"1h", 3600},
+		{"2h", 7200},
 		{"6h", 21600},
+		{"12h", 43200},
 		{"1d", 86400},
+		{"2d", 172800},
+		{"3d", 259200},
+		{"4d", 345600},
+		{"5d", 432000},
 		{"1w", 604800},
+		{"2w", 1209600},
 		{"1M", 2592000},
 	}
 
-	// Find the smallest interval that results in <= 20 points
+	// Find the interval that results in points count closest to 20
 	bestInterval := tiers[len(tiers)-1].name
+	minDiff := math.MaxFloat64
 	for _, t := range tiers {
-		if duration.Seconds()/t.sec <= 20 {
+		pointsCount := duration.Seconds() / t.sec
+		diff := math.Abs(pointsCount - 20)
+		if diff < minDiff {
+			minDiff = diff
 			bestInterval = t.name
-			break
 		}
 	}
 
-	// Validate requested interval; override if it leads to > 20 points or is unsupported
-	selectedInterval := interval
-	reqIntervalSec := 0.0
-	for _, t := range tiers {
-		if t.name == interval {
-			reqIntervalSec = t.sec
-			break
-		}
-	}
-
-	if reqIntervalSec == 0 || duration.Seconds()/reqIntervalSec > 20 {
-		selectedInterval = bestInterval
-	}
-
-	return s.store.GetTimeSeries(tableNames, metric, selectedInterval, startT, endT)
+	return s.store.GetTimeSeries(tableNames, metric, bestInterval, startT, endT)
 }
 

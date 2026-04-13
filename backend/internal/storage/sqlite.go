@@ -330,51 +330,34 @@ func (s *SqliteStorage) GetTimeSeries(tableNames []string, metric string, interv
 		return &TimeSeriesResult{Metric: metric, Interval: interval, Points: []TimeSeriesPoint{}}, nil
 	}
 
-	var timeFormat string
-	var intervalSec float64
-	switch interval {
-	case "1m":
-		timeFormat = "%Y-%m-%dT%H:%M:00Z"
-		intervalSec = 60
-	case "5m":
-		// Custom format for 5m rounding
-		timeFormat = "%Y-%m-%dT%H:"
-		intervalSec = 300
-	case "1h":
-		timeFormat = "%Y-%m-%dT%H:00:00Z"
-		intervalSec = 3600
-	case "6h":
-		// Custom format for 6h rounding
-		intervalSec = 21600
-	case "1d":
-		timeFormat = "%Y-%m-%dT00:00:00Z"
-		intervalSec = 86400
-	case "1w":
-		// Custom format for weekly rounding (starts on Monday)
-		intervalSec = 604800
-	case "1M":
-		// Custom format for monthly rounding
-		intervalSec = 2592000
-	default:
+	intervalMap := map[string]float64{
+		"1m": 60, "2m": 120, "5m": 300, "10m": 600, "30m": 1800,
+		"1h": 3600, "2h": 7200, "6h": 21600, "12h": 43200,
+		"1d": 86400, "2d": 172800, "3d": 259200, "4d": 345600, "5d": 432000,
+		"1w": 604800, "2w": 1209600, "1M": 2592000,
+	}
+
+	intervalSec, ok := intervalMap[interval]
+	if !ok {
 		return nil, fmt.Errorf("unsupported interval: %s", interval)
 	}
 
 	// For custom intervals, we need a special grouping expression
 	var timeExpr string
-	if interval == "5m" {
-		// Example: 2024-01-01T00:07:00Z -> 2024-01-01T00:05:00Z
-		timeExpr = "strftime('%Y-%m-%dT%H:', time_local) || printf('%02d', (strftime('%M', time_local) / 5) * 5) || ':00Z'"
-	} else if interval == "6h" {
-		// Example: 2024-01-01T07:00:00Z -> 2024-01-01T06:00:00Z
-		timeExpr = "strftime('%Y-%m-%dT', time_local) || printf('%02d', (strftime('%H', time_local) / 6) * 6) || ':00:00Z'"
-	} else if interval == "1w" {
+	if interval == "1w" || interval == "2w" {
 		// Group by week starting on Monday
+		// weekday 0 is Sunday, so 'weekday 0', '-6 days' is Monday
 		timeExpr = "date(time_local, 'weekday 0', '-6 days') || 'T00:00:00Z'"
+		if interval == "2w" {
+			// For 2w, we round the unix days to 14-day chunks
+			timeExpr = "strftime('%Y-%m-%dT%H:%M:%SZ', (strftime('%s', time_local) / 1209600) * 1209600, 'unixepoch')"
+		}
 	} else if interval == "1M" {
 		// Group by the first day of the month
 		timeExpr = "strftime('%Y-%m-01T00:00:00Z', time_local)"
 	} else {
-		timeExpr = fmt.Sprintf("strftime('%s', time_local)", timeFormat)
+		// Generic math-based rounding for other intervals
+		timeExpr = fmt.Sprintf("strftime('%%Y-%%m-%%dT%%H:%%M:%%SZ', (strftime('%%s', time_local) / %.0f) * %.0f, 'unixepoch')", intervalSec, intervalSec)
 	}
 
 	// Construct UNION query for multiple tables

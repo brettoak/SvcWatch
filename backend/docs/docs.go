@@ -311,21 +311,6 @@ const docTemplate = `{
                         "required": true
                     },
                     {
-                        "enum": [
-                            "1m",
-                            "5m",
-                            "1h",
-                            "6h",
-                            "1d",
-                            "1w",
-                            "1M"
-                        ],
-                        "type": "string",
-                        "description": "Aggregation interval (optional, automatically calculated if omitted)",
-                        "name": "interval",
-                        "in": "query"
-                    },
-                    {
                         "type": "string",
                         "default": "2026-03-19 00:00:00",
                         "description": "Start Time",
