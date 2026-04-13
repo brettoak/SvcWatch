@@ -56,38 +56,40 @@ const handleLogin = async () => {
 </script>
 
 <template>
-  <div class="login-container">
-    <div class="login-card">
-      <div class="login-header">
-        <h1>SvcWatch</h1>
-        <p>Sign in to your account</p>
+  <div class="flex justify-center items-center min-h-screen bg-bg-primary">
+    <div class="w-full max-w-[400px] p-10 bg-bg-secondary rounded-xl shadow-card animate-fade-in">
+      <div class="text-center mb-8">
+        <h1 class="text-4xl font-bold text-primary-blue mb-2 tracking-tight">SvcWatch</h1>
+        <p class="text-text-secondary text-sm">Sign in to your account</p>
       </div>
 
-      <form @submit.prevent="handleLogin" class="login-form">
-        <div class="form-group">
-          <label for="email">Email</label>
+      <form @submit.prevent="handleLogin" class="flex flex-col gap-5">
+        <div class="flex flex-col gap-2">
+          <label for="email" class="text-sm font-medium text-text-secondary">Email</label>
           <input
             id="email"
             v-model="email"
             type="email"
             placeholder="admin@example.com"
             :disabled="isLoading"
+            class="w-full p-3 bg-bg-secondary border border-border-color text-text-primary rounded-lg text-base outline-none transition-all focus:border-primary-blue focus:ring-3 focus:ring-primary-blue/10 disabled:opacity-50"
           />
         </div>
 
-        <div class="form-group">
-          <label for="password">Password</label>
-          <div class="password-input-wrapper">
+        <div class="flex flex-col gap-2">
+          <label for="password" class="text-sm font-medium text-text-secondary">Password</label>
+          <div class="relative flex items-center">
             <input
               id="password"
               v-model="password"
               :type="showPassword ? 'text' : 'password'"
               placeholder="••••••••"
               :disabled="isLoading"
+              class="w-full p-3 pr-10 bg-bg-secondary border border-border-color text-text-primary rounded-lg text-base outline-none transition-all focus:border-primary-blue focus:ring-3 focus:ring-primary-blue/10 disabled:opacity-50"
             />
             <button
               type="button"
-              class="toggle-password"
+              class="absolute right-3 bg-transparent border-none p-0 cursor-pointer text-text-secondary flex items-center justify-center transition-colors hover:text-primary-blue disabled:opacity-50"
               @click="togglePassword"
               :disabled="isLoading"
               tabindex="-1"
@@ -131,11 +133,11 @@ const handleLogin = async () => {
           </div>
         </div>
 
-        <div v-if="error" class="error-message">
+        <div v-if="error" class="text-sm text-red-600 bg-red-50 dark:bg-red-500/10 p-3 rounded-lg border border-red-100 dark:border-red-500/20">
           {{ error }}
         </div>
 
-        <button type="submit" class="login-button" :disabled="isLoading">
+        <button type="submit" class="mt-2 p-3 bg-primary-blue text-white border-none rounded-lg text-base font-semibold cursor-pointer transition-all hover:bg-primary-blue-hover hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-70 disabled:cursor-not-allowed disabled:transform-none" :disabled="isLoading">
           <span v-if="isLoading">Signing in...</span>
           <span v-else>Sign In</span>
         </button>
@@ -145,136 +147,4 @@ const handleLogin = async () => {
 </template>
 
 <style scoped>
-.login-container {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  min-height: 100vh;
-  background-color: var(--bg-primary);
-}
-
-.login-card {
-  width: 100%;
-  max-width: 400px;
-  padding: 2.5rem;
-  background: var(--bg-secondary);
-  border-radius: 12px;
-  box-shadow: var(--card-shadow);
-}
-
-.login-header {
-  text-align: center;
-  margin-bottom: 2rem;
-}
-
-.login-header h1 {
-  color: var(--primary-blue);
-  font-size: 2rem;
-  font-weight: 700;
-  margin-bottom: 0.5rem;
-}
-
-.login-header p {
-  color: var(--text-secondary);
-  font-size: 0.875rem;
-}
-
-.login-form {
-  display: flex;
-  flex-direction: column;
-  gap: 1.25rem;
-}
-
-.form-group {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.form-group label {
-  font-size: 0.875rem;
-  font-weight: 500;
-  color: var(--text-secondary);
-}
-
-.form-group input {
-  padding: 0.75rem;
-  border: 1px solid var(--border-color);
-  background-color: var(--input-bg);
-  color: var(--text-primary);
-  border-radius: 6px;
-  font-size: 1rem;
-  width: 100%;
-  transition: border-color 0.2s, box-shadow 0.2s;
-}
-
-.password-input-wrapper {
-  position: relative;
-  display: flex;
-  align-items: center;
-}
-
-.password-input-wrapper input {
-  padding-right: 2.5rem;
-}
-
-.toggle-password {
-  position: absolute;
-  right: 0.75rem;
-  background: none;
-  border: none;
-  padding: 0;
-  cursor: pointer;
-  color: var(--text-secondary);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: color 0.2s;
-}
-
-.toggle-password:hover:not(:disabled) {
-  color: var(--primary-blue);
-}
-
-.form-group input:focus {
-  outline: none;
-  border-color: var(--primary-blue);
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
-}
-
-.error-message {
-  color: #dc2626;
-  font-size: 0.875rem;
-  background-color: #fef2f2;
-  padding: 0.75rem;
-  border-radius: 6px;
-  border: 1px solid #fee2e2;
-}
-
-.dark .error-message {
-  background-color: rgba(220, 38, 38, 0.1);
-  border-color: rgba(220, 38, 38, 0.2);
-}
-
-.login-button {
-  margin-top: 0.5rem;
-  padding: 0.75rem;
-  background-color: var(--primary-blue);
-  color: white;
-  border: none;
-  border-radius: 6px;
-  font-size: 1rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background-color 0.2s;
-}
-
-.login-button:hover:not(:disabled) {
-  background-color: var(--primary-blue-hover);
-}
-
-.login-button:disabled {
-  opacity: 0.7;
-  cursor: not-allowed;
-}
 </style>

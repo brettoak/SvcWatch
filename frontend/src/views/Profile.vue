@@ -89,29 +89,29 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="profile-container">
+  <div class="flex flex-col gap-8 animate-fade-in">
     <div class="page-header">
-      <h1>User Profile</h1>
-      <p>Manage your account settings and view your information.</p>
+      <h1 class="text-3xl font-bold text-text-primary mb-2 tracking-tight">User Profile</h1>
+      <p class="text-text-secondary text-base">Manage your account settings and view your information.</p>
     </div>
 
-    <div v-if="isLoading" class="state-container">
-      <div class="loading-spinner"></div>
-      <p>Loading profile...</p>
+    <div v-if="isLoading" class="flex flex-col items-center justify-center p-16 bg-bg-secondary rounded-xl shadow-card gap-4">
+      <div class="w-10 h-10 border-3 border-border-color border-top-primary-blue rounded-full animate-spin"></div>
+      <p class="text-text-secondary">Loading profile...</p>
     </div>
 
-    <div v-else-if="error" class="state-container error">
+    <div v-else-if="error" class="flex flex-col items-center justify-center p-16 bg-bg-secondary rounded-xl shadow-card gap-4 text-red-600">
       <p>{{ error }}</p>
-      <button @click="fetchProfile" class="retry-btn">Retry</button>
+      <button @click="fetchProfile" class="px-4 py-2 bg-primary-blue text-white rounded-lg border-none cursor-pointer font-medium transition-all hover:bg-primary-blue-hover">Retry</button>
     </div>
 
-    <div v-else-if="profile" class="profile-card">
-      <div class="card-header">
-        <div class="avatar-container" @click="triggerAvatarUpload">
+    <div v-else-if="profile" class="bg-bg-secondary rounded-xl shadow-card overflow-hidden">
+      <div class="p-10 bg-gradient-to-br from-bg-primary to-bg-secondary flex items-center gap-6 border-b border-border-color">
+        <div class="relative w-20 h-20 rounded-full cursor-pointer overflow-hidden shadow-md group" @click="triggerAvatarUpload">
           <input 
             type="file" 
             ref="avatarInput" 
-            class="hidden-input" 
+            class="hidden" 
             accept="image/*" 
             @change="handleAvatarUpload" 
           />
@@ -119,37 +119,37 @@ onMounted(() => {
             v-if="profile.avatarUrl" 
             :src="profile.avatarUrl" 
             alt="User Avatar" 
-            class="user-avatar" 
+            class="w-full h-full object-cover block" 
           />
-          <div v-else class="avatar-placeholder">
+          <div v-else class="w-full h-full bg-primary-blue text-white flex items-center justify-center text-3xl font-bold">
             {{ profile.username.charAt(0).toUpperCase() }}
           </div>
-          <div class="avatar-overlay" :class="{ 'uploading': isUploadingAvatar }">
-            <span v-if="isUploadingAvatar" class="upload-loader"></span>
+          <div class="absolute inset-0 bg-black/50 text-white flex items-center justify-center text-xs font-semibold opacity-0 group-hover:opacity-100 transition-opacity" :class="{ 'opacity-100 bg-black/70': isUploadingAvatar }">
+            <span v-if="isUploadingAvatar" class="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
             <span v-else>Update</span>
           </div>
         </div>
-        <div class="header-info">
-          <h2>{{ profile.username }}</h2>
-          <span class="role-badge">{{ profile.role || 'User' }}</span>
+        <div>
+          <h2 class="text-2xl font-bold text-text-primary mb-1">{{ profile.username }}</h2>
+          <span class="inline-block px-3 py-1 bg-bg-secondary text-primary-blue text-[0.7rem] font-bold rounded-full border border-border-color uppercase tracking-wider">{{ profile.role || 'User' }}</span>
         </div>
       </div>
 
-      <div class="card-body">
-        <div class="info-group">
-          <label>Email Address</label>
-          <div class="info-value">{{ profile.email }}</div>
+      <div class="p-10 grid gap-8">
+        <div class="flex flex-col gap-1">
+          <label class="text-[0.7rem] font-bold uppercase tracking-wider text-text-secondary">Email Address</label>
+          <div class="text-base text-text-primary font-medium">{{ profile.email }}</div>
         </div>
         
-        <div class="info-group">
-          <label>User ID</label>
-          <div class="info-value">#{{ profile.id }}</div>
+        <div class="flex flex-col gap-1">
+          <label class="text-[0.7rem] font-bold uppercase tracking-wider text-text-secondary">User ID</label>
+          <div class="text-base text-text-primary font-medium">#{{ profile.id }}</div>
         </div>
 
-        <div class="info-group">
-          <label>Account Status</label>
-          <div class="info-value status">
-            <span class="status-dot" :class="profile.status?.toLowerCase() || 'active'"></span>
+        <div class="flex flex-col gap-1">
+          <label class="text-[0.7rem] font-bold uppercase tracking-wider text-text-secondary">Account Status</label>
+          <div class="flex items-center gap-2 text-base text-text-primary font-medium">
+            <span class="w-2 h-2 rounded-full" :class="profile.status?.toLowerCase() === 'active' || !profile.status ? 'bg-green-500 ring-4 ring-green-500/10' : 'bg-gray-400'"></span>
             {{ profile.status || 'Active' }}
           </div>
         </div>
@@ -159,206 +159,8 @@ onMounted(() => {
 </template>
 
 <style scoped>
-.profile-container {
-  display: flex;
-  flex-direction: column;
-  gap: 2rem;
-}
-
-.page-header h1 {
-  font-size: 1.875rem;
-  font-weight: 700;
-  color: var(--text-primary);
-  margin-bottom: 0.5rem;
-}
-
-.page-header p {
-  color: var(--text-secondary);
-  font-size: 1rem;
-}
-
-.state-container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 4rem;
-  background: var(--bg-secondary);
-  border-radius: 12px;
-  box-shadow: var(--card-shadow);
-  gap: 1rem;
-}
-
-.state-container.error {
-  color: #dc2626;
-}
-
-.loading-spinner {
-  width: 40px;
-  height: 40px;
-  border: 3px solid var(--border-color);
-  border-top: 3px solid var(--primary-blue);
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
-
-.retry-btn {
-  padding: 0.5rem 1rem;
-  background-color: var(--primary-blue);
-  color: white;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-}
-
-.profile-card {
-  background: var(--bg-secondary);
-  border-radius: 12px;
-  box-shadow: var(--card-shadow);
-  overflow: hidden;
-}
-
-.card-header {
-  padding: 2.5rem;
-  background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);
-  display: flex;
-  align-items: center;
-  gap: 1.5rem;
-  border-bottom: 1px solid var(--border-color);
-}
-
-.avatar-container {
-  position: relative;
-  width: 80px;
-  height: 80px;
-  border-radius: 50%;
-  cursor: pointer;
-  overflow: hidden;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-}
-
-.hidden-input {
-  display: none;
-}
-
-.user-avatar {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
-}
-
-.avatar-placeholder {
-  width: 100%;
-  height: 100%;
-  background-color: var(--primary-blue);
-  color: white;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 2rem;
-  font-weight: 700;
-}
-
-.avatar-overlay {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(0, 0, 0, 0.5);
-  color: white;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 0.75rem;
-  font-weight: 600;
-  opacity: 0;
-  transition: opacity 0.2s ease;
-}
-
-.avatar-container:hover .avatar-overlay {
-  opacity: 1;
-}
-
-.avatar-overlay.uploading {
-  opacity: 1;
-  background-color: rgba(0, 0, 0, 0.7);
-}
-
-.upload-loader {
-  width: 20px;
-  height: 20px;
-  border: 2px solid #ffffff;
-  border-top: 2px solid transparent;
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-}
-
-.header-info h2 {
-  font-size: 1.5rem;
-  font-weight: 700;
-  color: var(--text-primary);
-  margin-bottom: 0.25rem;
-}
-
-.role-badge {
-  display: inline-block;
-  padding: 0.25rem 0.75rem;
-  background-color: var(--bg-secondary);
-  color: var(--primary-blue);
-  font-size: 0.75rem;
-  font-weight: 600;
-  border-radius: 9999px;
-  border: 1px solid var(--border-color);
-}
-
-.card-body {
-  padding: 2.5rem;
-  display: grid;
-  gap: 1.5rem;
-}
-
-.info-group {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.info-group label {
-  font-size: 0.75rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--text-secondary);
-}
-
-.info-value {
-  font-size: 1rem;
-  color: var(--text-primary);
-  font-weight: 500;
-}
-
-.info-value.status {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.status-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-}
-
-.status-dot.active {
-  background-color: #22c55e;
-  box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.1);
+/* Spinner border-top utility if needed, but Tailwind 4 might need a custom class if not standard */
+.border-top-primary-blue {
+  border-top-color: var(--color-primary-blue);
 }
 </style>

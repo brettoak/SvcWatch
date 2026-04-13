@@ -57,25 +57,25 @@ const currentThemeIcon = computed(() => themeStore.isDark ? SunIcon : MoonIcon)
 </script>
 
 <template>
-  <div class="layout-container">
+  <div class="flex flex-col h-screen overflow-hidden bg-bg-primary text-text-primary">
     <!-- Top Navigation Bar -->
-    <header class="top-nav">
-      <div class="header-left">
-        <button @click="toggleSidebar" class="toggle-btn" title="Toggle Sidebar">
+    <header class="flex justify-between items-center h-16 px-6 bg-bg-secondary border-b border-border-color shadow-sm z-20">
+      <div class="flex items-center gap-4">
+        <button @click="toggleSidebar" class="bg-transparent border-none text-text-secondary cursor-pointer p-2 rounded-md flex items-center justify-center transition-all duration-200 hover:bg-bg-primary hover:text-primary-blue" title="Toggle Sidebar">
           <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <line x1="3" y1="12" x2="21" y2="12"></line>
             <line x1="3" y1="6" x2="21" y2="6"></line>
             <line x1="3" y1="18" x2="21" y2="18"></line>
           </svg>
         </button>
-        <div class="logo">SvcWatch</div>
+        <div class="text-2xl font-bold text-primary-blue tracking-tight">SvcWatch</div>
       </div>
-      <div class="user-actions">
-        <button @click="themeStore.toggleTheme" class="theme-toggle" :title="themeStore.isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode'">
+      <div class="flex items-center gap-6">
+        <button @click="themeStore.toggleTheme" class="bg-transparent border-none text-text-secondary cursor-pointer p-2 rounded-md flex items-center justify-center transition-all duration-200 hover:bg-bg-primary hover:text-primary-blue" :title="themeStore.isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode'">
           <component :is="currentThemeIcon" />
         </button>
-        <span class="user-greeting">Hello, {{ authStore.user?.username || authStore.user?.email || 'Admin' }}</span>
-        <button @click="handleLogout" class="logout-btn" title="Logout">
+        <span class="text-sm text-text-secondary font-medium">Hello, {{ authStore.user?.username || authStore.user?.email || 'Admin' }}</span>
+        <button @click="handleLogout" class="bg-transparent border-none text-text-secondary cursor-pointer p-2 rounded-md flex items-center justify-center transition-all duration-200 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10" title="Logout">
           <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
             <polyline points="16 17 21 12 16 7"></polyline>
@@ -85,29 +85,32 @@ const currentThemeIcon = computed(() => themeStore.isDark ? SunIcon : MoonIcon)
       </div>
     </header>
 
-    <div class="main-body">
+    <div class="flex flex-1 overflow-hidden">
       <!-- Left Sidebar -->
-      <aside class="sidebar" :class="{ collapsed: isSidebarCollapsed }">
-        <nav class="side-nav">
+      <aside class="flex flex-col border-r border-border-color bg-bg-secondary z-10 transition-[width] duration-300 ease-in-out" :class="isSidebarCollapsed ? 'w-[72px]' : 'w-60'">
+        <nav class="flex flex-col gap-2 p-4" :class="{ 'px-2': isSidebarCollapsed }">
           <router-link
             v-for="item in navItems"
             :key="item.path"
             :to="item.path"
-            class="nav-link"
-            :class="{ active: route.path === item.path }"
+            class="flex items-center p-3 text-text-secondary no-underline rounded-lg font-medium text-[0.95rem] whitespace-nowrap transition-all duration-200 hover:bg-bg-primary hover:text-text-primary"
+            :class="[
+              route.path === item.path ? 'bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-primary-blue' : '',
+              isSidebarCollapsed ? 'justify-center py-3' : ''
+            ]"
             :title="isSidebarCollapsed ? item.name : ''"
           >
-            <span class="nav-icon-wrapper">
+            <span class="flex items-center justify-center min-w-[40px]">
               <component :is="item.icon" />
             </span>
-            <span class="nav-text" v-show="!isSidebarCollapsed">{{ item.name }}</span>
+            <span class="ml-1 transition-opacity duration-200" v-show="!isSidebarCollapsed">{{ item.name }}</span>
           </router-link>
         </nav>
       </aside>
 
       <!-- Main Content Area -->
-      <main class="content-area">
-        <div class="content-wrapper">
+      <main class="flex-1 overflow-y-auto bg-bg-primary">
+        <div class="p-8">
           <RouterView />
         </div>
       </main>
@@ -116,203 +119,6 @@ const currentThemeIcon = computed(() => themeStore.isDark ? SunIcon : MoonIcon)
 </template>
 
 <style scoped>
-.layout-container {
-  display: flex;
-  flex-direction: column;
-  height: 100vh;
-  overflow: hidden;
-  background-color: var(--bg-primary);
-  color: var(--text-primary);
-}
-
-/* Top Navigation Bar */
-.top-nav {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  height: 64px;
-  padding: 0 1.5rem;
-  background-color: var(--bg-secondary);
-  border-bottom: 1px solid var(--border-color);
-  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-  z-index: 20;
-}
-
-.header-left {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-}
-
-.toggle-btn {
-  background: none;
-  border: none;
-  color: var(--text-secondary);
-  cursor: pointer;
-  padding: 0.5rem;
-  border-radius: 6px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.2s;
-}
-
-.toggle-btn:hover {
-  background-color: var(--bg-primary);
-  color: var(--primary-blue);
-}
-
-.logo {
-  font-size: 1.5rem;
-  font-weight: 700;
-  color: var(--primary-blue);
-  letter-spacing: -0.025em;
-}
-
-.user-actions {
-  display: flex;
-  align-items: center;
-  gap: 1.5rem;
-}
-
-.theme-toggle {
-  background: none;
-  border: none;
-  color: var(--text-secondary);
-  cursor: pointer;
-  padding: 0.5rem;
-  border-radius: 6px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.2s;
-}
-
-.theme-toggle:hover {
-  background-color: var(--bg-primary);
-  color: var(--primary-blue);
-}
-
-.user-greeting {
-  font-size: 0.875rem;
-  color: var(--text-secondary);
-  font-weight: 500;
-}
-
-.logout-btn {
-  background: none;
-  border: none;
-  color: var(--text-secondary);
-  cursor: pointer;
-  padding: 0.5rem;
-  border-radius: 6px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.2s;
-}
-
-.logout-btn:hover {
-  color: #ef4444;
-  background-color: #fef2f2;
-}
-
-.dark .logout-btn:hover {
-  background-color: rgba(239, 68, 68, 0.1);
-}
-
-/* Main Body Layout */
-.main-body {
-  display: flex;
-  flex: 1;
-  overflow: hidden;
-}
-
-/* Left Sidebar */
-.sidebar {
-  width: 240px;
-  background-color: var(--bg-secondary);
-  border-right: 1px solid var(--border-color);
-  display: flex;
-  flex-direction: column;
-  z-index: 10;
-  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.sidebar.collapsed {
-  width: 72px;
-}
-
-.sidebar.collapsed .side-nav {
-  padding: 1rem 0.5rem;
-}
-
-.sidebar.collapsed .nav-link {
-  padding: 0.75rem 0;
-  justify-content: center;
-}
-
-.side-nav {
-  padding: 1rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.nav-link {
-  display: flex;
-  align-items: center;
-  padding: 0.75rem;
-  color: var(--text-secondary);
-  text-decoration: none;
-  border-radius: 8px;
-  font-weight: 500;
-  font-size: 0.95rem;
-  white-space: nowrap;
-  transition: all 0.2s;
-}
-
-.nav-icon-wrapper {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 40px;
-}
-
-.nav-text {
-  margin-left: 0.25rem;
-  transition: opacity 0.2s;
-}
-
-.sidebar.collapsed .nav-text {
-  opacity: 0;
-  pointer-events: none;
-}
-
-.nav-link:hover {
-  background-color: var(--bg-primary);
-  color: var(--text-primary);
-}
-
-.nav-link.active {
-  background-color: #eff6ff; /* Light theme active bg */
-  color: #2563eb;
-}
-
-.dark .nav-link.active {
-  background-color: rgba(59, 130, 246, 0.1);
-  color: var(--primary-blue);
-}
-
-/* Content Area */
-.content-area {
-  flex: 1;
-  overflow-y: auto;
-  background-color: var(--bg-primary);
-}
-
-.content-wrapper {
-  padding: 2rem;
-}
+/* Only keeping structural-only or non-tailwind logic if absolutely needed, but here we can remove all */
 </style>
 
