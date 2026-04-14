@@ -64,29 +64,32 @@ jobs:
           path: ./dist
 
       - name: Ensure target directory exists on server
-        uses: appleboy/ssh-action@master
+        uses: appleboy/ssh-action@v1.2.0
         with:
           host: ${{ secrets.FRONTEND_HOST }}
           username: ${{ secrets.FRONTEND_USER }}
           key: ${{ secrets.SERVER_SSH_KEY }}
+          timeout: 60s
           script: |
              mkdir -p /home/${{ secrets.FRONTEND_USER }}/app/frontend
 
       - name: Copy frontend dist to server
-        uses: appleboy/scp-action@master
+        uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.FRONTEND_HOST }}
           username: ${{ secrets.FRONTEND_USER }}
           key: ${{ secrets.SERVER_SSH_KEY }}
+          timeout: 60s
           source: "dist/*"
           target: "/home/${{ secrets.FRONTEND_USER }}/app/frontend"
 
       - name: Configure Nginx & Reload
-        uses: appleboy/ssh-action@master
+        uses: appleboy/ssh-action@v1.2.0
         with:
           host: ${{ secrets.FRONTEND_HOST }}
           username: ${{ secrets.FRONTEND_USER }}
           key: ${{ secrets.SERVER_SSH_KEY }}
+          timeout: 60s
           script: |
             DOMAIN="watch.dongyuhan.com"
             CERT_DIR="/etc/letsencrypt/live/$DOMAIN"

@@ -1,54 +1,72 @@
-# .
+# SvcWatch Frontend 📊
 
-This template should help get you started developing with Vue 3 in Vite.
+The frontend of SvcWatch is a high-performance, real-time analytics dashboard built with **Vue 3**, **Vite**, and **TypeScript**. It visualizes monitoring data from the Go backend, providing insights into traffic, latency, and error rates.
 
-## Recommended IDE Setup
+## ✨ Features
 
-[VS Code](https://code.visualstudio.com/) + [Vue (Official)](https://marketplace.visualstudio.com/items?itemName=Vue.volar) (and disable Vetur).
+- **Real-time Visualization**: Interactive charts for QPS and status distributions.
+- **Modern UI**: Built with **Tailwind CSS 4** for a sleek, responsive experience.
+- **Dark Mode Support**: Seamless transition between light and dark themes.
+- **Secure Authentication**: Integration with the Passport service for protected monitoring views.
 
-## Recommended Browser Setup
+## 🛠️ Tech Stack
 
-- Chromium-based browsers (Chrome, Edge, Brave, etc.):
-  - [Vue.js devtools](https://chromewebstore.google.com/detail/vuejs-devtools/nhdogjmejiglipccpnnnanhbledajbpd)
-  - [Turn on Custom Object Formatter in Chrome DevTools](http://bit.ly/object-formatters)
-- Firefox:
-  - [Vue.js devtools](https://addons.mozilla.org/en-US/firefox/addon/vue-js-devtools/)
-  - [Turn on Custom Object Formatter in Firefox DevTools](https://fxdx.dev/firefox-devtools-custom-object-formatters/)
+- **Framework**: Vue 3 (Composition API)
+- **Build Tool**: Vite
+- **Styling**: Tailwind CSS 4
+- **State Management**: Pinia
+- **Language**: TypeScript
 
-## Type Support for `.vue` Imports in TS
+## 🚀 Getting Started
 
-TypeScript cannot handle type information for `.vue` imports by default, so we replace the `tsc` CLI with `vue-tsc` for type checking. In editors, we need [Volar](https://marketplace.visualstudio.com/items?itemName=Vue.volar) to make the TypeScript language service aware of `.vue` types.
+### Prerequisites
 
-## Customize configuration
+- Node.js (v20 or higher)
+- npm
 
-See [Vite Configuration Reference](https://vite.dev/config/).
+### Installation
 
-## Project Setup
+```bash
+# Navigate to the frontend directory
+cd frontend
 
-```sh
+# Install dependencies
 npm install
 ```
 
-### Compile and Hot-Reload for Development
+### Development
 
-```sh
+```bash
+# Run the development server
 npm run dev
 ```
 
-### Type-Check, Compile and Minify for Production
+The app will be available at `http://localhost:5173`.
 
-```sh
+### Production Build
+
+```bash
+# Type-check and build for production
 npm run build
 ```
 
-### Run Unit Tests with [Vitest](https://vitest.dev/)
+The output will be in the `dist/` directory.
 
-```sh
-npm run test:unit
-```
+## 📦 Deployment
 
-### Lint with [ESLint](https://eslint.org/)
+This project uses GitHub Actions for automated deployment. The workflow is defined in `.github/workflows/deploy-frontend.yml`.
 
-```sh
-npm run lint
-```
+### Required GitHub Secrets
+
+To deploy properly, ensure the following secrets are configured in your GitHub repository:
+
+- `SERVER_SSH_KEY`: Private SSH key for server access.
+- `FRONTEND_HOST`: The IP address or hostname of your frontend server.
+- `FRONTEND_USER`: The SSH username (e.g., `ubuntu`).
+
+### Target Server Setup
+
+The deployment script expects:
+- Nginx installed and configured as a reverse proxy.
+- SSL certificates managed by Certbot (at `watch.dongyuhan.com`).
+- The app directory at `/home/<user>/app/frontend`.
