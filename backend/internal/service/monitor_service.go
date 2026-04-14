@@ -180,13 +180,43 @@ func (s *MonitorService) GetTimeSeriesStats(metric, startTime, endTime string, s
 	}
 
 	duration := endT.Sub(startT)
-
-	// Calculate exact interval required to get around 20 points
-	intervalSec := duration.Seconds() / 20
+	numPoints := 20
+	intervalSec := math.Floor(duration.Seconds() / float64(numPoints))
 	if intervalSec < 1 {
 		intervalSec = 1
 	}
+	interval := time.Duration(intervalSec) * time.Second
 
-	return s.store.GetTimeSeries(tableNames, metric, fmt.Sprintf("%.0f", intervalSec), startT, endT)
+	// Fetch raw points from storage
+	result, err := s.store.GetTimeSeries(tableNames, metric, fmt.Sprintf("%.0f", interval.Seconds()), startT, endT)
+	if err != nil {
+		return nil, err
+	}
+
+	// Post-process to ensure exactly 20 points
+	// 1. Create a map of existing points for quick lookup
+	pointMap := make(map[string]float64)
+	for _, p := range result.Points {
+		pointMap[p.Timestamp] = p.Value
+	}
+
+	finalPoints := make([]storage.TimeSeriesPoint, 0, numPoints)
+	
+	// 2. Generate exactly 20 points based on startT and interval
+	// Since SQL grouping is now relative to startT, they should match perfectly.
+	for i := 0; i < numPoints; i++ {
+		bucketT := startT.Add(time.Duration(i) * interval)
+		tsKey := bucketT.Format("2006-01-02T15:04:05Z")
+		
+		val := pointMap[tsKey]
+		finalPoints = append(finalPoints, storage.TimeSeriesPoint{
+			Timestamp: bucketT.Format(time.RFC3339),
+			Value:     val,
+		})
+	}
+
+	result.Points = finalPoints
+	result.Interval = fmt.Sprintf("%.0fs", interval.Seconds())
+	return result, nil
 }
 

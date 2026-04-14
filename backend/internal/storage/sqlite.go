@@ -364,10 +364,10 @@ func (s *SqliteStorage) GetTimeSeries(tableNames []string, metric string, interv
 	} else if interval == "1M" {
 		// Group by the first day of the month
 		timeExpr = "strftime('%Y-%m-01T00:00:00Z', time_local)"
-	} else {
 		// Generic math-based rounding for other intervals
-		// We use CAST to ensure integer division for clean buckets
-		timeExpr = fmt.Sprintf("strftime('%%Y-%%m-%%dT%%H:%%M:%%SZ', (CAST(strftime('%%s', time_local) AS INTEGER) / %.0f) * %.0f, 'unixepoch')", intervalSec, intervalSec)
+		// We make the rounding relative to startTime so that buckets align perfectly with the request
+		startUnix := startTime.Unix()
+		timeExpr = fmt.Sprintf("strftime('%%Y-%%m-%%dT%%H:%%M:%%SZ', ((CAST(strftime('%%s', time_local) AS INTEGER) - %d) / %.0f) * %.0f + %d, 'unixepoch')", startUnix, intervalSec, intervalSec, startUnix)
 	}
 
 	// Construct UNION query for multiple tables
