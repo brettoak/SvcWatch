@@ -122,6 +122,7 @@ jobs:
           host: ${{ matrix.server.host }}
           username: ${{ matrix.server.user }}
           key: ${{ secrets.SERVER_SSH_KEY }}
+          timeout: 120
           source: "svcwatch"
           target: "/home/${{ matrix.server.user }}/app"
 
