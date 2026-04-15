@@ -180,7 +180,7 @@ func (s *MonitorService) GetTimeSeriesStats(metric, startTime, endTime string, s
 	}
 
 	duration := endT.Sub(startT)
-	numPoints := 20
+	numPoints := 30
 	intervalSec := math.Floor(duration.Seconds() / float64(numPoints))
 	if intervalSec < 1 {
 		intervalSec = 1
@@ -202,7 +202,7 @@ func (s *MonitorService) GetTimeSeriesStats(metric, startTime, endTime string, s
 
 	finalPoints := make([]storage.TimeSeriesPoint, 0, numPoints)
 	
-	// 2. Generate exactly 20 points based on startT and interval
+	// 2. Generate exactly 30 points based on startT and interval
 	// Since SQL grouping is now relative to startT, they should match perfectly.
 	for i := 0; i < numPoints; i++ {
 		bucketT := startT.Add(time.Duration(i) * interval)
