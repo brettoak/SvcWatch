@@ -205,7 +205,7 @@ func (ctrl *MonitorController) LogsHandler(c *gin.Context) {
 
 // TimeSeriesHandler Get trend data for charts
 // @Summary Get trend data for charts
-// @Description Get time-series data for a metric (qps, error_rate, latency_p99, bandwidth). Range cannot exceed 1 year. Returns max 20 points.
+// @Description Get time-series data for a metric (qps, error_rate, latency_p99, bandwidth). Range cannot exceed 1 year. Returns exactly 30 points.
 // @Tags Monitor
 // @Produce json
 // @Security BearerAuth
