@@ -25,7 +25,7 @@ const dashboardData = ref<DashboardData | null>(null)
 const distributionData = ref<DistributionData | null>(null)
 const timeSeriesData = ref<TimeSeriesData | null>(null)
 
-const selectedMetric = ref('qps')
+const selectedMetric = ref('bandwidth')
 const metricOptions = [
   { label: 'QPS', value: 'qps' },
   { label: 'Error Rate', value: 'error_rate' },
