@@ -59,8 +59,8 @@ const fetchLogs = async () => {
     
     const resp = await getLogs(params)
     if (resp.data && resp.data.code === 200) {
-      logs.value = resp.data.data.logs
-      total.value = resp.data.data.total
+      logs.value = resp.data.data.logs || []
+      total.value = resp.data.data.total || 0
     }
   } catch (err) {
     console.error('Failed to fetch logs', err)

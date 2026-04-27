@@ -435,11 +435,11 @@ const getTsMaxVal = () => {
           >
             <div class="flex items-center gap-2 mb-1 border-b border-white/10 pb-1">
               <span class="w-2 h-2 rounded-full bg-primary-blue"></span>
-              <span class="font-bold text-white/90">{{ tsBars[hoveredBarIdx].fullTs }}</span>
+              <span class="font-bold text-white/90">{{ tsBars[hoveredBarIdx]?.fullTs }}</span>
             </div>
             <div class="flex justify-between items-baseline">
               <span class="text-white/50 uppercase text-[0.6rem] font-bold tracking-wider">{{ selectedMetric.replace('_', ' ') }}</span>
-              <span class="text-[0.9rem] font-black text-white">{{ formatBarTooltip(tsBars[hoveredBarIdx].val) }}</span>
+              <span class="text-[0.9rem] font-black text-white">{{ formatBarTooltip(tsBars[hoveredBarIdx]?.val || 0) }}</span>
             </div>
           </div>
           <div v-else class="flex-1 flex flex-col items-center justify-center text-text-secondary text-sm italic py-10">
