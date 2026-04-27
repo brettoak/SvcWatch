@@ -124,6 +124,49 @@ export interface TimeSeriesResponse {
   }
 }
 
+export interface Log {
+  id: number
+  time: string
+  remote_addr: string
+  method: string
+  path: string
+  protocol: string
+  status: number
+  body_bytes_sent: number
+  referer: string
+  user_agent: string
+  request_time: number
+  upstream_response_time: string
+  source_id: string
+}
+
+export interface LogsResponse {
+  code: number
+  message: string
+  data: {
+    total: number
+    page: number
+    size: number
+    logs: Log[]
+  }
+}
+
+export interface LogQueryParams {
+  page?: number
+  size?: number
+  start_time?: string
+  end_time?: string
+  source_id?: string
+  ip?: string
+  method?: string
+  status?: number
+  status_class?: string
+  path_keyword?: string
+  min_latency?: number
+  max_latency?: number
+  sort?: string
+}
+
 export const getDashboardOverview = (startTime: string, endTime: string) => {
   return api.get<DashboardOverviewResponse>('/overview', {
     params: {
@@ -150,6 +193,10 @@ export const getTimeSeriesStats = (metric: string, startTime: string, endTime: s
       end_time: endTime,
     },
   })
+}
+
+export const getLogs = (params: LogQueryParams) => {
+  return api.get<LogsResponse>('/logs', { params })
 }
 
 export const uploadAvatar = (file: File) => {
