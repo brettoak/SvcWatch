@@ -372,9 +372,9 @@ const getTsMaxVal = () => {
       </div>
     </div>
 
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 items-stretch">
       <!-- Timeseries Bar Chart Card -->
-      <div class="lg:col-span-2 relative bg-bg-secondary rounded-2xl p-7 shadow-card border border-border-color flex flex-col gap-5 transition-all duration-300 overflow-hidden z-10" :class="{ 'opacity-50 pointer-events-none': loading || tsLoading }">
+      <div class="lg:col-span-2 relative bg-bg-secondary rounded-2xl p-7 shadow-card border border-border-color flex flex-col gap-5 transition-all duration-300 overflow-hidden z-10 h-full" :class="{ 'opacity-50 pointer-events-none': loading || tsLoading }">
         <div class="flex flex-col gap-4 sm:flex-row sm:justify-between sm:items-center">
           <h3 class="text-text-secondary text-[0.75rem] font-bold uppercase tracking-widest flex justify-between items-center">Requests Over Time<span class="text-lg opacity-80 ml-2">📈</span></h3>
           <div class="flex bg-bg-primary rounded-lg p-1 border border-border-color shrink-0">
@@ -455,11 +455,11 @@ const getTsMaxVal = () => {
       </div>
 
       <!-- Status Code Distribution Card -->
-      <div class="lg:col-span-1 relative bg-bg-secondary rounded-2xl p-7 shadow-card border border-border-color flex flex-col gap-5 transition-all duration-300 overflow-hidden z-10" :class="{ 'opacity-50 pointer-events-none': loading }">
+      <div class="lg:col-span-1 relative bg-bg-secondary rounded-2xl p-7 shadow-card border border-border-color flex flex-col gap-5 transition-all duration-300 overflow-hidden z-10 h-full" :class="{ 'opacity-50 pointer-events-none': loading }">
          <h3 class="text-text-secondary text-[0.75rem] font-bold uppercase tracking-widest flex justify-between items-center">Status Distribution<span class="text-lg opacity-80 ml-2">📊</span></h3>
-       <div class="flex flex-col gap-8 items-center">
-          <!-- Donut Chart Top -->
-          <div class="flex justify-center items-center py-2">
+       <div class="flex flex-col xl:flex-row gap-6 items-center flex-1">
+          <!-- Donut Chart Left (on large) / Top (on small) -->
+          <div class="flex justify-center items-center py-2 shrink-0">
             <svg :width="chartSize" :height="chartSize" viewBox="0 0 180 180" class="filter drop-shadow-md">
               <circle 
                 :cx="center" :cy="center" :r="radius" 
@@ -483,23 +483,22 @@ const getTsMaxVal = () => {
             </svg>
           </div>
 
-          <!-- Detailed List Bottom -->
-          <div class="flex flex-col gap-5 w-full">
-              <div v-for="item in distributionData?.distribution" :key="item.code_class" class="flex flex-col gap-2">
-                 <div class="flex items-center gap-3">
-                    <div class="flex items-center gap-2 flex-1">
+          <!-- Detailed List Right (on large) / Bottom (on small) -->
+          <div class="flex flex-col gap-4 w-full flex-1">
+              <div v-for="item in distributionData?.distribution" :key="item.code_class" class="flex flex-col gap-1.5">
+                 <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-2">
                        <span class="w-2.5 h-2.5 rounded-full shadow-sm" :style="{ backgroundColor: getStatusColor(item.code_class) }"></span>
-                       <span class="text-[0.75rem] font-bold text-text-primary min-w-[30px]">{{ item.code_class }}</span>
-                       <span class="text-[0.65rem] font-bold text-text-secondary uppercase tracking-tight">{{ getStatusLabel(item.code_class) }}</span>
+                       <span class="text-[0.75rem] font-bold text-text-primary">{{ item.code_class }}</span>
                     </div>
-                    <span class="text-[0.8rem] font-extrabold text-text-primary">{{ (item.percentage || 0).toFixed(2) }}%</span>
+                    <span class="text-[0.75rem] font-extrabold text-text-primary">{{ (item.percentage || 0).toFixed(1) }}%</span>
                  </div>
                  <div class="h-1.5 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden shadow-inner">
                     <div class="h-full rounded-full transition-all duration-700 ease-out" :style="{ width: item.percentage + '%', backgroundColor: getStatusColor(item.code_class) }"></div>
                  </div>
               </div>
               <div v-if="!distributionData?.distribution?.length" class="flex flex-col items-center justify-center text-text-secondary text-sm italic py-4">
-                No data available for this range
+                No data available
               </div>
           </div>
        </div>
