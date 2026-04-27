@@ -8,6 +8,10 @@ const total = ref(0)
 const loading = ref(false)
 const showAdvanced = ref(false)
 
+const toggleAdvanced = () => {
+  showAdvanced.value = !showAdvanced.value
+}
+
 const formatToDateTimeLocal = (date: Date) => {
   const pad = (n: number) => n.toString().padStart(2, '0')
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`
@@ -174,11 +178,11 @@ const formatBytes = (bytes: number) => {
       <!-- Advanced Toggle -->
       <button 
         type="button"
-        @click="showAdvanced = !showAdvanced" 
+        @click.stop.prevent="toggleAdvanced" 
         class="text-[0.75rem] font-bold text-primary-blue flex items-center gap-1 hover:underline w-fit bg-transparent border-none cursor-pointer p-1"
       >
-        {{ showAdvanced ? 'Hide Advanced Filters' : 'Show Advanced Filters' }}
-        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" :class="showAdvanced ? 'rotate-180' : ''" class="transition-transform"><polyline points="6 9 12 15 18 9"></polyline></svg>
+        <span class="pointer-events-none">{{ showAdvanced ? 'Hide Advanced Filters' : 'Show Advanced Filters' }}</span>
+        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" :class="showAdvanced ? 'rotate-180' : ''" class="transition-transform pointer-events-none"><polyline points="6 9 12 15 18 9"></polyline></svg>
       </button>
 
       <div v-show="showAdvanced" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 animate-slide-in">
