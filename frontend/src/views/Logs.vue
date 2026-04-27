@@ -59,7 +59,7 @@ const fetchLogs = async () => {
     
     const resp = await getLogs(params)
     if (resp.data && resp.data.code === 200) {
-      logs.value = resp.data.data.logs || []
+      logs.value = resp.data.data.items || []
       total.value = resp.data.data.total || 0
     }
   } catch (err) {
@@ -126,6 +126,17 @@ const formatBytes = (bytes: number) => {
   const sizes = ['B', 'KB', 'MB', 'GB']
   const i = Math.floor(Math.log(bytes) / Math.log(k))
   return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
+}
+
+const parseMethod = (request: string) => {
+  if (!request) return '-'
+  return request.split(' ')[0] || '-'
+}
+
+const parsePath = (request: string) => {
+  if (!request) return '-'
+  const parts = request.split(' ')
+  return parts.length > 1 ? parts[1] : request
 }
 </script>
 
@@ -269,36 +280,36 @@ const formatBytes = (bytes: number) => {
             <tr v-else-if="logs.length === 0" class="text-center italic text-text-secondary py-10">
               <td colspan="7" class="px-6 py-20">No logs found matching criteria</td>
             </tr>
-            <tr v-else v-for="log in logs" :key="log.id" class="hover:bg-bg-primary/30 transition-colors group">
-              <td class="px-6 py-4 text-xs font-medium text-text-secondary whitespace-nowrap">{{ new Date(log.time).toLocaleString() }}</td>
-              <td class="px-6 py-4 text-xs font-bold text-text-primary">{{ log.remote_addr }}</td>
+            <tr v-else v-for="(log, idx) in logs" :key="idx" class="hover:bg-bg-primary/30 transition-colors group">
+              <td class="px-6 py-4 text-xs font-medium text-text-secondary whitespace-nowrap">{{ new Date(log.entry.time_local).toLocaleString() }}</td>
+              <td class="px-6 py-4 text-xs font-bold text-text-primary">{{ log.entry.remote_addr }}</td>
               <td class="px-6 py-4">
                 <span class="px-2 py-0.5 rounded text-[0.65rem] font-black uppercase tracking-tighter" 
                   :class="{
-                    'bg-emerald-500/10 text-emerald-500': log.method === 'GET',
-                    'bg-blue-500/10 text-blue-500': log.method === 'POST',
-                    'bg-amber-500/10 text-amber-500': log.method === 'PUT',
-                    'bg-red-500/10 text-red-500': log.method === 'DELETE',
-                    'bg-slate-500/10 text-slate-500': !['GET','POST','PUT','DELETE'].includes(log.method)
+                    'bg-emerald-500/10 text-emerald-500': parseMethod(log.entry.request) === 'GET',
+                    'bg-blue-500/10 text-blue-500': parseMethod(log.entry.request) === 'POST',
+                    'bg-amber-500/10 text-amber-500': parseMethod(log.entry.request) === 'PUT',
+                    'bg-red-500/10 text-red-500': parseMethod(log.entry.request) === 'DELETE',
+                    'bg-slate-500/10 text-slate-500': !['GET','POST','PUT','DELETE'].includes(parseMethod(log.entry.request))
                   }">
-                  {{ log.method }}
+                  {{ parseMethod(log.entry.request) }}
                 </span>
               </td>
               <td class="px-6 py-4">
-                <div class="text-xs text-text-primary font-medium max-w-[300px] truncate" :title="log.path">{{ log.path }}</div>
+                <div class="text-xs text-text-primary font-medium max-w-[300px] truncate" :title="parsePath(log.entry.request)">{{ parsePath(log.entry.request) }}</div>
               </td>
               <td class="px-6 py-4 text-center">
-                <span class="px-2 py-1 rounded-md text-[0.75rem] font-black" :class="getStatusColor(log.status)">
-                  {{ log.status }}
+                <span class="px-2 py-1 rounded-md text-[0.75rem] font-black" :class="getStatusColor(log.entry.status)">
+                  {{ log.entry.status }}
                 </span>
               </td>
               <td class="px-6 py-4 text-right">
-                <span class="text-xs font-bold" :class="log.request_time > 500 ? 'text-red-500' : 'text-text-primary'">
-                  {{ (log.request_time * 1000).toFixed(0) }} ms
+                <span class="text-xs font-bold" :class="log.entry.request_time > 0.5 ? 'text-red-500' : 'text-text-primary'">
+                  {{ (log.entry.request_time * 1000).toFixed(0) }} ms
                 </span>
               </td>
               <td class="px-6 py-4 text-right text-xs text-text-secondary font-medium">
-                {{ formatBytes(log.body_bytes_sent) }}
+                {{ formatBytes(log.entry.body_bytes_sent) }}
               </td>
             </tr>
           </tbody>

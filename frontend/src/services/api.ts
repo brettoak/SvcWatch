@@ -124,20 +124,21 @@ export interface TimeSeriesResponse {
   }
 }
 
-export interface Log {
-  id: number
-  time: string
+export interface LogEntry {
   remote_addr: string
-  method: string
-  path: string
-  protocol: string
+  remote_user: string
+  time_local: string
+  request: string
   status: number
   body_bytes_sent: number
-  referer: string
-  user_agent: string
+  http_referer: string
+  http_user_agent: string
   request_time: number
-  upstream_response_time: string
+}
+
+export interface Log {
   source_id: string
+  entry: LogEntry
 }
 
 export interface LogsResponse {
@@ -147,7 +148,7 @@ export interface LogsResponse {
     total: number
     page: number
     size: number
-    logs: Log[]
+    items: Log[]
   }
 }
 
