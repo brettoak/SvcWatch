@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch, onMounted } from 'vue'
+import { ref, watch, onMounted, computed } from 'vue'
 import { getDashboardOverview, getStatusDistribution, getTimeSeriesStats } from '@/services/api'
 import type { DashboardOverviewResponse, StatusDistributionResponse, TimeSeriesResponse } from '@/services/api'
 
@@ -26,6 +26,15 @@ const distributionData = ref<DistributionData | null>(null)
 const timeSeriesData = ref<TimeSeriesData | null>(null)
 
 const selectedMetric = ref('bandwidth')
+const hoveredBarIdx = ref<number | null>(null)
+const mouseX = ref(0)
+const mouseY = ref(0)
+
+const handleMouseMove = (e: MouseEvent) => {
+  mouseX.value = e.clientX
+  mouseY.value = e.clientY
+}
+
 const metricOptions = [
   { label: 'QPS', value: 'qps' },
   { label: 'Error Rate', value: 'error_rate' },
@@ -223,7 +232,7 @@ const getSuccessRate = () => {
 }
 
 // Bar Chart Helpers
-const getTsBars = () => {
+const tsBars = computed(() => {
   if (!timeSeriesData.value?.points || timeSeriesData.value.points.length === 0) return []
   const pts = timeSeriesData.value.points
   const maxVal = Math.max(...pts.map(p => p.value), 1)
@@ -241,10 +250,11 @@ const getTsBars = () => {
       h: Math.max(h, 2), // minimum height 2px to be visible
       val: p.value,
       // Format time based on interval roughly
-      ts: new Date(p.ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      ts: new Date(p.ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      fullTs: new Date(p.ts).toLocaleString()
     }
   })
-}
+})
 
 const formatBarTooltip = (val: number) => {
   if (selectedMetric.value === 'bandwidth') return Math.round(val / 1024) + ' KB/s'
@@ -380,7 +390,7 @@ const getTsMaxVal = () => {
           </div>
         </div>
         <div class="relative w-full h-[180px] mt-4 flex flex-col">
-          <svg v-if="timeSeriesData?.points?.length" viewBox="0 0 600 170" class="w-full h-full overflow-visible" preserveAspectRatio="none">
+          <svg v-if="timeSeriesData?.points?.length" viewBox="0 0 600 170" class="w-full h-full overflow-visible" preserveAspectRatio="none" @mousemove="handleMouseMove">
             <!-- Grid lines -->
             <g class="stroke-slate-200/50 dark:stroke-slate-700/50">
               <line x1="0" y1="42.5" x2="600" y2="42.5" stroke-width="1"/>
@@ -392,7 +402,7 @@ const getTsMaxVal = () => {
             <!-- Bars -->
             <g>
               <rect
-                v-for="(bar, idx) in getTsBars()" 
+                v-for="(bar, idx) in tsBars" 
                 :key="idx"
                 :x="bar.x"
                 :y="bar.y"
@@ -402,8 +412,9 @@ const getTsMaxVal = () => {
                 class="hover:brightness-125 transition-all duration-300 cursor-pointer"
                 rx="2"
                 ry="2"
+                @mouseenter="hoveredBarIdx = idx"
+                @mouseleave="hoveredBarIdx = null"
               >
-                <title>{{ bar.ts }} - {{ formatBarTooltip(bar.val) }}</title>
               </rect>
             </g>
 
@@ -415,14 +426,30 @@ const getTsMaxVal = () => {
               </linearGradient>
             </defs>
           </svg>
+          
+          <!-- Custom Tooltip -->
+          <div 
+            v-if="hoveredBarIdx !== null && tsBars[hoveredBarIdx]" 
+            class="fixed pointer-events-none z-[100] bg-slate-900/90 text-white px-3 py-2 rounded-lg text-[0.7rem] shadow-xl backdrop-blur-md border border-white/10 flex flex-col gap-0.5 min-w-[120px] transition-opacity duration-200"
+            :style="{ left: mouseX + 15 + 'px', top: mouseY + 15 + 'px' }"
+          >
+            <div class="flex items-center gap-2 mb-1 border-b border-white/10 pb-1">
+              <span class="w-2 h-2 rounded-full bg-primary-blue"></span>
+              <span class="font-bold text-white/90">{{ tsBars[hoveredBarIdx].fullTs }}</span>
+            </div>
+            <div class="flex justify-between items-baseline">
+              <span class="text-white/50 uppercase text-[0.6rem] font-bold tracking-wider">{{ selectedMetric.replace('_', ' ') }}</span>
+              <span class="text-[0.9rem] font-black text-white">{{ formatBarTooltip(tsBars[hoveredBarIdx].val) }}</span>
+            </div>
+          </div>
           <div v-else class="flex-1 flex flex-col items-center justify-center text-text-secondary text-sm italic py-10">
             No timeseries data available
           </div>
           
           <div v-if="timeSeriesData?.points?.length" class="flex justify-between items-center text-[0.65rem] text-text-secondary font-bold uppercase tracking-tight mt-3 px-1">
-             <span>{{ getTsBars()[0]?.ts || '' }}</span>
-             <span>{{ getTsBars()[Math.floor(getTsBars().length / 2)]?.ts || '' }}</span>
-             <span>{{ getTsBars()[getTsBars().length - 1]?.ts || '' }}</span>
+             <span>{{ tsBars[0]?.ts || '' }}</span>
+             <span>{{ tsBars[Math.floor(tsBars.length / 2)]?.ts || '' }}</span>
+             <span>{{ tsBars[tsBars.length - 1]?.ts || '' }}</span>
           </div>
         </div>
       </div>
