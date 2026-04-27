@@ -172,12 +172,16 @@ const formatBytes = (bytes: number) => {
       </div>
 
       <!-- Advanced Toggle -->
-      <button @click="showAdvanced = !showAdvanced" class="text-[0.75rem] font-bold text-primary-blue flex items-center gap-1 hover:underline w-fit">
+      <button 
+        type="button"
+        @click="showAdvanced = !showAdvanced" 
+        class="text-[0.75rem] font-bold text-primary-blue flex items-center gap-1 hover:underline w-fit bg-transparent border-none cursor-pointer p-1"
+      >
         {{ showAdvanced ? 'Hide Advanced Filters' : 'Show Advanced Filters' }}
         <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" :class="showAdvanced ? 'rotate-180' : ''" class="transition-transform"><polyline points="6 9 12 15 18 9"></polyline></svg>
       </button>
 
-      <div v-if="showAdvanced" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 animate-slide-in">
+      <div v-show="showAdvanced" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 animate-slide-in">
         <div class="flex flex-col gap-1.5">
           <label class="text-[0.7rem] font-bold uppercase tracking-widest text-text-secondary ml-1">HTTP Method</label>
           <select v-model="filters.method" class="bg-bg-primary border border-border-color rounded-xl px-4 py-2.5 text-sm outline-none focus:border-primary-blue transition-all">
