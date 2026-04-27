@@ -185,7 +185,8 @@ const formatBytes = (bytes: number) => {
         <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" :class="showAdvanced ? 'rotate-180' : ''" class="transition-transform pointer-events-none"><polyline points="6 9 12 15 18 9"></polyline></svg>
       </button>
 
-      <div v-show="showAdvanced" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 animate-slide-in">
+      <Transition name="slide">
+        <div v-if="showAdvanced" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <div class="flex flex-col gap-1.5">
           <label class="text-[0.7rem] font-bold uppercase tracking-widest text-text-secondary ml-1">HTTP Method</label>
           <select v-model="filters.method" class="bg-bg-primary border border-border-color rounded-xl px-4 py-2.5 text-sm outline-none focus:border-primary-blue transition-all">
@@ -241,6 +242,7 @@ const formatBytes = (bytes: number) => {
           </select>
         </div>
       </div>
+      </Transition>
     </div>
 
     <!-- Logs Table Card -->
@@ -345,5 +347,17 @@ input::-webkit-inner-spin-button {
 /* Firefox */
 input[type=number] {
   -moz-appearance: textfield;
+}
+
+/* Transition for Advanced Filters */
+.slide-enter-active,
+.slide-leave-active {
+  transition: all 0.3s ease-out;
+}
+
+.slide-enter-from,
+.slide-leave-to {
+  opacity: 0;
+  transform: translateY(-10px);
 }
 </style>
