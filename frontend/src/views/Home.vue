@@ -7,7 +7,7 @@ type DashboardData = DashboardOverviewResponse['data']
 type DistributionData = StatusDistributionResponse['data']
 type TimeSeriesData = TimeSeriesResponse['data']
 
-const timeFilter = ref('5m')
+const timeFilter = ref('7d')
 const timeOptions = [
   { label: '5m', value: '5m' },
   { label: '30m', value: '30m' },
