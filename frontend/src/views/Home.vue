@@ -249,8 +249,14 @@ const tsBars = computed(() => {
       w: barWidth,
       h: Math.max(h, 2), // minimum height 2px to be visible
       val: p.value,
-      // Format time based on interval roughly
-      ts: new Date(p.ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      // Format time based on interval roughly, now includes date
+      ts: new Date(p.ts).toLocaleString([], { 
+        month: '2-digit', 
+        day: '2-digit', 
+        hour: '2-digit', 
+        minute: '2-digit',
+        hour12: false 
+      }),
       fullTs: new Date(p.ts).toLocaleString()
     }
   })
