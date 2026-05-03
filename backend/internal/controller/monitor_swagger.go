@@ -38,3 +38,10 @@ type StatsResponseWrapper struct {
 	Message string                 `json:"message" example:"success"`
 	Data    map[string]interface{} `json:"data"`
 }
+
+// TopPathsResponseWrapper is the Swagger representation of the Top Paths API response.
+type TopPathsResponseWrapper struct {
+	Code    int                   `json:"code" example:"200"`
+	Message string                `json:"message" example:"success"`
+	Data    []storage.TopPathItem `json:"data"`
+}

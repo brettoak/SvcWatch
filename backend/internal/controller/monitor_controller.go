@@ -236,3 +236,39 @@ func (ctrl *MonitorController) TimeSeriesHandler(c *gin.Context) {
 	utils.Success(c, result)
 }
 
+// TopPathsRequest represents query parameters for the top paths endpoint.
+type TopPathsRequest struct {
+	StartTime string `form:"start_time" binding:"required"`
+	EndTime   string `form:"end_time" binding:"required"`
+	SourceID  string `form:"source_id"`
+	Limit     int    `form:"limit,default=10" binding:"min=1,max=100"`
+}
+
+// TopPathsHandler Get top requested paths
+// @Summary Get top requested paths
+// @Description Get the top requested interface URIs along with their request count, average response time, and error rate.
+// @Tags Monitor
+// @Produce json
+// @Security BearerAuth
+// @Param start_time query string true "Start Time" example(2026-03-19 00:00:00)
+// @Param end_time query string true "End Time" example(2026-03-20 00:00:00)
+// @Param source_id query string false "Log File or Source ID"
+// @Param limit query int false "Number of top paths to return (default 10, max 100)" default(10)
+// @Success 200 {object} TopPathsResponseWrapper
+// @Router /api/v1/sev/stats/top-paths [get]
+func (ctrl *MonitorController) TopPathsHandler(c *gin.Context) {
+	var req TopPathsRequest
+	if err := c.ShouldBindQuery(&req); err != nil {
+		utils.Error(c, 400, err.Error())
+		return
+	}
+
+	result, err := ctrl.svc.GetTopPaths(req.StartTime, req.EndTime, req.SourceID, req.Limit)
+	if err != nil {
+		utils.Error(c, 500, err.Error())
+		return
+	}
+
+	utils.Success(c, result)
+}
+

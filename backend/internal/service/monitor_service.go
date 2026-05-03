@@ -220,3 +220,35 @@ func (s *MonitorService) GetTimeSeriesStats(metric, startTime, endTime string, s
 	return result, nil
 }
 
+// GetTopPaths retrieves the top requested paths and their statistics.
+func (s *MonitorService) GetTopPaths(startTime, endTime string, sourceID string, limit int) ([]storage.TopPathItem, error) {
+	var tableNames []string
+
+	for _, monInst := range s.monitors {
+		tableName := monInst.GetTableName()
+		logPath := monInst.GetLogPath()
+		
+		if sourceID != "" && tableName != sourceID && filepath.Base(logPath) != sourceID {
+			continue
+		}
+		tableNames = append(tableNames, tableName)
+	}
+
+	if len(tableNames) == 0 {
+		return []storage.TopPathItem{}, nil
+	}
+
+	startT, endT, err := utils.ParseAndValidateRange(startTime, endTime, utils.MaxTimeRangeLimit)
+	if err != nil {
+		return nil, err
+	}
+
+	if limit <= 0 {
+		limit = 10
+	} else if limit > 100 {
+		limit = 100
+	}
+
+	return s.store.GetTopPaths(tableNames, startT, endT, limit)
+}
+

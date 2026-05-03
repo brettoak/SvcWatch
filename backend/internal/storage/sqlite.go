@@ -445,6 +445,80 @@ func (s *SqliteStorage) GetTimeSeries(tableNames []string, metric string, interv
 	}, nil
 }
 
+// TopPathItem represents a single top path record.
+type TopPathItem struct {
+	URI             string  `json:"uri"`
+	RequestCount    int     `json:"request_count"`
+	AvgResponseTime float64 `json:"avg_response_time"`
+	ErrorRate       float64 `json:"error_rate"`
+}
+
+// GetTopPaths retrieves the top N requested paths across multiple tables.
+func (s *SqliteStorage) GetTopPaths(tableNames []string, startTime, endTime time.Time, limit int) ([]TopPathItem, error) {
+	if len(tableNames) == 0 {
+		return []TopPathItem{}, nil
+	}
+
+	var unions []string
+	var args []interface{}
+	for _, tableName := range tableNames {
+		unions = append(unions, fmt.Sprintf("SELECT request, status, request_time FROM %s WHERE time_local >= ? AND time_local <= ?", tableName))
+		args = append(args, startTime, endTime)
+	}
+	unionQuery := strings.Join(unions, " UNION ALL ")
+
+	query := fmt.Sprintf(`
+		SELECT 
+			CASE 
+				WHEN instr(path, '?') > 0 THEN substr(path, 1, instr(path, '?') - 1)
+				ELSE path
+			END as uri,
+			COUNT(*) as request_count,
+			COALESCE(AVG(request_time), 0.0) as avg_response_time,
+			CAST(SUM(CASE WHEN status < 200 OR status >= 300 THEN 1 ELSE 0 END) AS REAL) * 100.0 / COUNT(*) as error_rate
+		FROM (
+			SELECT request_time, status,
+			CASE 
+				WHEN instr(request, ' ') > 0 AND instr(substr(request, instr(request, ' ') + 1), ' ') > 0 THEN 
+					substr(request, instr(request, ' ') + 1, instr(substr(request, instr(request, ' ') + 1), ' ') - 1)
+				WHEN instr(request, ' ') > 0 THEN 
+					substr(request, instr(request, ' ') + 1)
+				ELSE request 
+			END as path
+			FROM (%s)
+		)
+		GROUP BY uri
+		ORDER BY request_count DESC
+		LIMIT ?
+	`, unionQuery)
+
+	args = append(args, limit)
+
+	rows, err := s.db.Query(query, args...)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query top paths: %w", err)
+	}
+	defer rows.Close()
+
+	var result []TopPathItem
+	for rows.Next() {
+		var item TopPathItem
+		if err := rows.Scan(&item.URI, &item.RequestCount, &item.AvgResponseTime, &item.ErrorRate); err != nil {
+			return nil, fmt.Errorf("failed to scan top paths row: %w", err)
+		}
+		// Round floats to 2 decimal places
+		item.AvgResponseTime = math.Round(item.AvgResponseTime*100) / 100
+		item.ErrorRate = math.Round(item.ErrorRate*100) / 100
+		result = append(result, item)
+	}
+
+	if result == nil {
+		result = []TopPathItem{}
+	}
+
+	return result, nil
+}
+
 // Close closes the database connection.
 func (s *SqliteStorage) Close() error {
 	if s.db != nil {
