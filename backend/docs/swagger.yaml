@@ -1,62 +1,6 @@
 basePath: /
 definitions:
-  controller.LogsResponseWrapper:
-    properties:
-      code:
-        example: 200
-        type: integer
-      data:
-        $ref: '#/definitions/storage.LogQueryResponse'
-      message:
-        example: success
-        type: string
-    type: object
-  controller.OverviewResponseWrapper:
-    properties:
-      code:
-        example: 200
-        type: integer
-      data:
-        $ref: '#/definitions/storage.OverviewStats'
-      message:
-        example: success
-        type: string
-    type: object
-  controller.StatsResponseWrapper:
-    properties:
-      code:
-        example: 200
-        type: integer
-      data:
-        additionalProperties: true
-        type: object
-      message:
-        example: success
-        type: string
-    type: object
-  controller.StatusDistributionResponseWrapper:
-    properties:
-      code:
-        example: 200
-        type: integer
-      data:
-        $ref: '#/definitions/storage.StatusDistributionResult'
-      message:
-        example: success
-        type: string
-    type: object
-  controller.TimeSeriesResponseWrapper:
-    properties:
-      code:
-        example: 200
-        type: integer
-      data:
-        $ref: '#/definitions/storage.TimeSeriesResult'
-      message:
-        example: success
-        type: string
-    type: object
-  model.LogEntry:
+  SvcWatch_internal_model.LogEntry:
     properties:
       body_bytes_sent:
         type: integer
@@ -77,18 +21,18 @@ definitions:
       time_local:
         type: string
     type: object
-  storage.LogQueryItem:
+  SvcWatch_internal_storage.LogQueryItem:
     properties:
       entry:
-        $ref: '#/definitions/model.LogEntry'
+        $ref: '#/definitions/SvcWatch_internal_model.LogEntry'
       source_id:
         type: string
     type: object
-  storage.LogQueryResponse:
+  SvcWatch_internal_storage.LogQueryResponse:
     properties:
       items:
         items:
-          $ref: '#/definitions/storage.LogQueryItem'
+          $ref: '#/definitions/SvcWatch_internal_storage.LogQueryItem'
         type: array
       page:
         type: integer
@@ -97,28 +41,28 @@ definitions:
       total:
         type: integer
     type: object
-  storage.MetricValue:
+  SvcWatch_internal_storage.MetricValue:
     properties:
       compare_percent:
         type: number
       value:
         type: number
     type: object
-  storage.OverviewStats:
+  SvcWatch_internal_storage.OverviewStats:
     properties:
       avg_response_time:
-        $ref: '#/definitions/storage.MetricValue'
+        $ref: '#/definitions/SvcWatch_internal_storage.MetricValue'
       compare_type:
         description: e.g., "vs yesterday" or "vs previous period"
         type: string
       error_rate:
-        $ref: '#/definitions/storage.MetricValue'
+        $ref: '#/definitions/SvcWatch_internal_storage.MetricValue'
       success_rate:
-        $ref: '#/definitions/storage.MetricValue'
+        $ref: '#/definitions/SvcWatch_internal_storage.MetricValue'
       total_requests:
-        $ref: '#/definitions/storage.MetricValue'
+        $ref: '#/definitions/SvcWatch_internal_storage.MetricValue'
     type: object
-  storage.StatusDistributionEntry:
+  SvcWatch_internal_storage.StatusDistributionEntry:
     properties:
       code_class:
         type: string
@@ -127,23 +71,23 @@ definitions:
       percentage:
         type: number
     type: object
-  storage.StatusDistributionResult:
+  SvcWatch_internal_storage.StatusDistributionResult:
     properties:
       distribution:
         items:
-          $ref: '#/definitions/storage.StatusDistributionEntry'
+          $ref: '#/definitions/SvcWatch_internal_storage.StatusDistributionEntry'
         type: array
       total:
         type: integer
     type: object
-  storage.TimeSeriesPoint:
+  SvcWatch_internal_storage.TimeSeriesPoint:
     properties:
       ts:
         type: string
       value:
         type: number
     type: object
-  storage.TimeSeriesResult:
+  SvcWatch_internal_storage.TimeSeriesResult:
     properties:
       interval:
         type: string
@@ -151,15 +95,95 @@ definitions:
         type: string
       points:
         items:
-          $ref: '#/definitions/storage.TimeSeriesPoint'
+          $ref: '#/definitions/SvcWatch_internal_storage.TimeSeriesPoint'
         type: array
     type: object
-  utils.Response:
+  SvcWatch_internal_storage.TopPathItem:
+    properties:
+      avg_response_time:
+        type: number
+      error_rate:
+        type: number
+      request_count:
+        type: integer
+      uri:
+        type: string
+    type: object
+  SvcWatch_internal_utils.Response:
     properties:
       code:
         type: integer
       data: {}
       message:
+        type: string
+    type: object
+  internal_controller.LogsResponseWrapper:
+    properties:
+      code:
+        example: 200
+        type: integer
+      data:
+        $ref: '#/definitions/SvcWatch_internal_storage.LogQueryResponse'
+      message:
+        example: success
+        type: string
+    type: object
+  internal_controller.OverviewResponseWrapper:
+    properties:
+      code:
+        example: 200
+        type: integer
+      data:
+        $ref: '#/definitions/SvcWatch_internal_storage.OverviewStats'
+      message:
+        example: success
+        type: string
+    type: object
+  internal_controller.StatsResponseWrapper:
+    properties:
+      code:
+        example: 200
+        type: integer
+      data:
+        additionalProperties: true
+        type: object
+      message:
+        example: success
+        type: string
+    type: object
+  internal_controller.StatusDistributionResponseWrapper:
+    properties:
+      code:
+        example: 200
+        type: integer
+      data:
+        $ref: '#/definitions/SvcWatch_internal_storage.StatusDistributionResult'
+      message:
+        example: success
+        type: string
+    type: object
+  internal_controller.TimeSeriesResponseWrapper:
+    properties:
+      code:
+        example: 200
+        type: integer
+      data:
+        $ref: '#/definitions/SvcWatch_internal_storage.TimeSeriesResult'
+      message:
+        example: success
+        type: string
+    type: object
+  internal_controller.TopPathsResponseWrapper:
+    properties:
+      code:
+        example: 200
+        type: integer
+      data:
+        items:
+          $ref: '#/definitions/SvcWatch_internal_storage.TopPathItem'
+        type: array
+      message:
+        example: success
         type: string
     type: object
 info:
@@ -195,7 +219,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/controller.StatusDistributionResponseWrapper'
+            $ref: '#/definitions/internal_controller.StatusDistributionResponseWrapper'
       security:
       - BearerAuth: []
       summary: Get HTTP status code distribution
@@ -279,7 +303,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/controller.LogsResponseWrapper'
+            $ref: '#/definitions/internal_controller.LogsResponseWrapper'
       security:
       - BearerAuth: []
       summary: Query detailed logs
@@ -312,7 +336,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/controller.OverviewResponseWrapper'
+            $ref: '#/definitions/internal_controller.OverviewResponseWrapper'
       security:
       - BearerAuth: []
       summary: Get business overview key metrics
@@ -327,7 +351,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/utils.Response'
+            $ref: '#/definitions/SvcWatch_internal_utils.Response'
       summary: Health Check
       tags:
       - System
@@ -340,7 +364,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/controller.StatsResponseWrapper'
+            $ref: '#/definitions/internal_controller.StatsResponseWrapper'
       security:
       - BearerAuth: []
       summary: Get aggregated logs statistics
@@ -349,7 +373,7 @@ paths:
   /api/v1/sev/stats/timeseries:
     get:
       description: Get time-series data for a metric (qps, error_rate, latency_p99,
-        bandwidth). Range cannot exceed 1 year. Returns max 20 points.
+        bandwidth). Range cannot exceed 1 year. Returns exactly 30 points.
       parameters:
       - description: Metric type
         enum:
@@ -386,10 +410,48 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/controller.TimeSeriesResponseWrapper'
+            $ref: '#/definitions/internal_controller.TimeSeriesResponseWrapper'
       security:
       - BearerAuth: []
       summary: Get trend data for charts
+      tags:
+      - Monitor
+  /api/v1/sev/stats/top-paths:
+    get:
+      description: Get the top requested interface URIs along with their request count,
+        average response time, and error rate.
+      parameters:
+      - description: Start Time
+        example: "2026-03-19 00:00:00"
+        in: query
+        name: start_time
+        required: true
+        type: string
+      - description: End Time
+        example: "2026-03-20 00:00:00"
+        in: query
+        name: end_time
+        required: true
+        type: string
+      - description: Log File or Source ID
+        in: query
+        name: source_id
+        type: string
+      - default: 10
+        description: Number of top paths to return (default 10, max 100)
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_controller.TopPathsResponseWrapper'
+      security:
+      - BearerAuth: []
+      summary: Get top requested paths
       tags:
       - Monitor
 securityDefinitions:

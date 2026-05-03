@@ -52,7 +52,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/controller.StatusDistributionResponseWrapper"
+                            "$ref": "#/definitions/internal_controller.StatusDistributionResponseWrapper"
                         }
                     }
                 }
@@ -173,7 +173,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/controller.LogsResponseWrapper"
+                            "$ref": "#/definitions/internal_controller.LogsResponseWrapper"
                         }
                     }
                 }
@@ -223,7 +223,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/controller.OverviewResponseWrapper"
+                            "$ref": "#/definitions/internal_controller.OverviewResponseWrapper"
                         }
                     }
                 }
@@ -243,7 +243,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/utils.Response"
+                            "$ref": "#/definitions/SvcWatch_internal_utils.Response"
                         }
                     }
                 }
@@ -268,7 +268,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/controller.StatsResponseWrapper"
+                            "$ref": "#/definitions/internal_controller.StatsResponseWrapper"
                         }
                     }
                 }
@@ -281,7 +281,7 @@
                         "BearerAuth": []
                     }
                 ],
-                "description": "Get time-series data for a metric (qps, error_rate, latency_p99, bandwidth). Range cannot exceed 1 year. Returns max 20 points.",
+                "description": "Get time-series data for a metric (qps, error_rate, latency_p99, bandwidth). Range cannot exceed 1 year. Returns exactly 30 points.",
                 "produces": [
                     "application/json"
                 ],
@@ -334,7 +334,63 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/controller.TimeSeriesResponseWrapper"
+                            "$ref": "#/definitions/internal_controller.TimeSeriesResponseWrapper"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/sev/stats/top-paths": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Get the top requested interface URIs along with their request count, average response time, and error rate.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Monitor"
+                ],
+                "summary": "Get top requested paths",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "example": "2026-03-19 00:00:00",
+                        "description": "Start Time",
+                        "name": "start_time",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "example": "2026-03-20 00:00:00",
+                        "description": "End Time",
+                        "name": "end_time",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Log File or Source ID",
+                        "name": "source_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 10,
+                        "description": "Number of top paths to return (default 10, max 100)",
+                        "name": "limit",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/internal_controller.TopPathsResponseWrapper"
                         }
                     }
                 }
@@ -342,88 +398,7 @@
         }
     },
     "definitions": {
-        "controller.LogsResponseWrapper": {
-            "type": "object",
-            "properties": {
-                "code": {
-                    "type": "integer",
-                    "example": 200
-                },
-                "data": {
-                    "$ref": "#/definitions/storage.LogQueryResponse"
-                },
-                "message": {
-                    "type": "string",
-                    "example": "success"
-                }
-            }
-        },
-        "controller.OverviewResponseWrapper": {
-            "type": "object",
-            "properties": {
-                "code": {
-                    "type": "integer",
-                    "example": 200
-                },
-                "data": {
-                    "$ref": "#/definitions/storage.OverviewStats"
-                },
-                "message": {
-                    "type": "string",
-                    "example": "success"
-                }
-            }
-        },
-        "controller.StatsResponseWrapper": {
-            "type": "object",
-            "properties": {
-                "code": {
-                    "type": "integer",
-                    "example": 200
-                },
-                "data": {
-                    "type": "object",
-                    "additionalProperties": true
-                },
-                "message": {
-                    "type": "string",
-                    "example": "success"
-                }
-            }
-        },
-        "controller.StatusDistributionResponseWrapper": {
-            "type": "object",
-            "properties": {
-                "code": {
-                    "type": "integer",
-                    "example": 200
-                },
-                "data": {
-                    "$ref": "#/definitions/storage.StatusDistributionResult"
-                },
-                "message": {
-                    "type": "string",
-                    "example": "success"
-                }
-            }
-        },
-        "controller.TimeSeriesResponseWrapper": {
-            "type": "object",
-            "properties": {
-                "code": {
-                    "type": "integer",
-                    "example": 200
-                },
-                "data": {
-                    "$ref": "#/definitions/storage.TimeSeriesResult"
-                },
-                "message": {
-                    "type": "string",
-                    "example": "success"
-                }
-            }
-        },
-        "model.LogEntry": {
+        "SvcWatch_internal_model.LogEntry": {
             "type": "object",
             "properties": {
                 "body_bytes_sent": {
@@ -455,24 +430,24 @@
                 }
             }
         },
-        "storage.LogQueryItem": {
+        "SvcWatch_internal_storage.LogQueryItem": {
             "type": "object",
             "properties": {
                 "entry": {
-                    "$ref": "#/definitions/model.LogEntry"
+                    "$ref": "#/definitions/SvcWatch_internal_model.LogEntry"
                 },
                 "source_id": {
                     "type": "string"
                 }
             }
         },
-        "storage.LogQueryResponse": {
+        "SvcWatch_internal_storage.LogQueryResponse": {
             "type": "object",
             "properties": {
                 "items": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/storage.LogQueryItem"
+                        "$ref": "#/definitions/SvcWatch_internal_storage.LogQueryItem"
                     }
                 },
                 "page": {
@@ -486,7 +461,7 @@
                 }
             }
         },
-        "storage.MetricValue": {
+        "SvcWatch_internal_storage.MetricValue": {
             "type": "object",
             "properties": {
                 "compare_percent": {
@@ -497,28 +472,28 @@
                 }
             }
         },
-        "storage.OverviewStats": {
+        "SvcWatch_internal_storage.OverviewStats": {
             "type": "object",
             "properties": {
                 "avg_response_time": {
-                    "$ref": "#/definitions/storage.MetricValue"
+                    "$ref": "#/definitions/SvcWatch_internal_storage.MetricValue"
                 },
                 "compare_type": {
                     "description": "e.g., \"vs yesterday\" or \"vs previous period\"",
                     "type": "string"
                 },
                 "error_rate": {
-                    "$ref": "#/definitions/storage.MetricValue"
+                    "$ref": "#/definitions/SvcWatch_internal_storage.MetricValue"
                 },
                 "success_rate": {
-                    "$ref": "#/definitions/storage.MetricValue"
+                    "$ref": "#/definitions/SvcWatch_internal_storage.MetricValue"
                 },
                 "total_requests": {
-                    "$ref": "#/definitions/storage.MetricValue"
+                    "$ref": "#/definitions/SvcWatch_internal_storage.MetricValue"
                 }
             }
         },
-        "storage.StatusDistributionEntry": {
+        "SvcWatch_internal_storage.StatusDistributionEntry": {
             "type": "object",
             "properties": {
                 "code_class": {
@@ -532,13 +507,13 @@
                 }
             }
         },
-        "storage.StatusDistributionResult": {
+        "SvcWatch_internal_storage.StatusDistributionResult": {
             "type": "object",
             "properties": {
                 "distribution": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/storage.StatusDistributionEntry"
+                        "$ref": "#/definitions/SvcWatch_internal_storage.StatusDistributionEntry"
                     }
                 },
                 "total": {
@@ -546,7 +521,7 @@
                 }
             }
         },
-        "storage.TimeSeriesPoint": {
+        "SvcWatch_internal_storage.TimeSeriesPoint": {
             "type": "object",
             "properties": {
                 "ts": {
@@ -557,7 +532,7 @@
                 }
             }
         },
-        "storage.TimeSeriesResult": {
+        "SvcWatch_internal_storage.TimeSeriesResult": {
             "type": "object",
             "properties": {
                 "interval": {
@@ -569,12 +544,29 @@
                 "points": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/storage.TimeSeriesPoint"
+                        "$ref": "#/definitions/SvcWatch_internal_storage.TimeSeriesPoint"
                     }
                 }
             }
         },
-        "utils.Response": {
+        "SvcWatch_internal_storage.TopPathItem": {
+            "type": "object",
+            "properties": {
+                "avg_response_time": {
+                    "type": "number"
+                },
+                "error_rate": {
+                    "type": "number"
+                },
+                "request_count": {
+                    "type": "integer"
+                },
+                "uri": {
+                    "type": "string"
+                }
+            }
+        },
+        "SvcWatch_internal_utils.Response": {
             "type": "object",
             "properties": {
                 "code": {
@@ -583,6 +575,106 @@
                 "data": {},
                 "message": {
                     "type": "string"
+                }
+            }
+        },
+        "internal_controller.LogsResponseWrapper": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 200
+                },
+                "data": {
+                    "$ref": "#/definitions/SvcWatch_internal_storage.LogQueryResponse"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "success"
+                }
+            }
+        },
+        "internal_controller.OverviewResponseWrapper": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 200
+                },
+                "data": {
+                    "$ref": "#/definitions/SvcWatch_internal_storage.OverviewStats"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "success"
+                }
+            }
+        },
+        "internal_controller.StatsResponseWrapper": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 200
+                },
+                "data": {
+                    "type": "object",
+                    "additionalProperties": true
+                },
+                "message": {
+                    "type": "string",
+                    "example": "success"
+                }
+            }
+        },
+        "internal_controller.StatusDistributionResponseWrapper": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 200
+                },
+                "data": {
+                    "$ref": "#/definitions/SvcWatch_internal_storage.StatusDistributionResult"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "success"
+                }
+            }
+        },
+        "internal_controller.TimeSeriesResponseWrapper": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 200
+                },
+                "data": {
+                    "$ref": "#/definitions/SvcWatch_internal_storage.TimeSeriesResult"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "success"
+                }
+            }
+        },
+        "internal_controller.TopPathsResponseWrapper": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 200
+                },
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/SvcWatch_internal_storage.TopPathItem"
+                    }
+                },
+                "message": {
+                    "type": "string",
+                    "example": "success"
                 }
             }
         }
