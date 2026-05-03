@@ -433,7 +433,8 @@ paths:
         name: end_time
         required: true
         type: string
-      - description: Log File or Source ID
+      - default: access.log
+        description: Log File or Source ID
         in: query
         name: source_id
         type: string

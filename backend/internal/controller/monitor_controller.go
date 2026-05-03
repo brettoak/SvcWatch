@@ -252,7 +252,7 @@ type TopPathsRequest struct {
 // @Security BearerAuth
 // @Param start_time query string true "Start Time" default(2026-03-19 00:00:00)
 // @Param end_time query string true "End Time" default(2026-03-20 00:00:00)
-// @Param source_id query string false "Log File or Source ID"
+// @Param source_id query string false "Log File or Source ID" default(access.log)
 // @Param limit query int false "Number of top paths to return (default 10, max 100)" default(10)
 // @Success 200 {object} TopPathsResponseWrapper
 // @Router /api/v1/sev/stats/top-paths [get]

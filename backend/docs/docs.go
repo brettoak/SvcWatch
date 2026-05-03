@@ -381,6 +381,7 @@ const docTemplate = `{
                     },
                     {
                         "type": "string",
+                        "default": "access.log",
                         "description": "Log File or Source ID",
                         "name": "source_id",
                         "in": "query"
