@@ -15,6 +15,7 @@ const timeOptions = [
   { label: '6h', value: '6h' },
   { label: '24h', value: '24h' },
   { label: '7d', value: '7d' },
+  { label: '30d', value: '30d' },
   { label: 'Custom', value: 'custom' },
 ]
 
@@ -72,6 +73,7 @@ const calculateTimeRange = () => {
     case '6h': start.setHours(start.getHours() - 6); break
     case '24h': start.setHours(start.getHours() - 24); break
     case '7d': start.setDate(start.getDate() - 7); break
+    case '30d': start.setDate(start.getDate() - 30); break
   }
 
   return {
