@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, watch, onMounted, computed } from 'vue'
-import { getDashboardOverview, getStatusDistribution, getTimeSeriesStats } from '@/services/api'
-import type { DashboardOverviewResponse, StatusDistributionResponse, TimeSeriesResponse } from '@/services/api'
+import { getDashboardOverview, getStatusDistribution, getTimeSeriesStats, getTopPaths } from '@/services/api'
+import type { DashboardOverviewResponse, StatusDistributionResponse, TimeSeriesResponse, TopPathItem } from '@/services/api'
 
 type DashboardData = DashboardOverviewResponse['data']
 type DistributionData = StatusDistributionResponse['data']
@@ -24,6 +24,7 @@ const customEndTime = ref('')
 const dashboardData = ref<DashboardData | null>(null)
 const distributionData = ref<DistributionData | null>(null)
 const timeSeriesData = ref<TimeSeriesData | null>(null)
+const topPathsData = ref<TopPathItem[]>([])
 
 const selectedMetric = ref('bandwidth')
 const hoveredBarIdx = ref<number | null>(null)
@@ -106,9 +107,10 @@ const fetchData = async () => {
   loading.value = true
   
   try {
-    const [overviewResp, distResp] = await Promise.all([
+    const [overviewResp, distResp, topPathsResp] = await Promise.all([
       getDashboardOverview(range.startStr, range.endStr),
-      getStatusDistribution(range.startStr, range.endStr)
+      getStatusDistribution(range.startStr, range.endStr),
+      getTopPaths(range.startStr, range.endStr, 10)
     ])
 
     if (overviewResp.data && overviewResp.data.code === 200) {
@@ -117,6 +119,10 @@ const fetchData = async () => {
     
     if (distResp.data && distResp.data.code === 200) {
       distributionData.value = distResp.data.data
+    }
+
+    if (topPathsResp.data && topPathsResp.data.code === 200) {
+      topPathsData.value = topPathsResp.data.data || []
     }
 
     await fetchTimeSeries()
@@ -508,6 +514,42 @@ const getTsMaxVal = () => {
               </div>
           </div>
        </div>
+      </div>
+    </div>
+
+    <!-- Top Request Paths Card -->
+    <div class="relative bg-bg-secondary rounded-2xl p-7 shadow-card border border-border-color flex flex-col gap-5 transition-all duration-300 animate-slide-in [animation-delay:0.4s]" :class="{ 'opacity-50 pointer-events-none': loading }">
+      <h3 class="text-text-secondary text-[0.75rem] font-bold uppercase tracking-widest flex items-center">Top Request Paths<span class="text-lg opacity-80 ml-2">🔥</span></h3>
+      <div class="overflow-x-auto w-full">
+        <table class="w-full text-left border-collapse">
+          <thead>
+            <tr class="bg-bg-primary/50 border-b border-border-color">
+              <th class="px-4 py-3 text-[0.7rem] font-bold uppercase tracking-widest text-text-secondary">Path</th>
+              <th class="px-4 py-3 text-[0.7rem] font-bold uppercase tracking-widest text-text-secondary text-right">Hits</th>
+              <th class="px-4 py-3 text-[0.7rem] font-bold uppercase tracking-widest text-text-secondary text-right">Avg ms</th>
+              <th class="px-4 py-3 text-[0.7rem] font-bold uppercase tracking-widest text-text-secondary text-right">Err%</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-border-color">
+            <tr v-if="!topPathsData.length" class="text-center italic text-text-secondary py-4">
+              <td colspan="4" class="px-4 py-8">No data available</td>
+            </tr>
+            <tr v-else v-for="(item, idx) in topPathsData" :key="idx" class="hover:bg-bg-primary/30 transition-colors">
+              <td class="px-4 py-3 text-xs font-bold text-text-primary max-w-[400px] truncate" :title="item.uri">{{ item.uri }}</td>
+              <td class="px-4 py-3 text-xs font-bold text-text-primary text-right">{{ item.request_count.toLocaleString() }}</td>
+              <td class="px-4 py-3 text-right">
+                <span class="text-xs font-bold" :class="item.avg_response_time > 0.5 ? 'text-red-500' : 'text-text-primary'">
+                  {{ (item.avg_response_time * 1000).toFixed(0) }}
+                </span>
+              </td>
+              <td class="px-4 py-3 text-right">
+                <span class="text-xs font-bold" :class="item.error_rate > 5 ? 'text-red-500' : (item.error_rate > 0 ? 'text-amber-500' : 'text-emerald-500')">
+                  {{ item.error_rate.toFixed(1) }}%
+                </span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
       </div>
     </div>
   </div>

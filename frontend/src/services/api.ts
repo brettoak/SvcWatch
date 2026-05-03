@@ -209,3 +209,26 @@ export const uploadAvatar = (file: File) => {
     }
   })
 }
+
+export interface TopPathItem {
+  uri: string
+  request_count: number
+  avg_response_time: number
+  error_rate: number
+}
+
+export interface TopPathsResponse {
+  code: number
+  message: string
+  data: TopPathItem[]
+}
+
+export const getTopPaths = (startTime: string, endTime: string, limit: number = 10) => {
+  return api.get<TopPathsResponse>('/stats/top-paths', {
+    params: {
+      start_time: startTime,
+      end_time: endTime,
+      limit,
+    },
+  })
+}
