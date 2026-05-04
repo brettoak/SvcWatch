@@ -4,9 +4,20 @@ import (
 	"SvcWatch/internal/service"
 	"SvcWatch/internal/storage"
 	"SvcWatch/internal/utils"
+	"fmt"
+	"net/http"
+	"os"
 
 	"github.com/gin-gonic/gin"
+	"github.com/gorilla/websocket"
+	"github.com/nxadm/tail"
 )
+
+var upgrader = websocket.Upgrader{
+	CheckOrigin: func(r *http.Request) bool {
+		return true // Allow all origins
+	},
+}
 
 // MonitorController handles HTTP requests for monitor statistics.
 type MonitorController struct {
@@ -270,5 +281,63 @@ func (ctrl *MonitorController) TopPathsHandler(c *gin.Context) {
 	}
 
 	utils.Success(c, result)
+}
+
+// LogsWebSocketHandler Real-time logs streaming via WebSocket
+// @Summary Real-time logs streaming via WebSocket
+// @Description Upgrade connection to WebSocket and stream raw logs in real-time
+// @Tags Monitor
+// @Param log_file query string false "Log File or Source ID (optional)" default(access.log)
+// @Router /api/v1/sev/logs/ws [get]
+func (ctrl *MonitorController) LogsWebSocketHandler(c *gin.Context) {
+	logFile := c.Query("log_file")
+	if logFile == "" {
+		logFile = "access.log"
+	}
+
+	// Upgrade HTTP connection to WebSocket
+	conn, err := upgrader.Upgrade(c.Writer, c.Request, nil)
+	if err != nil {
+		fmt.Printf("Failed to upgrade to websocket: %v\n", err)
+		return
+	}
+	defer conn.Close()
+
+	// Configure tail to read from the end of the file
+	config := tail.Config{
+		ReOpen:    true,
+		Follow:    true,
+		MustExist: false,
+		Location:  &tail.SeekInfo{Offset: 0, Whence: os.SEEK_END},
+	}
+
+	t, err := tail.TailFile(logFile, config)
+	if err != nil {
+		_ = conn.WriteMessage(websocket.TextMessage, []byte(fmt.Sprintf("Error tailing file: %v", err)))
+		return
+	}
+	defer t.Stop()
+
+	// Handle client disconnection
+	go func() {
+		for {
+			if _, _, err := conn.ReadMessage(); err != nil {
+				// Client disconnected
+				t.Stop()
+				break
+			}
+		}
+	}()
+
+	// Send lines to client
+	for line := range t.Lines {
+		if line.Err != nil {
+			fmt.Printf("Tail error: %v\n", line.Err)
+			continue
+		}
+		if err := conn.WriteMessage(websocket.TextMessage, []byte(line.Text)); err != nil {
+			break
+		}
+	}
 }
 
