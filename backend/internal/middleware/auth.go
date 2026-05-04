@@ -21,20 +21,24 @@ type tokenRequest struct {
 func TokenAuthMiddleware(passportURL string) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		authHeader := c.GetHeader("Authorization")
-		if authHeader == "" {
-			utils.Error(c, http.StatusUnauthorized, "Authorization header required")
+		token := ""
+
+		if authHeader != "" {
+			parts := strings.SplitN(authHeader, " ", 2)
+			if len(parts) == 2 && strings.ToLower(parts[0]) == "bearer" {
+				token = parts[1]
+			}
+		}
+
+		if token == "" {
+			token = c.Query("token")
+		}
+
+		if token == "" {
+			utils.Error(c, http.StatusUnauthorized, "Authorization token required")
 			c.Abort()
 			return
 		}
-
-		parts := strings.SplitN(authHeader, " ", 2)
-		if len(parts) != 2 || strings.ToLower(parts[0]) != "bearer" {
-			utils.Error(c, http.StatusUnauthorized, "Authorization header format must be Bearer {token}")
-			c.Abort()
-			return
-		}
-
-		token := parts[1]
 
 		// Prepare payload
 		reqPayload := tokenRequest{Token: token}
@@ -115,20 +119,24 @@ type permissionRequest struct {
 func PermissionMiddleware(permissionURL, sysCode, requiredPermission string) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		authHeader := c.GetHeader("Authorization")
-		if authHeader == "" {
-			utils.Error(c, http.StatusUnauthorized, "Authorization header required")
+		token := ""
+
+		if authHeader != "" {
+			parts := strings.SplitN(authHeader, " ", 2)
+			if len(parts) == 2 && strings.ToLower(parts[0]) == "bearer" {
+				token = parts[1]
+			}
+		}
+
+		if token == "" {
+			token = c.Query("token")
+		}
+
+		if token == "" {
+			utils.Error(c, http.StatusUnauthorized, "Authorization token required")
 			c.Abort()
 			return
 		}
-
-		parts := strings.SplitN(authHeader, " ", 2)
-		if len(parts) != 2 || strings.ToLower(parts[0]) != "bearer" {
-			utils.Error(c, http.StatusUnauthorized, "Authorization header format must be Bearer {token}")
-			c.Abort()
-			return
-		}
-
-		token := parts[1]
 
 		reqPayload := permissionRequest{
 			Token:              token,
