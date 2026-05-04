@@ -5,6 +5,7 @@ go 1.25.6
 require (
 	github.com/gin-contrib/cors v1.7.6
 	github.com/gin-gonic/gin v1.11.0
+	github.com/gorilla/websocket v1.5.3
 	github.com/mattn/go-sqlite3 v1.14.34
 	github.com/nxadm/tail v1.4.11
 	github.com/swaggo/files v1.0.1
