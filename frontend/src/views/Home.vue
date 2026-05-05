@@ -68,6 +68,36 @@ const connectWebSocket = () => {
   }
 }
 
+const highlightRawLog = (text: string) => {
+  if (!text) return ''
+  let highlighted = text.replace(/</g, '&lt;').replace(/>/g, '&gt;')
+  
+  // Highlight IP Address
+  highlighted = highlighted.replace(/^(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})/, '<span class="text-blue-400 font-bold">$1</span>')
+  
+  // Highlight Status Code
+  highlighted = highlighted.replace(/&quot; (\d{3}) /, (match, p1) => {
+    const code = parseInt(p1, 10)
+    let color = 'text-emerald-500 bg-emerald-500/10'
+    if (code >= 500) color = 'text-red-500 bg-red-500/10'
+    else if (code >= 400) color = 'text-amber-500 bg-amber-500/10'
+    else if (code >= 300) color = 'text-cyan-500 bg-cyan-500/10'
+    return `&quot; <span class="${color} font-bold px-1 rounded">${p1}</span> `
+  })
+
+  // Highlight Method and URI
+  highlighted = highlighted.replace(/&quot;(GET|POST|PUT|DELETE|PATCH|OPTIONS|HEAD) (.*?) (HTTP\/[0-9.]+)&quot;/, (match, method, uri, httpVer) => {
+    let methodColor = 'text-purple-400'
+    if (method === 'GET') methodColor = 'text-emerald-400'
+    if (method === 'POST') methodColor = 'text-blue-400'
+    if (method === 'DELETE') methodColor = 'text-red-400'
+    if (method === 'PUT' || method === 'PATCH') methodColor = 'text-amber-400'
+    return `&quot;<span class="${methodColor} font-bold">${method}</span> <span class="text-cyan-300 font-semibold">${uri}</span> <span class="text-slate-500">${httpVer}</span>&quot;`
+  })
+  
+  return highlighted
+}
+
 const selectedMetric = ref('bandwidth')
 const hoveredBarIdx = ref<number | null>(null)
 const mouseX = ref(0)
@@ -598,20 +628,20 @@ const getTsMaxVal = () => {
             <template v-if="log.raw">
                <span class="text-text-secondary shrink-0 whitespace-nowrap">{{ new Date(log._ts).toLocaleTimeString() }}</span>
                <div class="flex flex-col gap-1 w-full overflow-hidden">
-                 <div class="text-text-primary break-all">{{ log.raw }}</div>
+                 <div class="text-text-primary break-all" v-html="highlightRawLog(log.raw)"></div>
                </div>
             </template>
             <template v-else>
-               <span class="text-text-secondary shrink-0 whitespace-nowrap">{{ new Date(log.time_local || Date.now()).toLocaleTimeString() }}</span>
+               <span class="text-text-secondary shrink-0 whitespace-nowrap">{{ new Date(log.time_local || log._ts || Date.now()).toLocaleTimeString() }}</span>
                <div class="flex flex-col gap-1 w-full overflow-hidden">
                  <div class="flex items-center gap-2">
                    <span class="px-1.5 py-0.5 rounded text-[0.6rem] font-bold uppercase tracking-wider" 
                          :class="log.status >= 500 ? 'bg-red-500/10 text-red-500' : (log.status >= 400 ? 'bg-amber-500/10 text-amber-500' : 'bg-emerald-500/10 text-emerald-500')">
                      {{ log.status || 200 }}
                    </span>
-                   <span class="font-semibold text-text-primary truncate" :title="log.request">{{ log.request }}</span>
+                   <span class="font-semibold text-cyan-300 truncate" :title="log.request">{{ log.request }}</span>
                  </div>
-                 <div class="text-text-secondary truncate text-[0.65rem]">{{ log.remote_addr }} - {{ log.http_user_agent || '' }}</div>
+                 <div class="text-text-secondary truncate text-[0.65rem]"><span class="text-blue-400 font-bold">{{ log.remote_addr }}</span> - {{ log.http_user_agent || '' }}</div>
                </div>
             </template>
           </div>
