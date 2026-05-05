@@ -72,30 +72,47 @@ const highlightRawLog = (text: string) => {
   if (!text) return ''
   let highlighted = text.replace(/</g, '&lt;').replace(/>/g, '&gt;')
   
-  // Highlight IP Address
-  highlighted = highlighted.replace(/^(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})/, '<span class="text-blue-400 font-bold">$1</span>')
+  // Highlight IP Address - sleek sky blue
+  highlighted = highlighted.replace(/^(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})/, '<span class="text-sky-400 font-medium">$1</span>')
   
   // Highlight Status Code
   highlighted = highlighted.replace(/&quot; (\d{3}) /, (match, p1) => {
     const code = parseInt(p1, 10)
-    let color = 'text-emerald-500 bg-emerald-500/10'
-    if (code >= 500) color = 'text-red-500 bg-red-500/10'
-    else if (code >= 400) color = 'text-amber-500 bg-amber-500/10'
-    else if (code >= 300) color = 'text-cyan-500 bg-cyan-500/10'
-    return `&quot; <span class="${color} font-bold px-1 rounded">${p1}</span> `
+    let color = 'text-emerald-400 bg-emerald-400/10 border-emerald-400/20'
+    if (code >= 500) color = 'text-rose-400 bg-rose-400/10 border-rose-400/20'
+    else if (code >= 400) color = 'text-amber-400 bg-amber-400/10 border-amber-400/20'
+    else if (code >= 300) color = 'text-sky-400 bg-sky-400/10 border-sky-400/20'
+    return `&quot; <span class="${color} font-bold px-1.5 py-0.5 text-[0.6rem] rounded border">${p1}</span> `
   })
 
   // Highlight Method and URI
   highlighted = highlighted.replace(/&quot;(GET|POST|PUT|DELETE|PATCH|OPTIONS|HEAD) (.*?) (HTTP\/[0-9.]+)&quot;/, (match, method, uri, httpVer) => {
-    let methodColor = 'text-purple-400'
+    let methodColor = 'text-slate-400'
     if (method === 'GET') methodColor = 'text-emerald-400'
-    if (method === 'POST') methodColor = 'text-blue-400'
-    if (method === 'DELETE') methodColor = 'text-red-400'
+    if (method === 'POST') methodColor = 'text-indigo-400'
+    if (method === 'DELETE') methodColor = 'text-rose-400'
     if (method === 'PUT' || method === 'PATCH') methodColor = 'text-amber-400'
-    return `&quot;<span class="${methodColor} font-bold">${method}</span> <span class="text-cyan-300 font-semibold">${uri}</span> <span class="text-slate-500">${httpVer}</span>&quot;`
+    return `&quot;<span class="${methodColor} font-bold">${method}</span> <span class="text-slate-200">${uri}</span> <span class="text-slate-500 text-[0.65rem]">${httpVer}</span>&quot;`
   })
   
   return highlighted
+}
+
+const highlightRequestLine = (req: string) => {
+  if (!req) return ''
+  const parts = req.split(' ')
+  if (parts.length >= 2) {
+    const method = parts[0]
+    const uri = parts[1]
+    const httpVer = parts.length > 2 ? parts[2] : ''
+    let methodColor = 'text-slate-400'
+    if (method === 'GET') methodColor = 'text-emerald-400'
+    if (method === 'POST') methodColor = 'text-indigo-400'
+    if (method === 'DELETE') methodColor = 'text-rose-400'
+    if (method === 'PUT' || method === 'PATCH') methodColor = 'text-amber-400'
+    return `<span class="${methodColor} font-bold">${method}</span> <span class="text-slate-200">${uri}</span> <span class="text-slate-500 text-[0.65rem]">${httpVer}</span>`
+  }
+  return `<span class="text-slate-200">${req}</span>`
 }
 
 const selectedMetric = ref('bandwidth')
@@ -626,22 +643,22 @@ const getTsMaxVal = () => {
           </div>
           <div v-else v-for="(log, idx) in logsStream" :key="idx" class="flex gap-3 bg-bg-primary/50 p-2.5 rounded-lg border border-border-color/50 hover:bg-bg-primary transition-colors items-start">
             <template v-if="log.raw">
-               <span class="text-text-secondary shrink-0 whitespace-nowrap">{{ new Date(log._ts).toLocaleTimeString() }}</span>
+               <span class="text-slate-500 shrink-0 whitespace-nowrap text-[0.65rem] font-medium">{{ new Date(log._ts).toLocaleTimeString() }}</span>
                <div class="flex flex-col gap-1 w-full overflow-hidden">
-                 <div class="text-text-primary break-all" v-html="highlightRawLog(log.raw)"></div>
+                 <div class="text-slate-400 break-all" v-html="highlightRawLog(log.raw)"></div>
                </div>
             </template>
             <template v-else>
-               <span class="text-text-secondary shrink-0 whitespace-nowrap">{{ new Date(log.time_local || log._ts || Date.now()).toLocaleTimeString() }}</span>
+               <span class="text-slate-500 shrink-0 whitespace-nowrap text-[0.65rem] font-medium">{{ new Date(log.time_local || log._ts || Date.now()).toLocaleTimeString() }}</span>
                <div class="flex flex-col gap-1 w-full overflow-hidden">
                  <div class="flex items-center gap-2">
-                   <span class="px-1.5 py-0.5 rounded text-[0.6rem] font-bold uppercase tracking-wider" 
-                         :class="log.status >= 500 ? 'bg-red-500/10 text-red-500' : (log.status >= 400 ? 'bg-amber-500/10 text-amber-500' : 'bg-emerald-500/10 text-emerald-500')">
+                   <span class="px-1.5 py-0.5 rounded text-[0.6rem] font-bold uppercase tracking-wider border" 
+                         :class="log.status >= 500 ? 'text-rose-400 bg-rose-400/10 border-rose-400/20' : (log.status >= 400 ? 'text-amber-400 bg-amber-400/10 border-amber-400/20' : (log.status >= 300 ? 'text-sky-400 bg-sky-400/10 border-sky-400/20' : 'text-emerald-400 bg-emerald-400/10 border-emerald-400/20'))">
                      {{ log.status || 200 }}
                    </span>
-                   <span class="font-semibold text-cyan-300 truncate" :title="log.request">{{ log.request }}</span>
+                   <span class="truncate" :title="log.request" v-html="highlightRequestLine(log.request)"></span>
                  </div>
-                 <div class="text-text-secondary truncate text-[0.65rem]"><span class="text-blue-400 font-bold">{{ log.remote_addr }}</span> - {{ log.http_user_agent || '' }}</div>
+                 <div class="text-slate-400 truncate text-[0.65rem]"><span class="text-sky-400 font-medium">{{ log.remote_addr }}</span> - {{ log.http_user_agent || '' }}</div>
                </div>
             </template>
           </div>
