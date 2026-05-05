@@ -41,6 +41,7 @@ export default defineConfig(({ mode }) => {
       '/api/sev': {
         target: BACKEND_SERVICE_URL,
         changeOrigin: true,
+        ws: true,
         rewrite: (path) => path.replace(/^\/api\/sev/, '/api/v1/sev'),
       },
     },

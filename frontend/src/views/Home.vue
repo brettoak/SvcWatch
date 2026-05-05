@@ -30,6 +30,7 @@ const topPathsData = ref<TopPathItem[]>([])
 
 const logsStream = ref<any[]>([])
 let ws: WebSocket | null = null
+const wsStatus = ref<'connecting' | 'connected' | 'error' | 'closed'>('connecting')
 
 const connectWebSocket = () => {
   const authStore = useAuthStore()
@@ -37,7 +38,22 @@ const connectWebSocket = () => {
   const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
   const wsUrl = `${protocol}//${window.location.host}/api/sev/logs/ws?token=${authStore.token}`
   
+  wsStatus.value = 'connecting'
   ws = new WebSocket(wsUrl)
+  
+  ws.onopen = () => {
+    wsStatus.value = 'connected'
+  }
+
+  ws.onerror = (err) => {
+    console.error('WebSocket Error:', err)
+    wsStatus.value = 'error'
+  }
+
+  ws.onclose = () => {
+    wsStatus.value = 'closed'
+    // Optional: could implement reconnect logic here
+  }
   
   ws.onmessage = (event) => {
     try {
@@ -555,13 +571,28 @@ const getTsMaxVal = () => {
         <h3 class="text-text-secondary text-[0.75rem] font-bold uppercase tracking-widest flex items-center justify-between">
           <div class="flex items-center">Real-time Logs<span class="text-lg opacity-80 ml-2">📡</span></div>
           <div class="flex items-center gap-2">
-            <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.8)]"></span>
-            <span class="text-[0.65rem] text-emerald-500 font-bold uppercase tracking-widest">Live</span>
+            <span class="w-2 h-2 rounded-full" 
+                  :class="{
+                    'bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.8)]': wsStatus === 'connected',
+                    'bg-amber-500 animate-pulse': wsStatus === 'connecting',
+                    'bg-red-500': wsStatus === 'error' || wsStatus === 'closed'
+                  }"></span>
+            <span class="text-[0.65rem] font-bold uppercase tracking-widest"
+                  :class="{
+                    'text-emerald-500': wsStatus === 'connected',
+                    'text-amber-500': wsStatus === 'connecting',
+                    'text-red-500': wsStatus === 'error' || wsStatus === 'closed'
+                  }">
+              {{ wsStatus }}
+            </span>
           </div>
         </h3>
         <div class="overflow-y-auto max-h-[350px] w-full flex flex-col gap-2 font-mono text-[0.7rem] custom-scrollbar pr-2">
-          <div v-if="!logsStream.length" class="text-center italic text-text-secondary py-8 flex-1 flex items-center justify-center">
-            Waiting for logs...
+          <div v-if="!logsStream.length" class="text-center italic text-text-secondary py-8 flex-1 flex flex-col items-center justify-center gap-2">
+            <span v-if="wsStatus === 'connecting'">Connecting to log stream...</span>
+            <span v-else-if="wsStatus === 'error'">Connection failed. Please check server.</span>
+            <span v-else-if="wsStatus === 'closed'">Connection closed.</span>
+            <span v-else>Waiting for logs...</span>
           </div>
           <div v-else v-for="(log, idx) in logsStream" :key="idx" class="flex gap-3 bg-bg-primary/50 p-2.5 rounded-lg border border-border-color/50 hover:bg-bg-primary transition-colors items-start">
             <template v-if="log.raw">
