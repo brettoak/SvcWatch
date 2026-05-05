@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { ref, watch, onMounted, computed } from 'vue'
+import { ref, watch, onMounted, onUnmounted, computed } from 'vue'
 import { getDashboardOverview, getStatusDistribution, getTimeSeriesStats, getTopPaths } from '@/services/api'
 import type { DashboardOverviewResponse, StatusDistributionResponse, TimeSeriesResponse, TopPathItem } from '@/services/api'
+import { useAuthStore } from '@/stores/auth'
 
 type DashboardData = DashboardOverviewResponse['data']
 type DistributionData = StatusDistributionResponse['data']
@@ -26,6 +27,30 @@ const dashboardData = ref<DashboardData | null>(null)
 const distributionData = ref<DistributionData | null>(null)
 const timeSeriesData = ref<TimeSeriesData | null>(null)
 const topPathsData = ref<TopPathItem[]>([])
+
+const logsStream = ref<any[]>([])
+let ws: WebSocket | null = null
+
+const connectWebSocket = () => {
+  const authStore = useAuthStore()
+  if (!authStore.token) return
+  const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
+  const wsUrl = `${protocol}//${window.location.host}/api/sev/logs/ws?token=${authStore.token}`
+  
+  ws = new WebSocket(wsUrl)
+  
+  ws.onmessage = (event) => {
+    try {
+      const data = JSON.parse(event.data)
+      logsStream.value.unshift(data)
+    } catch (e) {
+      logsStream.value.unshift({ raw: event.data, _ts: Date.now() })
+    }
+    if (logsStream.value.length > 50) {
+      logsStream.value.pop()
+    }
+  }
+}
 
 const selectedMetric = ref('bandwidth')
 const hoveredBarIdx = ref<number | null>(null)
@@ -161,6 +186,11 @@ onMounted(() => {
   customStartTime.value = toLocalISO(start)
 
   fetchData()
+  connectWebSocket()
+})
+
+onUnmounted(() => {
+  if (ws) ws.close()
 })
 
 const getTrendClass = (val: number, isErrorRate = false) => {
@@ -519,8 +549,46 @@ const getTsMaxVal = () => {
       </div>
     </div>
 
-    <!-- Top Request Paths Card -->
-    <div class="relative bg-bg-secondary rounded-2xl p-7 shadow-card border border-border-color flex flex-col gap-5 transition-all duration-300 animate-slide-in [animation-delay:0.4s]" :class="{ 'opacity-50 pointer-events-none': loading }">
+    <div class="grid grid-cols-1 xl:grid-cols-2 gap-6 items-stretch animate-slide-in [animation-delay:0.4s]">
+      <!-- Live Logs Stream Card (Left) -->
+      <div class="relative bg-bg-secondary rounded-2xl p-7 shadow-card border border-border-color flex flex-col gap-5 transition-all duration-300 overflow-hidden h-full">
+        <h3 class="text-text-secondary text-[0.75rem] font-bold uppercase tracking-widest flex items-center justify-between">
+          <div class="flex items-center">Real-time Logs<span class="text-lg opacity-80 ml-2">📡</span></div>
+          <div class="flex items-center gap-2">
+            <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.8)]"></span>
+            <span class="text-[0.65rem] text-emerald-500 font-bold uppercase tracking-widest">Live</span>
+          </div>
+        </h3>
+        <div class="overflow-y-auto max-h-[350px] w-full flex flex-col gap-2 font-mono text-[0.7rem] custom-scrollbar pr-2">
+          <div v-if="!logsStream.length" class="text-center italic text-text-secondary py-8 flex-1 flex items-center justify-center">
+            Waiting for logs...
+          </div>
+          <div v-else v-for="(log, idx) in logsStream" :key="idx" class="flex gap-3 bg-bg-primary/50 p-2.5 rounded-lg border border-border-color/50 hover:bg-bg-primary transition-colors items-start">
+            <template v-if="log.raw">
+               <span class="text-text-secondary shrink-0 whitespace-nowrap">{{ new Date(log._ts).toLocaleTimeString() }}</span>
+               <div class="flex flex-col gap-1 w-full overflow-hidden">
+                 <div class="text-text-primary break-all">{{ log.raw }}</div>
+               </div>
+            </template>
+            <template v-else>
+               <span class="text-text-secondary shrink-0 whitespace-nowrap">{{ new Date(log.time_local || Date.now()).toLocaleTimeString() }}</span>
+               <div class="flex flex-col gap-1 w-full overflow-hidden">
+                 <div class="flex items-center gap-2">
+                   <span class="px-1.5 py-0.5 rounded text-[0.6rem] font-bold uppercase tracking-wider" 
+                         :class="log.status >= 500 ? 'bg-red-500/10 text-red-500' : (log.status >= 400 ? 'bg-amber-500/10 text-amber-500' : 'bg-emerald-500/10 text-emerald-500')">
+                     {{ log.status || 200 }}
+                   </span>
+                   <span class="font-semibold text-text-primary truncate" :title="log.request">{{ log.request }}</span>
+                 </div>
+                 <div class="text-text-secondary truncate text-[0.65rem]">{{ log.remote_addr }} - {{ log.http_user_agent || '' }}</div>
+               </div>
+            </template>
+          </div>
+        </div>
+      </div>
+
+      <!-- Top Request Paths Card (Right) -->
+      <div class="relative bg-bg-secondary rounded-2xl p-7 shadow-card border border-border-color flex flex-col gap-5 transition-all duration-300 h-full" :class="{ 'opacity-50 pointer-events-none': loading }">
       <h3 class="text-text-secondary text-[0.75rem] font-bold uppercase tracking-widest flex items-center">Top Request Paths<span class="text-lg opacity-80 ml-2">🔥</span></h3>
       <div class="overflow-x-auto w-full">
         <table class="w-full text-left border-collapse">
@@ -554,10 +622,9 @@ const getTsMaxVal = () => {
         </table>
       </div>
     </div>
+    </div>
   </div>
 </template>
 
 <style scoped>
 </style>
-  gap: 0.5rem;
-}
