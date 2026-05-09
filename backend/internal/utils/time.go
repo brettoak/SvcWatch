@@ -11,13 +11,21 @@ const (
 )
 
 // ParseTime parses a time string into a time.Time object.
-// It supports multiple formats: RFC3339 (ISO 8601) and custom "2006-01-02 15:04:05".
+// It supports RFC3339Nano (JS toISOString), RFC3339, datetime-local, and "2006-01-02 15:04:05".
 func ParseTime(s string) (time.Time, error) {
-	t, err := time.Parse(time.RFC3339, s)
-	if err != nil {
-		t, err = time.Parse("2006-01-02 15:04:05", s)
+	layouts := []string{
+		time.RFC3339Nano,       // "2026-05-09T12:00:00.000Z" (from JS toISOString)
+		time.RFC3339,           // "2026-05-09T12:00:00Z"
+		"2006-01-02T15:04:05",  // datetime-local without timezone
+		"2006-01-02T15:04",     // datetime-local short
+		"2006-01-02 15:04:05",  // legacy format
 	}
-	return t, err
+	for _, layout := range layouts {
+		if t, err := time.Parse(layout, s); err == nil {
+			return t.UTC(), nil
+		}
+	}
+	return time.Time{}, fmt.Errorf("unsupported time format: %q", s)
 }
 
 // ValidateTimeRange checks if the time range is logical and within limits.
