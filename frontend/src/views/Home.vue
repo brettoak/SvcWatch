@@ -56,12 +56,15 @@ const connectWebSocket = () => {
   }
   
   ws.onmessage = (event) => {
+    let logData;
     try {
-      const data = JSON.parse(event.data)
-      logsStream.value.unshift(data)
+      logData = JSON.parse(event.data)
     } catch (e) {
-      logsStream.value.unshift({ raw: event.data, _ts: Date.now() })
+      logData = { raw: event.data, _ts: Date.now() }
     }
+    // Add unique ID for Vue key to prevent full list re-renders on unshift
+    logData._id = Math.random().toString(36).substring(2, 11) + Date.now();
+    logsStream.value.unshift(logData)
     if (logsStream.value.length > 50) {
       logsStream.value.pop()
     }
@@ -641,7 +644,7 @@ const getTsMaxVal = () => {
             <span v-else-if="wsStatus === 'closed'">Connection closed.</span>
             <span v-else>Waiting for logs...</span>
           </div>
-          <div v-else v-for="(log, idx) in logsStream" :key="idx" class="flex gap-3 bg-bg-primary/50 p-2.5 rounded-lg border border-border-color/50 hover:bg-bg-primary transition-colors items-start">
+          <div v-else v-for="log in logsStream" :key="log._id" class="flex gap-3 bg-bg-primary/50 p-2.5 rounded-lg border border-border-color/50 hover:bg-bg-primary transition-colors items-start">
             <template v-if="log.raw">
                <span class="text-slate-500 shrink-0 whitespace-nowrap text-[0.65rem] font-medium">{{ new Date(log._ts).toLocaleTimeString() }}</span>
                <div class="flex flex-col gap-1 w-full overflow-hidden">

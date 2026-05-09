@@ -330,7 +330,7 @@ const parsePath = (request: string) => {
             <tr v-else-if="logs.length === 0" class="text-center italic text-text-secondary py-10">
               <td colspan="7" class="px-6 py-20">No logs found matching criteria</td>
             </tr>
-            <tr v-else v-for="(log, idx) in logs" :key="idx" class="hover:bg-bg-primary/30 transition-colors group">
+            <tr v-else v-for="log in logs" :key="log.entry.id" class="hover:bg-bg-primary/30 transition-colors group">
               <td class="px-6 py-4 text-xs font-medium text-text-secondary whitespace-nowrap">{{ new Date(log.entry.time_local).toLocaleString() }}</td>
               <td class="px-6 py-4 text-xs font-bold text-text-primary">{{ log.entry.remote_addr }}</td>
               <td class="px-6 py-4">
