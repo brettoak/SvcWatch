@@ -125,6 +125,7 @@ export interface TimeSeriesResponse {
 }
 
 export interface LogEntry {
+  id: number
   remote_addr: string
   remote_user: string
   time_local: string
