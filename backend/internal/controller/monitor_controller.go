@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
@@ -318,25 +319,55 @@ func (ctrl *MonitorController) LogsWebSocketHandler(c *gin.Context) {
 	}
 	defer t.Stop()
 
-	// Handle client disconnection
+	// done channel signals all goroutines to stop on client disconnect
+	done := make(chan struct{})
+
+	// Handle client disconnection and pong responses
+	conn.SetPongHandler(func(string) error { return nil })
 	go func() {
+		defer close(done)
 		for {
 			if _, _, err := conn.ReadMessage(); err != nil {
-				// Client disconnected
+				// Client disconnected or error
 				t.Stop()
-				break
+				return
+			}
+		}
+	}()
+
+	// Heartbeat: send a WebSocket ping every 30s to keep the connection alive
+	// through Nginx and other reverse proxies that close idle connections.
+	go func() {
+		ticker := time.NewTicker(30 * time.Second)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-ticker.C:
+				if err := conn.WriteMessage(websocket.PingMessage, nil); err != nil {
+					return
+				}
+			case <-done:
+				return
 			}
 		}
 	}()
 
 	// Send lines to client
-	for line := range t.Lines {
-		if line.Err != nil {
-			fmt.Printf("Tail error: %v\n", line.Err)
-			continue
-		}
-		if err := conn.WriteMessage(websocket.TextMessage, []byte(line.Text)); err != nil {
-			break
+	for {
+		select {
+		case <-done:
+			return
+		case line, ok := <-t.Lines:
+			if !ok {
+				return
+			}
+			if line.Err != nil {
+				fmt.Printf("Tail error: %v\n", line.Err)
+				continue
+			}
+			if err := conn.WriteMessage(websocket.TextMessage, []byte(line.Text)); err != nil {
+				return
+			}
 		}
 	}
 }

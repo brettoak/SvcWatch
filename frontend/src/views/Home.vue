@@ -57,6 +57,9 @@ const connectWebSocket = () => {
   
   let logIdCounter = 0
   ws.onmessage = (event) => {
+    // Ignore empty heartbeat/ping messages
+    if (!event.data || event.data.trim() === '') return
+
     let logData;
     try {
       logData = JSON.parse(event.data)
