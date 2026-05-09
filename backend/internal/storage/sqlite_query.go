@@ -96,7 +96,7 @@ func (s *SqliteStorage) QueryLogs(tableNames []string, filter LogQueryFilter) (*
 	limit := filter.Size
 	offset := (filter.Page - 1) * filter.Size
 
-	querySQL := fmt.Sprintf("SELECT source_id, remote_addr, remote_user, time_local, request, status, body_bytes_sent, http_referer, http_user_agent, request_time FROM %s %s %s LIMIT ? OFFSET ?", baseTable, whereSQL, orderSQL)
+	querySQL := fmt.Sprintf("SELECT source_id, id, remote_addr, remote_user, time_local, request, status, body_bytes_sent, http_referer, http_user_agent, request_time FROM %s %s %s LIMIT ? OFFSET ?", baseTable, whereSQL, orderSQL)
 	
 	queryArgs := append(args, limit, offset)
 	
@@ -111,6 +111,7 @@ func (s *SqliteStorage) QueryLogs(tableNames []string, filter LogQueryFilter) (*
 		var item LogQueryItem
 		err := rows.Scan(
 			&item.SourceID,
+			&item.Entry.ID,
 			&item.Entry.RemoteAddr,
 			&item.Entry.RemoteUser,
 			&item.Entry.TimeLocal,

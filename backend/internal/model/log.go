@@ -5,6 +5,7 @@ import "time"
 // LogEntry represents a single parsed Nginx log line.
 // All comments are in English as requested.
 type LogEntry struct {
+	ID            uint64    `json:"id"`
 	RemoteAddr    string    `json:"remote_addr"`
 	RemoteUser    string    `json:"remote_user"`
 	TimeLocal     time.Time `json:"time_local"`
