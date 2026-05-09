@@ -69,10 +69,12 @@ func (s *SqliteStorage) Save(tableName string, entry *model.LogEntry) error {
 		remote_addr, remote_user, time_local, request, status, body_bytes_sent, http_referer, http_user_agent, request_time
 	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`, tableName)
+	// Always store time_local as UTC RFC3339 string for consistent string-based comparison in SQLite
+	timeLocalUTC := entry.TimeLocal.UTC().Format(time.RFC3339)
 	_, err := s.db.Exec(insertSQL,
 		entry.RemoteAddr,
 		entry.RemoteUser,
-		entry.TimeLocal,
+		timeLocalUTC,
 		entry.Request,
 		entry.Status,
 		entry.BodyBytesSent,
