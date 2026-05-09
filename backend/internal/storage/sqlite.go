@@ -13,6 +13,27 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 )
 
+// parseAnyTime flexibly parses time strings from multiple sources:
+// - JS toISOString(): "2026-05-09T12:00:00.000Z" (RFC3339Nano with Z)
+// - RFC3339:          "2026-05-09T12:00:00Z"
+// - datetime-local:  "2026-05-09T12:00" or "2026-05-09T12:00:00"
+// - legacy:          "2026-05-09 12:00:00"
+func parseAnyTime(s string) (time.Time, error) {
+	layouts := []string{
+		time.RFC3339Nano,
+		time.RFC3339,
+		"2006-01-02T15:04:05",
+		"2006-01-02T15:04",
+		time.DateTime,
+	}
+	for _, layout := range layouts {
+		if t, err := time.Parse(layout, s); err == nil {
+			return t.UTC(), nil
+		}
+	}
+	return time.Time{}, fmt.Errorf("cannot parse time string: %q", s)
+}
+
 // SqliteStorage implements SQLite storage.
 type SqliteStorage struct {
 	db *sql.DB
@@ -206,16 +227,13 @@ func calculateComparePercent(current, previous float64) float64 {
 // GetOverviewWithCompare calculates metrics for the given timeframe and compares against the same timeframe 24 hours prior.
 func (s *SqliteStorage) GetOverviewWithCompare(tableName string, startTimeStr, endTimeStr string) (*OverviewStats, error) {
 	// 1. Parse times to calculate the previous period
-	layout := time.RFC3339
-	if len(startTimeStr) == 19 {
-		layout = time.DateTime // "2006-01-02 15:04:05"
-	}
-
-	startTime, err := time.Parse(layout, startTimeStr)
+	// Use a flexible parser to handle RFC3339Nano (e.g. from JS toISOString: "2026-05-09T12:00:00.000Z")
+	// as well as plain RFC3339 and "2006-01-02 15:04:05" formats.
+	startTime, err := parseAnyTime(startTimeStr)
 	if err != nil {
 		return nil, fmt.Errorf("invalid start_time format: %w", err)
 	}
-	endTime, err := time.Parse(layout, endTimeStr)
+	endTime, err := parseAnyTime(endTimeStr)
 	if err != nil {
 		return nil, fmt.Errorf("invalid end_time format: %w", err)
 	}

@@ -6,22 +6,6 @@ import (
 	"time"
 )
 
-// parseFlexibleTime parses a time string in RFC3339 or "2006-01-02T15:04" (datetime-local) format.
-func parseFlexibleTime(s string) (time.Time, error) {
-	formats := []string{
-		time.RFC3339,
-		"2006-01-02T15:04:05",
-		"2006-01-02T15:04",
-		"2006-01-02 15:04:05",
-	}
-	for _, layout := range formats {
-		if t, err := time.Parse(layout, s); err == nil {
-			return t, nil
-		}
-	}
-	return time.Time{}, fmt.Errorf("cannot parse time: %s", s)
-}
-
 // QueryLogs executes a dynamic query across one or multiple tables with pagination and filtering.
 func (s *SqliteStorage) QueryLogs(tableNames []string, filter LogQueryFilter) (*LogQueryResponse, error) {
 	if len(tableNames) == 0 {
@@ -42,13 +26,13 @@ func (s *SqliteStorage) QueryLogs(tableNames []string, filter LogQueryFilter) (*
 	// Normalize StartTime and EndTime to UTC RFC3339 for consistent string comparison
 	// against the UTC RFC3339 strings stored in SQLite.
 	if filter.StartTime != "" {
-		if t, err := parseFlexibleTime(filter.StartTime); err == nil {
+		if t, err := parseAnyTime(filter.StartTime); err == nil {
 			whereClauses = append(whereClauses, "time_local >= ?")
 			args = append(args, t.UTC().Format(time.RFC3339))
 		}
 	}
 	if filter.EndTime != "" {
-		if t, err := parseFlexibleTime(filter.EndTime); err == nil {
+		if t, err := parseAnyTime(filter.EndTime); err == nil {
 			whereClauses = append(whereClauses, "time_local <= ?")
 			args = append(args, t.UTC().Format(time.RFC3339))
 		}
