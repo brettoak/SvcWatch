@@ -639,35 +639,39 @@ const getTsMaxVal = () => {
           </div>
         </h3>
         <div class="overflow-y-auto max-h-[350px] w-full flex flex-col gap-2 font-mono text-[0.7rem] custom-scrollbar pr-2">
-          <div v-if="!logsStream.length" class="text-center italic text-text-secondary py-8 flex-1 flex flex-col items-center justify-center gap-2">
-            <span v-if="wsStatus === 'connecting'">Connecting to log stream...</span>
-            <span v-else-if="wsStatus === 'error'">Connection failed. Please check server.</span>
-            <span v-else-if="wsStatus === 'closed'">Connection closed.</span>
-            <span v-else>Waiting for logs...</span>
-          </div>
-          <TransitionGroup v-else name="log-list" tag="div" class="flex flex-col gap-2">
-            <div v-for="log in logsStream" :key="log._id" class="flex gap-3 bg-bg-primary/50 p-2.5 rounded-lg border border-border-color/50 hover:bg-bg-primary transition-all duration-300 items-start">
-              <template v-if="log.raw">
-                 <span class="text-slate-500 shrink-0 whitespace-nowrap text-[0.65rem] font-medium">{{ new Date(log._ts).toLocaleTimeString() }}</span>
-                 <div class="flex flex-col gap-1 w-full overflow-hidden">
-                   <div class="text-slate-400 break-all" v-html="highlightRawLog(log.raw)"></div>
-                 </div>
-              </template>
-              <template v-else>
-                 <span class="text-slate-500 shrink-0 whitespace-nowrap text-[0.65rem] font-medium">{{ new Date(log.time_local || log._ts || Date.now()).toLocaleTimeString() }}</span>
-                 <div class="flex flex-col gap-1 w-full overflow-hidden">
-                   <div class="flex items-center gap-2">
-                     <span class="px-1.5 py-0.5 rounded text-[0.6rem] font-bold uppercase tracking-wider border" 
-                           :class="log.status >= 500 ? 'text-rose-400 bg-rose-400/10 border-rose-400/20' : (log.status >= 400 ? 'text-amber-400 bg-amber-400/10 border-amber-400/20' : (log.status >= 300 ? 'text-sky-400 bg-sky-400/10 border-sky-400/20' : 'text-emerald-400 bg-emerald-400/10 border-emerald-400/20'))">
-                       {{ log.status || 200 }}
-                     </span>
-                     <span class="truncate" :title="log.request" v-html="highlightRequestLine(log.request)"></span>
-                   </div>
-                   <div class="text-slate-400 truncate text-[0.65rem]"><span class="text-sky-400 font-medium">{{ log.remote_addr }}</span> - {{ log.http_user_agent || '' }}</div>
-                 </div>
-              </template>
+          <!-- Stable log container to prevent full re-render when switching from empty to populated -->
+          <div class="relative min-h-[100px]">
+            <div v-if="!logsStream.length" class="absolute inset-0 flex flex-col items-center justify-center text-center italic text-text-secondary py-8 gap-2 z-10 pointer-events-none">
+              <span v-if="wsStatus === 'connecting'">Connecting to log stream...</span>
+              <span v-else-if="wsStatus === 'error'">Connection failed. Please check server.</span>
+              <span v-else-if="wsStatus === 'closed'">Connection closed.</span>
+              <span v-else>Waiting for logs...</span>
             </div>
-          </TransitionGroup>
+            
+            <TransitionGroup name="log-list" tag="div" class="flex flex-col gap-2">
+              <div v-for="log in logsStream" :key="log._id" class="flex gap-3 bg-bg-primary/50 p-2.5 rounded-lg border border-border-color/50 hover:bg-bg-primary transition-all duration-300 items-start relative z-20">
+                <template v-if="log.raw">
+                   <span class="text-slate-500 shrink-0 whitespace-nowrap text-[0.65rem] font-medium">{{ new Date(log._ts).toLocaleTimeString() }}</span>
+                   <div class="flex flex-col gap-1 w-full overflow-hidden">
+                     <div class="text-slate-400 break-all" v-html="highlightRawLog(log.raw)"></div>
+                   </div>
+                </template>
+                <template v-else>
+                   <span class="text-slate-500 shrink-0 whitespace-nowrap text-[0.65rem] font-medium">{{ new Date(log.time_local || log._ts || Date.now()).toLocaleTimeString() }}</span>
+                   <div class="flex flex-col gap-1 w-full overflow-hidden">
+                     <div class="flex items-center gap-2">
+                       <span class="px-1.5 py-0.5 rounded text-[0.6rem] font-bold uppercase tracking-wider border" 
+                             :class="log.status >= 500 ? 'text-rose-400 bg-rose-400/10 border-rose-400/20' : (log.status >= 400 ? 'text-amber-400 bg-amber-400/10 border-amber-400/20' : (log.status >= 300 ? 'text-sky-400 bg-sky-400/10 border-sky-400/20' : 'text-emerald-400 bg-emerald-400/10 border-emerald-400/20'))">
+                         {{ log.status || 200 }}
+                       </span>
+                       <span class="truncate" :title="log.request" v-html="highlightRequestLine(log.request)"></span>
+                     </div>
+                     <div class="text-slate-400 truncate text-[0.65rem]"><span class="text-sky-400 font-medium">{{ log.remote_addr }}</span> - {{ log.http_user_agent || '' }}</div>
+                   </div>
+                </template>
+              </div>
+            </TransitionGroup>
+          </div>
         </div>
       </div>
 
