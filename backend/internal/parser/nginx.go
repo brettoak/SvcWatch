@@ -26,6 +26,8 @@ func Parse(line string) (*model.LogEntry, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse time: %v", err)
 	}
+	// Normalize to UTC for consistent storage and querying
+	timeLocal = timeLocal.UTC()
 
 	status, _ := strconv.Atoi(matches[5])
 	bodyBytes, _ := strconv.Atoi(matches[6])

@@ -49,6 +49,10 @@ const fetchLogs = async () => {
   loading.value = true
   try {
     const params = { ...filters.value }
+    // Convert local datetime-local strings to UTC ISO strings for the API
+    if (params.start_time) params.start_time = new Date(params.start_time).toISOString()
+    if (params.end_time) params.end_time = new Date(params.end_time).toISOString()
+    
     // Clean up empty params
     Object.keys(params).forEach(key => {
       const k = key as keyof LogQueryParams
