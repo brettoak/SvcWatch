@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch, onMounted, onUnmounted, computed } from 'vue'
+import { ref, watch, onMounted, onUnmounted, computed, nextTick } from 'vue'
 import { getDashboardOverview, getStatusDistribution, getTimeSeriesStats, getTopPaths } from '@/services/api'
 import type { DashboardOverviewResponse, StatusDistributionResponse, TimeSeriesResponse, TopPathItem } from '@/services/api'
 import { useAuthStore } from '@/stores/auth'
@@ -29,6 +29,8 @@ const timeSeriesData = ref<TimeSeriesData | null>(null)
 const topPathsData = ref<TopPathItem[]>([])
 
 const logsStream = ref<any[]>([])
+const totalLogsReceived = ref(0)
+const logContainerRef = ref<HTMLElement | null>(null)
 let ws: WebSocket | null = null
 const wsStatus = ref<'connecting' | 'connected' | 'error' | 'closed'>('connecting')
 
@@ -68,10 +70,17 @@ const connectWebSocket = () => {
     }
     // Use a combination of timestamp, random and a counter for absolute uniqueness and stability
     logData._id = `${Date.now()}-${logIdCounter++}-${Math.random().toString(36).substring(2, 7)}`;
-    logsStream.value.unshift(logData)
+    totalLogsReceived.value++
+    logsStream.value.push(logData)
     if (logsStream.value.length > 50) {
-      logsStream.value.pop()
+      logsStream.value.shift()
     }
+
+    nextTick(() => {
+      if (logContainerRef.value) {
+        logContainerRef.value.scrollTop = logContainerRef.value.scrollHeight
+      }
+    })
   }
 }
 
@@ -624,7 +633,7 @@ const getTsMaxVal = () => {
         <h3 class="text-text-secondary text-[0.7rem] font-bold uppercase tracking-widest flex items-center justify-between">
           <div class="flex items-center gap-3">
             <span class="opacity-80">REAL-TIME LOG STREAM</span>
-            <span class="text-emerald-500 font-black">{{ logsStream.length }} LINES</span>
+            <span class="text-emerald-500 font-black">{{ totalLogsReceived }} LINES</span>
           </div>
           <div class="flex items-center gap-2">
             <span class="w-1.5 h-1.5 rounded-full" 
@@ -643,7 +652,7 @@ const getTsMaxVal = () => {
             </span>
           </div>
         </h3>
-        <div class="overflow-y-auto max-h-[350px] w-full flex flex-col gap-1.5 font-log text-[0.7rem] custom-scrollbar pr-2 py-1">
+        <div ref="logContainerRef" class="overflow-y-auto max-h-[350px] w-full flex flex-col gap-1.5 font-log text-[0.7rem] custom-scrollbar pr-2 py-1">
           <!-- Stable log container to prevent full re-render when switching from empty to populated -->
           <div class="relative min-h-[100px]">
             <div v-if="!logsStream.length" class="absolute inset-0 flex flex-col items-center justify-center text-center italic text-text-secondary py-8 gap-2 z-10 pointer-events-none">
@@ -727,7 +736,7 @@ const getTsMaxVal = () => {
 }
 .log-list-enter-from {
   opacity: 0;
-  transform: translateY(-20px);
+  transform: translateY(20px);
 }
 .log-list-leave-to {
   opacity: 0;
