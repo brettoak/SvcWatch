@@ -119,9 +119,9 @@ const highlightRequestLine = (req: string) => {
   if (!req) return ''
   const parts = req.split(' ')
   if (parts.length >= 2) {
-    const method = parts[0]
-    const uri = parts[1]
-    const httpVer = parts.length > 2 ? parts[2] : ''
+    const method = parts[0] || ''
+    const uri = parts[1] || ''
+    const httpVer = parts.length > 2 ? (parts[2] || '') : ''
     let methodColor = 'text-slate-300'
     if (['GET', 'POST', 'PUT'].includes(method)) methodColor = 'text-amber-400'
     else if (method === 'PATCH') methodColor = 'text-sky-400'
