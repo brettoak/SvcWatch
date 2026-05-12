@@ -296,6 +296,9 @@ func (ctrl *MonitorController) LogsWebSocketHandler(c *gin.Context) {
 		logFile = "access.log"
 	}
 
+	// Resolve the actual file path from the monitor configuration
+	actualPath := ctrl.svc.ResolveLogPath(logFile)
+
 	// Upgrade HTTP connection to WebSocket
 	conn, err := upgrader.Upgrade(c.Writer, c.Request, nil)
 	if err != nil {
@@ -305,7 +308,7 @@ func (ctrl *MonitorController) LogsWebSocketHandler(c *gin.Context) {
 	defer conn.Close()
 
 	// Calculate offset for the last 10 lines
-	seekInfo := getLastNLinesOffset(logFile, 10)
+	seekInfo := getLastNLinesOffset(actualPath, 10)
 
 	// Configure tail to read from the calculated offset
 	config := tail.Config{
@@ -315,7 +318,7 @@ func (ctrl *MonitorController) LogsWebSocketHandler(c *gin.Context) {
 		Location:  seekInfo,
 	}
 
-	t, err := tail.TailFile(logFile, config)
+	t, err := tail.TailFile(actualPath, config)
 	if err != nil {
 		_ = conn.WriteMessage(websocket.TextMessage, []byte(fmt.Sprintf("Error tailing file: %v", err)))
 		return

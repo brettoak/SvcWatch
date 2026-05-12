@@ -37,6 +37,19 @@ func (s *MonitorService) GetStats() map[string]interface{} {
 	return stats
 }
 
+// ResolveLogPath resolves a sourceID or filename to its absolute log path configured in the monitor.
+func (s *MonitorService) ResolveLogPath(sourceID string) string {
+	for _, monInst := range s.monitors {
+		tableName := monInst.GetTableName()
+		logPath := monInst.GetLogPath()
+		
+		if sourceID == "" || tableName == sourceID || filepath.Base(logPath) == sourceID {
+			return logPath
+		}
+	}
+	return sourceID // fallback if not found
+}
+
 // GetOverview aggregates key metrics across monitors.
 func (s *MonitorService) GetOverview(startTime, endTime, logFile string) (*storage.OverviewStats, error) {
 	var aggregated *storage.OverviewStats
