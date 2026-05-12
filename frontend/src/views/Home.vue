@@ -80,27 +80,28 @@ const highlightRawLog = (text: string) => {
   let highlighted = text.replace(/</g, '&lt;').replace(/>/g, '&gt;')
   
   // Highlight IP Address - sleek sky blue
-  highlighted = highlighted.replace(/^(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})/, '<span class="text-sky-400 font-medium">$1</span>')
+  highlighted = highlighted.replace(/^(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})/, '<span class="text-sky-400 font-bold">$1</span>')
   
   // Highlight Status Code
   highlighted = highlighted.replace(/&quot; (\d{3}) /, (match, p1) => {
     const code = parseInt(p1, 10)
-    let color = 'text-emerald-400 bg-emerald-400/10 border-emerald-400/20'
-    if (code >= 500) color = 'text-rose-400 bg-rose-400/10 border-rose-400/20'
-    else if (code >= 400) color = 'text-amber-400 bg-amber-400/10 border-amber-400/20'
-    else if (code >= 300) color = 'text-sky-400 bg-sky-400/10 border-sky-400/20'
-    return `&quot; <span class="${color} font-bold px-1.5 py-0.5 text-[0.6rem] rounded border">${p1}</span> `
+    let color = 'text-emerald-400'
+    if (code >= 400) color = 'text-rose-500'
+    else if (code >= 300) color = 'text-amber-400'
+    return `&quot; <span class="${color} font-bold">${p1}</span> `
   })
 
   // Highlight Method and URI
   highlighted = highlighted.replace(/&quot;(GET|POST|PUT|DELETE|PATCH|OPTIONS|HEAD) (.*?) (HTTP\/[0-9.]+)&quot;/, (match, method, uri, httpVer) => {
-    let methodColor = 'text-slate-400'
-    if (method === 'GET') methodColor = 'text-emerald-400'
-    if (method === 'POST') methodColor = 'text-indigo-400'
-    if (method === 'DELETE') methodColor = 'text-rose-400'
-    if (method === 'PUT' || method === 'PATCH') methodColor = 'text-amber-400'
-    return `&quot;<span class="${methodColor} font-bold">${method}</span> <span class="text-slate-200">${uri}</span> <span class="text-slate-500 text-[0.65rem]">${httpVer}</span>&quot;`
+    let methodColor = 'text-slate-300'
+    if (['GET', 'POST', 'PUT'].includes(method)) methodColor = 'text-amber-400'
+    else if (method === 'PATCH') methodColor = 'text-sky-400'
+    else if (method === 'DELETE') methodColor = 'text-rose-400'
+    return `&quot;<span class="${methodColor} font-bold">${method}</span> <span class="text-slate-100">${uri}</span> <span class="text-slate-500 text-[0.6rem]">${httpVer}</span>&quot;`
   })
+  
+  // Highlight bytes sent at the end
+  highlighted = highlighted.replace(/ (\d+) &quot;/, ' <span class="text-slate-500">$1</span> &quot;')
   
   return highlighted
 }
@@ -112,12 +113,11 @@ const highlightRequestLine = (req: string) => {
     const method = parts[0]
     const uri = parts[1]
     const httpVer = parts.length > 2 ? parts[2] : ''
-    let methodColor = 'text-slate-400'
-    if (method === 'GET') methodColor = 'text-emerald-400'
-    if (method === 'POST') methodColor = 'text-indigo-400'
-    if (method === 'DELETE') methodColor = 'text-rose-400'
-    if (method === 'PUT' || method === 'PATCH') methodColor = 'text-amber-400'
-    return `<span class="${methodColor} font-bold">${method}</span> <span class="text-slate-200">${uri}</span> <span class="text-slate-500 text-[0.65rem]">${httpVer}</span>`
+    let methodColor = 'text-slate-300'
+    if (['GET', 'POST', 'PUT'].includes(method)) methodColor = 'text-amber-400'
+    else if (method === 'PATCH') methodColor = 'text-sky-400'
+    else if (method === 'DELETE') methodColor = 'text-rose-400'
+    return `<span class="${methodColor} font-bold">${method}</span> <span class="text-slate-100">${uri}</span> <span class="text-slate-500 text-[0.55rem]">${httpVer}</span>`
   }
   return `<span class="text-slate-200">${req}</span>`
 }
@@ -620,18 +620,20 @@ const getTsMaxVal = () => {
     </div>
 
     <div class="grid grid-cols-1 xl:grid-cols-2 gap-6 items-stretch animate-slide-in [animation-delay:0.4s]">
-      <!-- Live Logs Stream Card (Left) -->
       <div class="relative bg-bg-secondary rounded-2xl p-7 shadow-card border border-border-color flex flex-col gap-5 transition-all duration-300 overflow-hidden h-full">
-        <h3 class="text-text-secondary text-[0.75rem] font-bold uppercase tracking-widest flex items-center justify-between">
-          <div class="flex items-center">Real-time Logs<span class="text-lg opacity-80 ml-2">📡</span></div>
+        <h3 class="text-text-secondary text-[0.7rem] font-bold uppercase tracking-widest flex items-center justify-between">
+          <div class="flex items-center gap-3">
+            <span class="opacity-80">REAL-TIME LOG STREAM</span>
+            <span class="text-emerald-500 font-black">{{ logsStream.length }} LINES</span>
+          </div>
           <div class="flex items-center gap-2">
-            <span class="w-2 h-2 rounded-full" 
+            <span class="w-1.5 h-1.5 rounded-full" 
                   :class="{
                     'bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.8)]': wsStatus === 'connected',
                     'bg-amber-500 animate-pulse': wsStatus === 'connecting',
                     'bg-red-500': wsStatus === 'error' || wsStatus === 'closed'
                   }"></span>
-            <span class="text-[0.65rem] font-bold uppercase tracking-widest"
+            <span class="text-[0.6rem] font-bold uppercase tracking-widest"
                   :class="{
                     'text-emerald-500': wsStatus === 'connected',
                     'text-amber-500': wsStatus === 'connecting',
@@ -641,7 +643,7 @@ const getTsMaxVal = () => {
             </span>
           </div>
         </h3>
-        <div class="overflow-y-auto max-h-[350px] w-full flex flex-col gap-2 font-mono text-[0.7rem] custom-scrollbar pr-2">
+        <div class="overflow-y-auto max-h-[350px] w-full flex flex-col gap-1.5 font-log text-[0.7rem] custom-scrollbar pr-2 py-1">
           <!-- Stable log container to prevent full re-render when switching from empty to populated -->
           <div class="relative min-h-[100px]">
             <div v-if="!logsStream.length" class="absolute inset-0 flex flex-col items-center justify-center text-center italic text-text-secondary py-8 gap-2 z-10 pointer-events-none">
@@ -651,25 +653,26 @@ const getTsMaxVal = () => {
               <span v-else>Waiting for logs...</span>
             </div>
             
-            <TransitionGroup name="log-list" tag="div" class="flex flex-col gap-2">
-              <div v-for="log in logsStream" :key="log._id" class="flex gap-3 bg-bg-primary/50 p-2.5 rounded-lg border border-border-color/50 hover:bg-bg-primary transition-all duration-300 items-start relative z-20">
+            <TransitionGroup name="log-list" tag="div" class="flex flex-col gap-1.5">
+              <div v-for="log in logsStream" :key="log._id" class="flex gap-4 bg-bg-primary/30 p-2 rounded-lg border border-border-color/30 hover:bg-bg-primary/60 transition-all duration-200 items-start relative z-20 group">
                 <template v-if="log.raw">
-                   <span class="text-slate-500 shrink-0 whitespace-nowrap text-[0.65rem] font-medium">{{ new Date(log._ts).toLocaleTimeString() }}</span>
+                   <span class="text-slate-500/60 shrink-0 whitespace-nowrap text-[0.65rem] font-medium">{{ new Date(log._ts).toLocaleTimeString([], { hour12: false }) }}</span>
                    <div class="flex flex-col gap-1 w-full overflow-hidden">
-                     <div class="text-slate-400 break-all" v-html="highlightRawLog(log.raw)"></div>
+                     <div class="text-slate-400 break-all leading-relaxed" v-html="highlightRawLog(log.raw)"></div>
                    </div>
                 </template>
                 <template v-else>
-                   <span class="text-slate-500 shrink-0 whitespace-nowrap text-[0.65rem] font-medium">{{ new Date(log.time_local || log._ts || Date.now()).toLocaleTimeString() }}</span>
+                   <span class="text-slate-500/60 shrink-0 whitespace-nowrap text-[0.65rem] font-medium">{{ new Date(log.time_local || log._ts || Date.now()).toLocaleTimeString([], { hour12: false }) }}</span>
                    <div class="flex flex-col gap-1 w-full overflow-hidden">
-                     <div class="flex items-center gap-2">
-                       <span class="px-1.5 py-0.5 rounded text-[0.6rem] font-bold uppercase tracking-wider border" 
-                             :class="log.status >= 500 ? 'text-rose-400 bg-rose-400/10 border-rose-400/20' : (log.status >= 400 ? 'text-amber-400 bg-amber-400/10 border-amber-400/20' : (log.status >= 300 ? 'text-sky-400 bg-sky-400/10 border-sky-400/20' : 'text-emerald-400 bg-emerald-400/10 border-emerald-400/20'))">
+                     <div class="flex items-center gap-3">
+                       <span class="text-sky-400 font-bold shrink-0">{{ log.remote_addr }}</span>
+                       <span class="truncate" :title="log.request" v-html="highlightRequestLine(log.request)"></span>
+                       <span class="font-bold shrink-0 ml-auto" 
+                             :class="log.status >= 400 ? 'text-rose-500' : (log.status >= 300 ? 'text-amber-400' : 'text-emerald-400')">
                          {{ log.status || 200 }}
                        </span>
-                       <span class="truncate" :title="log.request" v-html="highlightRequestLine(log.request)"></span>
+                       <span class="text-slate-500/50 shrink-0 min-w-[40px] text-right">{{ Math.round(log.body_bytes_sent / 1024) }}KB</span>
                      </div>
-                     <div class="text-slate-400 truncate text-[0.65rem]"><span class="text-sky-400 font-medium">{{ log.remote_addr }}</span> - {{ log.http_user_agent || '' }}</div>
                    </div>
                 </template>
               </div>
