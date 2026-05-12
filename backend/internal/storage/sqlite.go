@@ -188,7 +188,10 @@ func (s *SqliteStorage) GetBaseMetrics(tableName string, startTime, endTime time
 	var successCount sql.NullFloat64
 	var errorCount sql.NullFloat64
 
-	err := s.db.QueryRow(query, startTime, endTime).Scan(
+	startTimeStr := startTime.UTC().Format(time.RFC3339)
+	endTimeStr := endTime.UTC().Format(time.RFC3339)
+
+	err := s.db.QueryRow(query, startTimeStr, endTimeStr).Scan(
 		&metrics.TotalRequests,
 		&successCount,
 		&errorCount,
@@ -319,7 +322,10 @@ func (s *SqliteStorage) GetStatusDistribution(tableName string, startTime, endTi
 	var total int
 	var s1xx, s2xx, s3xx, s4xx, s5xx sql.NullInt64
 
-	err := s.db.QueryRow(query, startTime, endTime).Scan(&total, &s1xx, &s2xx, &s3xx, &s4xx, &s5xx)
+	startTimeStr := startTime.UTC().Format(time.RFC3339)
+	endTimeStr := endTime.UTC().Format(time.RFC3339)
+
+	err := s.db.QueryRow(query, startTimeStr, endTimeStr).Scan(&total, &s1xx, &s2xx, &s3xx, &s4xx, &s5xx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query status distribution: %w", err)
 	}
@@ -437,8 +443,10 @@ func (s *SqliteStorage) GetTimeSeries(tableNames []string, metric string, interv
 
 	// Prepare arguments (each table needs startTime and endTime)
 	var args []interface{}
+	startTimeStr := startTime.UTC().Format(time.RFC3339)
+	endTimeStr := endTime.UTC().Format(time.RFC3339)
 	for range tableNames {
-		args = append(args, startTime, endTime)
+		args = append(args, startTimeStr, endTimeStr)
 	}
 
 	rows, err := s.db.Query(finalQuery, args...)
@@ -481,9 +489,11 @@ func (s *SqliteStorage) GetTopPaths(tableNames []string, startTime, endTime time
 
 	var unions []string
 	var args []interface{}
+	startTimeStr := startTime.UTC().Format(time.RFC3339)
+	endTimeStr := endTime.UTC().Format(time.RFC3339)
 	for _, tableName := range tableNames {
 		unions = append(unions, fmt.Sprintf("SELECT request, status, request_time FROM %s WHERE time_local >= ? AND time_local <= ?", tableName))
-		args = append(args, startTime, endTime)
+		args = append(args, startTimeStr, endTimeStr)
 	}
 	unionQuery := strings.Join(unions, " UNION ALL ")
 
