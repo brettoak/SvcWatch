@@ -304,12 +304,15 @@ func (ctrl *MonitorController) LogsWebSocketHandler(c *gin.Context) {
 	}
 	defer conn.Close()
 
-	// Configure tail to read from the end of the file
+	// Calculate offset for the last 10 lines
+	seekInfo := getLastNLinesOffset(logFile, 10)
+
+	// Configure tail to read from the calculated offset
 	config := tail.Config{
 		ReOpen:    true,
 		Follow:    true,
 		MustExist: false,
-		Location:  &tail.SeekInfo{Offset: 0, Whence: os.SEEK_END},
+		Location:  seekInfo,
 	}
 
 	t, err := tail.TailFile(logFile, config)
@@ -370,5 +373,66 @@ func (ctrl *MonitorController) LogsWebSocketHandler(c *gin.Context) {
 			}
 		}
 	}
+}
+
+// getLastNLinesOffset finds the offset of the Nth line from the end of the file.
+func getLastNLinesOffset(filename string, n int) *tail.SeekInfo {
+	file, err := os.Open(filename)
+	if err != nil {
+		return &tail.SeekInfo{Offset: 0, Whence: os.SEEK_END}
+	}
+	defer file.Close()
+
+	stat, err := file.Stat()
+	if err != nil {
+		return &tail.SeekInfo{Offset: 0, Whence: os.SEEK_END}
+	}
+
+	filesize := stat.Size()
+	if filesize == 0 {
+		return &tail.SeekInfo{Offset: 0, Whence: os.SEEK_END}
+	}
+
+	// Read a chunk from the end of the file
+	// 8KB should be more than enough for 10 lines of typical logs
+	const maxChunk = 8192
+	var readSize int64 = maxChunk
+	if filesize < readSize {
+		readSize = filesize
+	}
+
+	buf := make([]byte, readSize)
+	_, err = file.ReadAt(buf, filesize-readSize)
+	if err != nil {
+		return &tail.SeekInfo{Offset: 0, Whence: os.SEEK_END}
+	}
+
+	count := 0
+	pos := int64(len(buf)) - 1
+
+	// If the file ends with a newline, skip it so we don't count it as one of the N lines
+	if pos >= 0 && buf[pos] == '\n' {
+		pos--
+	}
+
+	for ; pos >= 0; pos-- {
+		if buf[pos] == '\n' {
+			count++
+			if count == n {
+				// Found the start of the Nth line from the end
+				return &tail.SeekInfo{Offset: filesize - readSize + pos + 1, Whence: os.SEEK_SET}
+			}
+		}
+	}
+
+	// If we didn't find N lines:
+	// If the whole file was read, start from the beginning
+	if filesize <= readSize {
+		return &tail.SeekInfo{Offset: 0, Whence: os.SEEK_SET}
+	}
+
+	// If the file is large and we didn't find N lines in the chunk, 
+	// just start from the beginning of the chunk as a best effort
+	return &tail.SeekInfo{Offset: filesize - readSize, Whence: os.SEEK_SET}
 }
 
