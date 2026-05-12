@@ -14,7 +14,7 @@ const toggleAdvanced = () => {
 
 const formatToDateTimeLocal = (date: Date) => {
   const pad = (n: number) => n.toString().padStart(2, '0')
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`
 }
 
 const getDefaultTimes = () => {
@@ -232,9 +232,9 @@ const parsePath = (request: string) => {
             </div>
             
             <div v-if="timeFilter === 'custom'" class="flex items-center gap-1 animate-fade-in flex-1 min-w-[300px]">
-              <input v-model="filters.start_time" type="datetime-local" class="bg-bg-primary border border-border-color rounded-xl px-3 py-1.5 text-sm outline-none focus:border-primary-blue transition-all w-full" />
+              <input v-model="filters.start_time" type="datetime-local" step="1" class="bg-bg-primary border border-border-color rounded-xl px-3 py-1.5 text-sm outline-none focus:border-primary-blue transition-all w-full" />
               <span class="text-text-secondary text-xs font-bold px-1">to</span>
-              <input v-model="filters.end_time" type="datetime-local" class="bg-bg-primary border border-border-color rounded-xl px-3 py-1.5 text-sm outline-none focus:border-primary-blue transition-all w-full" />
+              <input v-model="filters.end_time" type="datetime-local" step="1" class="bg-bg-primary border border-border-color rounded-xl px-3 py-1.5 text-sm outline-none focus:border-primary-blue transition-all w-full" />
             </div>
           </div>
         </div>
