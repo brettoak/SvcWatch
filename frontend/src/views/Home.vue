@@ -72,7 +72,7 @@ const connectWebSocket = () => {
     logData._id = `${Date.now()}-${logIdCounter++}-${Math.random().toString(36).substring(2, 7)}`;
     totalLogsReceived.value++
     logsStream.value.push(logData)
-    if (logsStream.value.length > 50) {
+    if (logsStream.value.length > 10) {
       logsStream.value.shift()
     }
 
