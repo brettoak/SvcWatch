@@ -72,7 +72,7 @@ const connectWebSocket = () => {
     logData._id = `${Date.now()}-${logIdCounter++}-${Math.random().toString(36).substring(2, 7)}`;
     totalLogsReceived.value++
     logsStream.value.push(logData)
-    if (logsStream.value.length > 10) {
+    if (logsStream.value.length > 50) {
       logsStream.value.shift()
     }
 
@@ -652,9 +652,9 @@ const getTsMaxVal = () => {
             </span>
           </div>
         </h3>
-        <div ref="logContainerRef" class="overflow-y-auto max-h-[350px] w-full flex flex-col gap-1.5 font-log text-[0.7rem] custom-scrollbar pr-2 py-1">
+        <div ref="logContainerRef" class="overflow-y-auto flex-1 min-h-0 w-full flex flex-col gap-1.5 font-log text-[0.7rem] custom-scrollbar pr-2 py-1">
           <!-- Stable log container to prevent full re-render when switching from empty to populated -->
-          <div class="relative min-h-[100px]">
+          <div class="relative min-h-full">
             <div v-if="!logsStream.length" class="absolute inset-0 flex flex-col items-center justify-center text-center italic text-text-secondary py-8 gap-2 z-10 pointer-events-none">
               <span v-if="wsStatus === 'connecting'">Connecting to log stream...</span>
               <span v-else-if="wsStatus === 'error'">Connection failed. Please check server.</span>
