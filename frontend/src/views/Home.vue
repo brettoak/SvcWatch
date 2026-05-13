@@ -629,7 +629,7 @@ const getTsMaxVal = () => {
     </div>
 
     <div class="grid grid-cols-1 xl:grid-cols-2 gap-6 items-stretch animate-slide-in [animation-delay:0.4s]">
-      <div class="relative bg-bg-secondary rounded-2xl p-7 shadow-card border border-border-color flex flex-col gap-5 transition-all duration-300 overflow-hidden h-full">
+      <div class="relative bg-bg-secondary rounded-2xl p-7 shadow-card border border-border-color flex flex-col gap-5 transition-all duration-300 overflow-hidden h-[420px]">
         <h3 class="text-text-secondary text-[0.7rem] font-bold uppercase tracking-widest flex items-center justify-between">
           <div class="flex items-center gap-3">
             <span class="opacity-80">REAL-TIME LOG STREAM</span>
@@ -691,12 +691,12 @@ const getTsMaxVal = () => {
       </div>
 
       <!-- Top Request Paths Card (Right) -->
-      <div class="relative bg-bg-secondary rounded-2xl p-7 shadow-card border border-border-color flex flex-col gap-5 transition-all duration-300 h-full" :class="{ 'opacity-50 pointer-events-none': loading }">
+      <div class="relative bg-bg-secondary rounded-2xl p-7 shadow-card border border-border-color flex flex-col gap-5 transition-all duration-300 h-[420px]" :class="{ 'opacity-50 pointer-events-none': loading }">
       <h3 class="text-text-secondary text-[0.75rem] font-bold uppercase tracking-widest flex items-center">Top Request Paths<span class="text-lg opacity-80 ml-2">🔥</span></h3>
-      <div class="overflow-x-auto w-full">
-        <table class="w-full text-left border-collapse">
-          <thead>
-            <tr class="bg-bg-primary/50 border-b border-border-color">
+      <div class="overflow-auto flex-1 min-h-0 w-full custom-scrollbar pr-2">
+        <table class="w-full text-left border-collapse relative">
+          <thead class="sticky top-0 bg-bg-secondary z-10 shadow-sm">
+            <tr class="bg-bg-primary/90 backdrop-blur-sm border-b border-border-color">
               <th class="px-4 py-3 text-[0.7rem] font-bold uppercase tracking-widest text-text-secondary">Path</th>
               <th class="px-4 py-3 text-[0.7rem] font-bold uppercase tracking-widest text-text-secondary text-right">Hits</th>
               <th class="px-4 py-3 text-[0.7rem] font-bold uppercase tracking-widest text-text-secondary text-right">Avg ms</th>
