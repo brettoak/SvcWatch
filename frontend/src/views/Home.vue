@@ -390,6 +390,43 @@ const getTsMaxVal = () => {
   if (!timeSeriesData.value?.points || timeSeriesData.value.points.length === 0) return 0
   return Math.max(...timeSeriesData.value.points.map(p => p.value))
 }
+
+const tsWavePath = computed(() => {
+  if (tsBars.value.length === 0) return ''
+  const pts = tsBars.value.map(bar => ({ x: bar.x + bar.w / 2, y: bar.y }))
+  
+  let d = `M ${pts[0].x} ${pts[0].y}`
+  for (let i = 0; i < pts.length - 1; i++) {
+    const p0 = pts[i]
+    const p1 = pts[i + 1]
+    const cp1x = p0.x + (p1.x - p0.x) / 2
+    const cp1y = p0.y
+    const cp2x = p1.x - (p1.x - p0.x) / 2
+    const cp2y = p1.y
+    d += ` C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${p1.x} ${p1.y}`
+  }
+  return d
+})
+
+const tsAreaPath = computed(() => {
+  if (tsBars.value.length === 0) return ''
+  const pts = tsBars.value.map(bar => ({ x: bar.x + bar.w / 2, y: bar.y }))
+  const height = 150
+  
+  let d = `M ${pts[0].x} ${height}`
+  d += ` L ${pts[0].x} ${pts[0].y}`
+  for (let i = 0; i < pts.length - 1; i++) {
+    const p0 = pts[i]
+    const p1 = pts[i + 1]
+    const cp1x = p0.x + (p1.x - p0.x) / 2
+    const cp1y = p0.y
+    const cp2x = p1.x - (p1.x - p0.x) / 2
+    const cp2y = p1.y
+    d += ` C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${p1.x} ${p1.y}`
+  }
+  d += ` L ${pts[pts.length - 1].x} ${height} Z`
+  return d
+})
 </script>
 
 <template>
@@ -522,30 +559,59 @@ const getTsMaxVal = () => {
               <line x1="0" y1="170" x2="600" y2="170" class="stroke-slate-200 dark:stroke-slate-700" stroke-width="1"/>
             </g>
             
-            <!-- Bars -->
+            <!-- Area Fill -->
+            <path
+              v-if="tsAreaPath"
+              :d="tsAreaPath"
+              fill="url(#waveGradient)"
+              class="transition-all duration-300"
+            />
+            
+            <!-- Smooth Line -->
+            <path
+              v-if="tsWavePath"
+              :d="tsWavePath"
+              fill="none"
+              stroke="var(--color-primary-blue)"
+              stroke-width="3"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              class="transition-all duration-300 drop-shadow-md"
+            />
+            
+            <!-- Hover detection regions (invisible columns) -->
             <g>
               <rect
                 v-for="(bar, idx) in tsBars" 
                 :key="idx"
-                :x="bar.x"
-                :y="bar.y"
-                :width="bar.w"
-                :height="bar.h"
-                fill="url(#barGradient)"
-                class="hover:brightness-125 transition-all duration-300 cursor-pointer"
-                rx="2"
-                ry="2"
+                :x="bar.x + bar.w / 2 - (600 / tsBars.length) / 2"
+                :y="0"
+                :width="600 / tsBars.length"
+                :height="170"
+                fill="transparent"
+                class="cursor-pointer"
                 @mouseenter="hoveredBarIdx = idx"
                 @mouseleave="hoveredBarIdx = null"
               >
               </rect>
             </g>
 
+            <!-- Highlight dot for hovered item -->
+            <circle
+              v-if="hoveredBarIdx !== null && tsBars[hoveredBarIdx]"
+              :cx="tsBars[hoveredBarIdx].x + tsBars[hoveredBarIdx].w / 2"
+              :cy="tsBars[hoveredBarIdx].y"
+              r="4"
+              class="transition-all duration-200 stroke-white dark:stroke-slate-900"
+              fill="var(--color-primary-blue)"
+              stroke-width="2"
+            />
+
             <!-- Definitions -->
             <defs>
-              <linearGradient id="barGradient" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stop-color="var(--color-primary-blue)" />
-                <stop offset="100%" stop-color="var(--color-primary-blue)" stop-opacity="0.2" />
+              <linearGradient id="waveGradient" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="var(--color-primary-blue)" stop-opacity="0.3" />
+                <stop offset="100%" stop-color="var(--color-primary-blue)" stop-opacity="0.0" />
               </linearGradient>
             </defs>
           </svg>
