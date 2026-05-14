@@ -379,6 +379,11 @@ const tsBars = computed(() => {
   })
 })
 
+const hoveredBar = computed(() => {
+  if (hoveredBarIdx.value === null) return null
+  return tsBars.value[hoveredBarIdx.value] || null
+})
+
 const formatBarTooltip = (val: number) => {
   if (selectedMetric.value === 'bandwidth') return Math.round(val / 1024) + ' KB/s'
   if (selectedMetric.value === 'latency_p99') return val.toFixed(1) + ' ms'
@@ -394,11 +399,13 @@ const getTsMaxVal = () => {
 const tsWavePath = computed(() => {
   if (tsBars.value.length === 0) return ''
   const pts = tsBars.value.map(bar => ({ x: bar.x + bar.w / 2, y: bar.y }))
+  if (pts.length === 0 || !pts[0]) return ''
   
   let d = `M ${pts[0].x} ${pts[0].y}`
   for (let i = 0; i < pts.length - 1; i++) {
     const p0 = pts[i]
     const p1 = pts[i + 1]
+    if (!p0 || !p1) continue
     const cp1x = p0.x + (p1.x - p0.x) / 2
     const cp1y = p0.y
     const cp2x = p1.x - (p1.x - p0.x) / 2
@@ -411,6 +418,7 @@ const tsWavePath = computed(() => {
 const tsAreaPath = computed(() => {
   if (tsBars.value.length === 0) return ''
   const pts = tsBars.value.map(bar => ({ x: bar.x + bar.w / 2, y: bar.y }))
+  if (pts.length === 0 || !pts[0]) return ''
   const height = 150
   
   let d = `M ${pts[0].x} ${height}`
@@ -418,13 +426,17 @@ const tsAreaPath = computed(() => {
   for (let i = 0; i < pts.length - 1; i++) {
     const p0 = pts[i]
     const p1 = pts[i + 1]
+    if (!p0 || !p1) continue
     const cp1x = p0.x + (p1.x - p0.x) / 2
     const cp1y = p0.y
     const cp2x = p1.x - (p1.x - p0.x) / 2
     const cp2y = p1.y
     d += ` C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${p1.x} ${p1.y}`
   }
-  d += ` L ${pts[pts.length - 1].x} ${height} Z`
+  const lastPt = pts[pts.length - 1]
+  if (lastPt) {
+    d += ` L ${lastPt.x} ${height} Z`
+  }
   return d
 })
 </script>
@@ -598,9 +610,9 @@ const tsAreaPath = computed(() => {
 
             <!-- Highlight dot for hovered item -->
             <circle
-              v-if="hoveredBarIdx !== null && tsBars[hoveredBarIdx]"
-              :cx="tsBars[hoveredBarIdx].x + tsBars[hoveredBarIdx].w / 2"
-              :cy="tsBars[hoveredBarIdx].y"
+              v-if="hoveredBar"
+              :cx="hoveredBar.x + hoveredBar.w / 2"
+              :cy="hoveredBar.y"
               r="4"
               class="transition-all duration-200 stroke-white dark:stroke-slate-900"
               fill="var(--color-primary-blue)"
@@ -618,17 +630,17 @@ const tsAreaPath = computed(() => {
           
           <!-- Custom Tooltip -->
           <div 
-            v-if="hoveredBarIdx !== null && tsBars[hoveredBarIdx]" 
+            v-if="hoveredBar" 
             class="fixed pointer-events-none z-[100] bg-slate-900/90 text-white px-3 py-2 rounded-lg text-[0.7rem] shadow-xl backdrop-blur-md border border-white/10 flex flex-col gap-0.5 min-w-[120px] transition-opacity duration-200"
             :style="{ left: mouseX + 15 + 'px', top: mouseY + 15 + 'px' }"
           >
             <div class="flex items-center gap-2 mb-1 border-b border-white/10 pb-1">
               <span class="w-2 h-2 rounded-full bg-primary-blue"></span>
-              <span class="font-bold text-white/90">{{ tsBars[hoveredBarIdx]?.fullTs }}</span>
+              <span class="font-bold text-white/90">{{ hoveredBar.fullTs }}</span>
             </div>
             <div class="flex justify-between items-baseline">
               <span class="text-white/50 uppercase text-[0.6rem] font-bold tracking-wider">{{ selectedMetric.replace('_', ' ') }}</span>
-              <span class="text-[0.9rem] font-black text-white">{{ formatBarTooltip(tsBars[hoveredBarIdx]?.val || 0) }}</span>
+              <span class="text-[0.9rem] font-black text-white">{{ formatBarTooltip(hoveredBar.val || 0) }}</span>
             </div>
           </div>
           <div v-else class="flex-1 flex flex-col items-center justify-center text-text-secondary text-sm italic py-10">
