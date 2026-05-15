@@ -3,6 +3,7 @@ package parser
 import (
 	"fmt"
 	"SvcWatch/internal/model"
+	"SvcWatch/internal/utils"
 	"regexp"
 	"strconv"
 	"time"
@@ -32,12 +33,12 @@ func Parse(line string) (*model.LogEntry, error) {
 	status, _ := strconv.Atoi(matches[5])
 	bodyBytes, _ := strconv.Atoi(matches[6])
 
-	var reqTime float64
+	reqTime, _ := 0.0
 	if len(matches) > 9 && matches[9] != "" {
 		reqTime, _ = strconv.ParseFloat(matches[9], 64)
 	}
 
-	return &model.LogEntry{
+	entry := &model.LogEntry{
 		RemoteAddr:    matches[1],
 		RemoteUser:    matches[2],
 		TimeLocal:     timeLocal,
@@ -47,5 +48,17 @@ func Parse(line string) (*model.LogEntry, error) {
 		HttpReferer:   matches[7],
 		HttpUserAgent: matches[8],
 		RequestTime:   reqTime,
-	}, nil
+	}
+
+	// Lookup Geo Location
+	geo := utils.LookupIP(entry.RemoteAddr)
+	if geo != nil {
+		entry.Country = geo.Country
+		entry.Region = geo.Region
+		entry.City = geo.City
+		entry.Latitude = geo.Latitude
+		entry.Longitude = geo.Longitude
+	}
+
+	return entry, nil
 }

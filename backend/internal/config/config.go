@@ -14,7 +14,8 @@ type Config struct {
 }
 
 type ServerConfig struct {
-	Port int `yaml:"port"`
+	Port        int    `yaml:"port"`
+	GeoIPDBPath string `yaml:"geoip_db_path"`
 }
 
 type AuthConfig struct {

@@ -15,4 +15,9 @@ type LogEntry struct {
 	HttpReferer   string    `json:"http_referer"`
 	HttpUserAgent string    `json:"http_user_agent"`
 	RequestTime   float64   `json:"request_time"`
+	Country       string    `json:"country"`
+	Region        string    `json:"region"`
+	City          string    `json:"city"`
+	Latitude      float64   `json:"latitude"`
+	Longitude     float64   `json:"longitude"`
 }

@@ -7,6 +7,7 @@ import (
 	mon "SvcWatch/internal/monitor" // Import the local module
 	"SvcWatch/internal/service"
 	storage "SvcWatch/internal/storage"
+	"SvcWatch/internal/utils"
 	"fmt"
 	"log"
 	"os"
@@ -36,6 +37,16 @@ func main() {
 	cfg, err := config.LoadConfig(configPath)
 	if err != nil {
 		log.Fatalf("Failed to load config: %v", err)
+	}
+
+	// Initialize GeoIP
+	if cfg.Server.GeoIPDBPath != "" {
+		utils.InitGeoIP(cfg.Server.GeoIPDBPath)
+		defer utils.CloseGeoIP()
+	} else {
+		// try default path
+		utils.InitGeoIP("data/GeoLite2-City.mmdb")
+		defer utils.CloseGeoIP()
 	}
 
 	// Initialize shared storage

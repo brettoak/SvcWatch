@@ -74,7 +74,12 @@ func (s *SqliteStorage) InitTable(tableName string, clearOnStartup bool) {
 		body_bytes_sent INTEGER,
 		http_referer TEXT,
 		http_user_agent TEXT,
-		request_time REAL
+		request_time REAL,
+		country TEXT,
+		region TEXT,
+		city TEXT,
+		latitude REAL,
+		longitude REAL
 	);
 	`, tableName)
 	_, err := s.db.Exec(createTableSQL)
@@ -87,8 +92,8 @@ func (s *SqliteStorage) InitTable(tableName string, clearOnStartup bool) {
 func (s *SqliteStorage) Save(tableName string, entry *model.LogEntry) error {
 	insertSQL := fmt.Sprintf(`
 	INSERT INTO %s (
-		remote_addr, remote_user, time_local, request, status, body_bytes_sent, http_referer, http_user_agent, request_time
-	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+		remote_addr, remote_user, time_local, request, status, body_bytes_sent, http_referer, http_user_agent, request_time, country, region, city, latitude, longitude
+	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`, tableName)
 	// Always store time_local as UTC RFC3339 string for consistent string-based comparison in SQLite
 	timeLocalUTC := entry.TimeLocal.UTC().Format(time.RFC3339)
@@ -102,6 +107,11 @@ func (s *SqliteStorage) Save(tableName string, entry *model.LogEntry) error {
 		entry.HttpReferer,
 		entry.HttpUserAgent,
 		entry.RequestTime,
+		entry.Country,
+		entry.Region,
+		entry.City,
+		entry.Latitude,
+		entry.Longitude,
 	)
 	if err != nil {
 		log.Printf("Failed to insert log entry into %s: %v", tableName, err)
@@ -544,6 +554,70 @@ func (s *SqliteStorage) GetTopPaths(tableNames []string, startTime, endTime time
 
 	if result == nil {
 		result = []TopPathItem{}
+	}
+
+	return result, nil
+}
+
+// GeoDistributionItem represents a single geographical distribution record.
+type GeoDistributionItem struct {
+	Country   string  `json:"country"`
+	Region    string  `json:"region"`
+	City      string  `json:"city"`
+	Latitude  float64 `json:"latitude"`
+	Longitude float64 `json:"longitude"`
+	Count     int     `json:"count"`
+}
+
+// GetGeoDistribution retrieves the geographical distribution of requests.
+func (s *SqliteStorage) GetGeoDistribution(tableNames []string, startTime, endTime time.Time, limit int) ([]GeoDistributionItem, error) {
+	if len(tableNames) == 0 {
+		return []GeoDistributionItem{}, nil
+	}
+
+	var unions []string
+	var args []interface{}
+	startTimeStr := startTime.UTC().Format(time.RFC3339)
+	endTimeStr := endTime.UTC().Format(time.RFC3339)
+	for _, tableName := range tableNames {
+		unions = append(unions, fmt.Sprintf("SELECT country, region, city, latitude, longitude FROM %s WHERE time_local >= ? AND time_local <= ? AND latitude IS NOT NULL AND longitude IS NOT NULL", tableName))
+		args = append(args, startTimeStr, endTimeStr)
+	}
+	unionQuery := strings.Join(unions, " UNION ALL ")
+
+	query := fmt.Sprintf(`
+		SELECT 
+			COALESCE(country, 'Unknown') as country,
+			COALESCE(region, 'Unknown') as region,
+			COALESCE(city, 'Unknown') as city,
+			latitude,
+			longitude,
+			COUNT(*) as count
+		FROM (%s)
+		GROUP BY latitude, longitude
+		ORDER BY count DESC
+		LIMIT ?
+	`, unionQuery)
+
+	args = append(args, limit)
+
+	rows, err := s.db.Query(query, args...)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query geo distribution: %w", err)
+	}
+	defer rows.Close()
+
+	var result []GeoDistributionItem
+	for rows.Next() {
+		var item GeoDistributionItem
+		if err := rows.Scan(&item.Country, &item.Region, &item.City, &item.Latitude, &item.Longitude, &item.Count); err != nil {
+			return nil, fmt.Errorf("failed to scan geo distribution row: %w", err)
+		}
+		result = append(result, item)
+	}
+
+	if result == nil {
+		result = []GeoDistributionItem{}
 	}
 
 	return result, nil
