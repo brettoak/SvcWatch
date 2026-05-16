@@ -41,7 +41,15 @@ type SqliteStorage struct {
 
 // NewSqliteStorage creates a new SqliteStorage.
 func NewSqliteStorage(dbPath string) *SqliteStorage {
-	db, err := sql.Open("sqlite3", dbPath)
+	// Add busy_timeout and WAL mode for concurrent read/write
+	dsn := dbPath
+	if !strings.Contains(dsn, "?") {
+		dsn += "?_busy_timeout=5000&_journal_mode=WAL"
+	} else {
+		dsn += "&_busy_timeout=5000&_journal_mode=WAL"
+	}
+
+	db, err := sql.Open("sqlite3", dsn)
 	if err != nil {
 		log.Fatalf("Failed to open sqlite database: %v", err)
 	}
