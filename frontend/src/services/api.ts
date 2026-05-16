@@ -233,3 +233,28 @@ export const getTopPaths = (startTime: string, endTime: string, limit: number = 
     },
   })
 }
+
+export interface GeoDistributionItem {
+  country: string
+  region: string
+  city: string
+  latitude: number
+  longitude: number
+  count: number
+}
+
+export interface GeoDistributionResponse {
+  code: number
+  message: string
+  data: GeoDistributionItem[]
+}
+
+export const getGeoDistribution = (startTime: string, endTime: string, limit: number = 100) => {
+  return api.get<GeoDistributionResponse>('/stats/geo-distribution', {
+    params: {
+      start_time: startTime,
+      end_time: endTime,
+      limit,
+    },
+  })
+}
