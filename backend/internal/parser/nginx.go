@@ -33,7 +33,7 @@ func Parse(line string) (*model.LogEntry, error) {
 	status, _ := strconv.Atoi(matches[5])
 	bodyBytes, _ := strconv.Atoi(matches[6])
 
-	reqTime, _ := 0.0
+	reqTime := 0.0
 	if len(matches) > 9 && matches[9] != "" {
 		reqTime, _ = strconv.ParseFloat(matches[9], 64)
 	}
