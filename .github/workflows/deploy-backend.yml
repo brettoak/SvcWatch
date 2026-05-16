@@ -127,7 +127,27 @@ jobs:
           source: "svcwatch"
           target: "/home/${{ matrix.server.user }}/app"
 
+      - name: Check if GeoIP database exists on ${{ matrix.server.host }}
+        id: check_db
+        env:
+          SSH_KEY: ${{ secrets.SERVER_SSH_KEY }}
+          HOST: ${{ matrix.server.host }}
+          USER: ${{ matrix.server.user }}
+        run: |
+          mkdir -p ~/.ssh
+          echo "$SSH_KEY" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -H $HOST >> ~/.ssh/known_hosts
+          if ssh -i ~/.ssh/id_rsa $USER@$HOST "[ -f /home/$USER/app/data/GeoLite2-City.mmdb ]"; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+            echo "GeoIP database already exists, will skip copying."
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+            echo "GeoIP database missing, will copy."
+          fi
+
       - name: Copy GeoIP database to ${{ matrix.server.host }}
+        if: steps.check_db.outputs.exists != 'true'
         uses: appleboy/scp-action@master
         with:
           host: ${{ matrix.server.host }}
