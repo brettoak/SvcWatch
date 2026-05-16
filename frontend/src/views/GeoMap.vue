@@ -25,6 +25,7 @@ use([
 
 const themeStore = useThemeStore()
 const loading = ref(true)
+const mapLoaded = ref(false)
 const geoData = ref<GeoDistributionItem[]>([])
 
 const fetchGeoData = async () => {
@@ -50,6 +51,7 @@ onMounted(async () => {
     const res = await fetch('/world.json')
     const worldJson = await res.json()
     echarts.registerMap('world', worldJson)
+    mapLoaded.value = true
   } catch (err) {
     console.error('Failed to load world.json', err)
   }
@@ -77,6 +79,7 @@ const option = computed(() => {
     geo: {
       map: 'world',
       roam: true,
+      zoom: 1.2,
       label: {
         emphasis: {
           show: false
@@ -84,11 +87,12 @@ const option = computed(() => {
       },
       itemStyle: {
         normal: {
-          areaColor: themeStore.isDark ? '#323c48' : '#e2e8f0',
-          borderColor: themeStore.isDark ? '#111' : '#fff'
+          areaColor: themeStore.isDark ? '#1e293b' : '#e0f2fe',
+          borderColor: themeStore.isDark ? '#0f172a' : '#bae6fd',
+          borderWidth: 1,
         },
         emphasis: {
-          areaColor: themeStore.isDark ? '#2a333d' : '#cbd5e1'
+          areaColor: themeStore.isDark ? '#334155' : '#bae6fd'
         }
       }
     },
@@ -99,7 +103,7 @@ const option = computed(() => {
         coordinateSystem: 'geo',
         data: data,
         symbolSize: (val: any) => {
-          return Math.max((val[2] / maxCount) * 20, 5)
+          return Math.max((val[2] / maxCount) * 25, 8)
         },
         showEffectOn: 'render',
         rippleEffect: {
@@ -115,9 +119,9 @@ const option = computed(() => {
         },
         itemStyle: {
           normal: {
-            color: '#3b82f6',
-            shadowBlur: 10,
-            shadowColor: '#3b82f6'
+            color: themeStore.isDark ? '#06b6d4' : '#3b82f6', // Cyan in dark, Blue in light
+            shadowBlur: 15,
+            shadowColor: themeStore.isDark ? '#22d3ee' : '#60a5fa'
           }
         },
         zlevel: 1
@@ -134,10 +138,13 @@ const option = computed(() => {
     </div>
     
     <div class="flex-1 bg-bg-secondary rounded-2xl shadow-card border border-border-color p-4 relative overflow-hidden">
-      <div v-if="loading" class="absolute inset-0 flex items-center justify-center bg-bg-secondary/50 backdrop-blur-sm z-10">
-        <span class="text-text-secondary font-bold">Loading map data...</span>
+      <div v-if="loading || !mapLoaded" class="absolute inset-0 flex items-center justify-center bg-bg-secondary/50 backdrop-blur-sm z-10">
+        <div class="flex flex-col items-center gap-3">
+          <div class="w-8 h-8 border-4 border-primary-blue border-t-transparent rounded-full animate-spin"></div>
+          <span class="text-text-secondary font-bold tracking-widest uppercase text-xs">Initializing Map...</span>
+        </div>
       </div>
-      <v-chart class="w-full h-full" :option="option" :autoresize="true" />
+      <v-chart v-if="mapLoaded" class="w-full h-full" :option="option" :autoresize="true" />
     </div>
   </div>
 </template>
