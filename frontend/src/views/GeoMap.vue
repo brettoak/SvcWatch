@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue'
+import { ref, watch, onMounted, computed } from 'vue'
 import { useThemeStore } from '@/stores/theme'
 import { getGeoDistribution } from '@/services/api'
 import type { GeoDistributionItem } from '@/services/api'
@@ -28,13 +28,57 @@ const loading = ref(true)
 const mapLoaded = ref(false)
 const geoData = ref<GeoDistributionItem[]>([])
 
+const timeFilter = ref('30d')
+const timeOptions = [
+  { label: '5m', value: '5m' },
+  { label: '30m', value: '30m' },
+  { label: '1h', value: '1h' },
+  { label: '6h', value: '6h' },
+  { label: '24h', value: '24h' },
+  { label: '7d', value: '7d' },
+  { label: '30d', value: '30d' },
+  { label: 'Custom', value: 'custom' },
+]
+
+const customStartTime = ref('')
+const customEndTime = ref('')
+const sourceId = ref('')
+
+const calculateTimeRange = () => {
+  const end = new Date()
+  let start = new Date(end)
+
+  if (timeFilter.value === 'custom') {
+    if (!customStartTime.value || !customEndTime.value) return null
+    return {
+      startStr: new Date(customStartTime.value).toISOString(),
+      endStr: new Date(customEndTime.value).toISOString()
+    }
+  }
+
+  switch (timeFilter.value) {
+    case '5m': start.setMinutes(start.getMinutes() - 5); break
+    case '30m': start.setMinutes(start.getMinutes() - 30); break
+    case '1h': start.setHours(start.getHours() - 1); break
+    case '6h': start.setHours(start.getHours() - 6); break
+    case '24h': start.setHours(start.getHours() - 24); break
+    case '7d': start.setDate(start.getDate() - 7); break
+    case '30d': start.setDate(start.getDate() - 30); break
+  }
+
+  return {
+    startStr: start.toISOString(),
+    endStr: end.toISOString()
+  }
+}
+
 const fetchGeoData = async () => {
+  const range = calculateTimeRange()
+  if (!range) return
+
   loading.value = true
   try {
-    const end = new Date()
-    const start = new Date(end)
-    start.setDate(start.getDate() - 30) // Default 30 days
-    const res = await getGeoDistribution(start.toISOString(), end.toISOString())
+    const res = await getGeoDistribution(range.startStr, range.endStr, sourceId.value)
     if (res.data && res.data.code === 200) {
       geoData.value = res.data.data || []
     }
@@ -44,6 +88,12 @@ const fetchGeoData = async () => {
     loading.value = false
   }
 }
+
+watch(timeFilter, (newVal) => {
+  if (newVal !== 'custom') {
+    fetchGeoData()
+  }
+})
 
 onMounted(async () => {
   try {
@@ -55,6 +105,19 @@ onMounted(async () => {
   } catch (err) {
     console.error('Failed to load world.json', err)
   }
+
+  const end = new Date()
+  const start = new Date(end)
+  start.setDate(start.getDate() - 30)
+  
+  const toLocalISO = (d: Date) => {
+    const pad = (n: number) => n.toString().padStart(2, '0')
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
+  }
+  
+  customEndTime.value = toLocalISO(end)
+  customStartTime.value = toLocalISO(start)
+
   await fetchGeoData()
 })
 
@@ -132,9 +195,54 @@ const option = computed(() => {
 </script>
 
 <template>
-  <div class="flex flex-col h-[calc(100vh-100px)] gap-6 animate-fade-in">
-    <div class="flex justify-between items-end">
-      <h1 class="text-3xl font-bold m-0 tracking-tight text-text-primary">IP Distribution Map</h1>
+  <div class="flex flex-col h-[calc(100vh-100px)] gap-6 animate-fade-in text-text-primary">
+    <div class="flex flex-col gap-6 md:flex-row md:justify-between md:items-end">
+      <h1 class="text-3xl font-bold m-0 tracking-tight">IP Distribution Map</h1>
+
+      <div class="flex flex-col items-end gap-3">
+        <div class="flex items-center gap-3 w-full md:w-auto">
+          <input 
+            type="text" 
+            v-model="sourceId" 
+            placeholder="Source ID (e.g. access.log)" 
+            class="flex-1 md:w-48 bg-bg-secondary border border-border-color text-text-primary px-3 py-1.5 rounded-lg text-sm outline-none transition-all focus:border-primary-blue shadow-sm"
+            @keyup.enter="fetchGeoData"
+          />
+          <button 
+            class="bg-transparent border-none text-text-secondary cursor-pointer p-1.5 rounded-md flex items-center justify-center transition-all duration-200 hover:bg-bg-secondary hover:text-primary-blue disabled:opacity-50 disabled:cursor-not-allowed group" 
+            @click="fetchGeoData" 
+            :disabled="loading" 
+            title="Refresh"
+          >
+            <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" class="group-active:rotate-180 transition-transform duration-300">
+              <polyline points="23 4 23 10 17 10"></polyline>
+              <polyline points="1 20 1 14 7 14"></polyline>
+              <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+            </svg>
+          </button>
+        </div>
+
+        <div class="flex flex-col gap-2 items-end">
+          <div class="flex bg-bg-secondary rounded-xl p-1 shadow-sm border border-border-color flex-wrap">
+            <button 
+              v-for="opt in timeOptions" 
+              :key="opt.value"
+              class="px-3.5 py-1.5 rounded-lg text-xs font-bold cursor-pointer transition-all duration-200"
+              :class="timeFilter === opt.value ? 'bg-primary-blue text-white shadow-md shadow-primary-blue/30' : 'bg-transparent text-text-secondary hover:text-text-primary'"
+              @click="timeFilter = opt.value"
+            >
+              {{ opt.label }}
+            </button>
+          </div>
+
+          <div v-if="timeFilter === 'custom'" class="flex items-center gap-2 bg-bg-secondary p-1.5 rounded-xl shadow-sm border border-border-color animate-fade-in mt-1 flex-wrap">
+            <input type="datetime-local" v-model="customStartTime" class="bg-transparent border border-border-color text-text-primary px-2.5 py-1.5 rounded-md text-sm outline-none transition-all focus:border-primary-blue" />
+            <span class="text-text-secondary text-sm">to</span>
+            <input type="datetime-local" v-model="customEndTime" class="bg-transparent border border-border-color text-text-primary px-2.5 py-1.5 rounded-md text-sm outline-none transition-all focus:border-primary-blue" />
+            <button class="bg-primary-blue text-white border-none py-1.5 px-4 rounded-md text-sm font-bold cursor-pointer transition-all hover:brightness-110 hover:-translate-y-px disabled:opacity-60 disabled:cursor-not-allowed" @click="fetchGeoData" :disabled="loading">Search</button>
+          </div>
+        </div>
+      </div>
     </div>
     
     <div class="flex-1 bg-bg-secondary rounded-2xl shadow-card border border-border-color p-4 relative overflow-hidden">

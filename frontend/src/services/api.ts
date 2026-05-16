@@ -249,11 +249,12 @@ export interface GeoDistributionResponse {
   data: GeoDistributionItem[]
 }
 
-export const getGeoDistribution = (startTime: string, endTime: string, limit: number = 100) => {
+export const getGeoDistribution = (startTime: string, endTime: string, sourceId?: string, limit: number = 100) => {
   return api.get<GeoDistributionResponse>('/stats/geo-distribution', {
     params: {
       start_time: startTime,
       end_time: endTime,
+      source_id: sourceId,
       limit,
     },
   })
