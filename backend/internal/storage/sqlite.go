@@ -94,6 +94,20 @@ func (s *SqliteStorage) InitTable(tableName string, clearOnStartup bool) {
 	if err != nil {
 		log.Fatalf("Failed to create table %s: %v", tableName, err)
 	}
+
+	// Auto-migrate missing columns for existing databases
+	columnsToAdd := []string{
+		"country TEXT",
+		"region TEXT",
+		"city TEXT",
+		"latitude REAL",
+		"longitude REAL",
+	}
+	for _, colDef := range columnsToAdd {
+		alterSQL := fmt.Sprintf("ALTER TABLE %s ADD COLUMN %s;", tableName, colDef)
+		// Ignore error since it will error if the column already exists
+		s.db.Exec(alterSQL)
+	}
 }
 
 // Save saves a log entry to SQLite.
