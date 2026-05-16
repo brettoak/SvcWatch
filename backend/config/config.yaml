@@ -17,5 +17,6 @@ redis:
   password: ""
   db: 0
 
+
 database:
   clear_on_startup: true
