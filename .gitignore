@@ -36,3 +36,5 @@ backend/svcwatch
 backend/access.log
 backend/access_api.log
 backend/nginx_logs.db
+backend/nginx_logs.db-shm
+backend/nginx_logs.db-wal
