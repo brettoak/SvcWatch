@@ -580,7 +580,7 @@ func (s *SqliteStorage) GetGeoDistribution(tableNames []string, startTime, endTi
 	startTimeStr := startTime.UTC().Format(time.RFC3339)
 	endTimeStr := endTime.UTC().Format(time.RFC3339)
 	for _, tableName := range tableNames {
-		unions = append(unions, fmt.Sprintf("SELECT country, region, city, latitude, longitude FROM %s WHERE time_local >= ? AND time_local <= ? AND latitude IS NOT NULL AND longitude IS NOT NULL", tableName))
+		unions = append(unions, fmt.Sprintf("SELECT country, region, city, latitude, longitude FROM %s WHERE time_local >= ? AND time_local <= ? AND country != '' AND (latitude != 0 OR longitude != 0)", tableName))
 		args = append(args, startTimeStr, endTimeStr)
 	}
 	unionQuery := strings.Join(unions, " UNION ALL ")
