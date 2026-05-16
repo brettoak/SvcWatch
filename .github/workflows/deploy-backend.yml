@@ -115,6 +115,7 @@ jobs:
             pkill svcwatch || true
             sleep 1
             mkdir -p /home/${{ matrix.server.user }}/app/config
+            mkdir -p /home/${{ matrix.server.user }}/app/data
 
       - name: Copy binary to ${{ matrix.server.host }}
         uses: appleboy/scp-action@master
@@ -125,6 +126,16 @@ jobs:
           timeout: 120s
           source: "svcwatch"
           target: "/home/${{ matrix.server.user }}/app"
+
+      - name: Copy GeoIP database to ${{ matrix.server.host }}
+        uses: appleboy/scp-action@master
+        with:
+          host: ${{ matrix.server.host }}
+          username: ${{ matrix.server.user }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          source: "backend/data/GeoLite2-City.mmdb"
+          target: "/home/${{ matrix.server.user }}/app"
+          strip_components: 1
 
       - name: Copy production config to ${{ matrix.server.host }}
         uses: appleboy/scp-action@master
