@@ -300,6 +300,66 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/v1/sev/stats/geo-distribution": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Get geographical distribution of IP addresses from logs.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Monitor"
+                ],
+                "summary": "Get geographical distribution of requests",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "default": "2026-03-19 00:00:00",
+                        "description": "Start Time",
+                        "name": "start_time",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "default": "2026-03-20 00:00:00",
+                        "description": "End Time",
+                        "name": "end_time",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "default": "access.log",
+                        "description": "Log File or Source ID",
+                        "name": "source_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 100,
+                        "description": "Number of locations to return (default 100, max 1000)",
+                        "name": "limit",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/storage.GeoDistributionItem"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/sev/stats/timeseries": {
             "get": {
                 "security": [
@@ -531,10 +591,28 @@ const docTemplate = `{
                 "body_bytes_sent": {
                     "type": "integer"
                 },
+                "city": {
+                    "type": "string"
+                },
+                "country": {
+                    "type": "string"
+                },
                 "http_referer": {
                     "type": "string"
                 },
                 "http_user_agent": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "latitude": {
+                    "type": "number"
+                },
+                "longitude": {
+                    "type": "number"
+                },
+                "region": {
                     "type": "string"
                 },
                 "remote_addr": {
@@ -553,6 +631,29 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "time_local": {
+                    "type": "string"
+                }
+            }
+        },
+        "storage.GeoDistributionItem": {
+            "type": "object",
+            "properties": {
+                "city": {
+                    "type": "string"
+                },
+                "count": {
+                    "type": "integer"
+                },
+                "country": {
+                    "type": "string"
+                },
+                "latitude": {
+                    "type": "number"
+                },
+                "longitude": {
+                    "type": "number"
+                },
+                "region": {
                     "type": "string"
                 }
             }

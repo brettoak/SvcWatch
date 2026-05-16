@@ -73,9 +73,21 @@ definitions:
     properties:
       body_bytes_sent:
         type: integer
+      city:
+        type: string
+      country:
+        type: string
       http_referer:
         type: string
       http_user_agent:
+        type: string
+      id:
+        type: integer
+      latitude:
+        type: number
+      longitude:
+        type: number
+      region:
         type: string
       remote_addr:
         type: string
@@ -88,6 +100,21 @@ definitions:
       status:
         type: integer
       time_local:
+        type: string
+    type: object
+  storage.GeoDistributionItem:
+    properties:
+      city:
+        type: string
+      count:
+        type: integer
+      country:
+        type: string
+      latitude:
+        type: number
+      longitude:
+        type: number
+      region:
         type: string
     type: object
   storage.LogQueryItem:
@@ -381,6 +408,46 @@ paths:
       security:
       - BearerAuth: []
       summary: Get aggregated logs statistics
+      tags:
+      - Monitor
+  /api/v1/sev/stats/geo-distribution:
+    get:
+      description: Get geographical distribution of IP addresses from logs.
+      parameters:
+      - default: "2026-03-19 00:00:00"
+        description: Start Time
+        in: query
+        name: start_time
+        required: true
+        type: string
+      - default: "2026-03-20 00:00:00"
+        description: End Time
+        in: query
+        name: end_time
+        required: true
+        type: string
+      - default: access.log
+        description: Log File or Source ID
+        in: query
+        name: source_id
+        type: string
+      - default: 100
+        description: Number of locations to return (default 100, max 1000)
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/storage.GeoDistributionItem'
+            type: array
+      security:
+      - BearerAuth: []
+      summary: Get geographical distribution of requests
       tags:
       - Monitor
   /api/v1/sev/stats/timeseries:
