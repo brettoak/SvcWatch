@@ -33,6 +33,8 @@ func SetupRouter(ctrl *controller.MonitorController, cfg *config.Config) *gin.En
 			private.GET("/stats/timeseries", middleware.PermissionMiddleware(cfg.Auth.PermissionURL, cfg.Auth.SysCode, "view:stats"), ctrl.TimeSeriesHandler)
 			// Top paths endpoint
 			private.GET("/stats/top-paths", middleware.PermissionMiddleware(cfg.Auth.PermissionURL, cfg.Auth.SysCode, "view:stats"), ctrl.TopPathsHandler)
+			// Geo distribution endpoint
+			private.GET("/stats/geo-distribution", middleware.PermissionMiddleware(cfg.Auth.PermissionURL, cfg.Auth.SysCode, "view:stats"), ctrl.GeoDistributionHandler)
 			// Overview endpoint
 			private.GET("/overview", middleware.PermissionMiddleware(cfg.Auth.PermissionURL, cfg.Auth.SysCode, "view:overview"), ctrl.OverviewHandler)
 			// Status distribution endpoint

@@ -265,3 +265,35 @@ func (s *MonitorService) GetTopPaths(startTime, endTime string, sourceID string,
 	return s.store.GetTopPaths(tableNames, startT, endT, limit)
 }
 
+// GetGeoDistribution retrieves the geographical distribution of requests.
+func (s *MonitorService) GetGeoDistribution(startTime, endTime string, sourceID string, limit int) ([]storage.GeoDistributionItem, error) {
+	var tableNames []string
+
+	for _, monInst := range s.monitors {
+		tableName := monInst.GetTableName()
+		logPath := monInst.GetLogPath()
+		
+		if sourceID != "" && tableName != sourceID && filepath.Base(logPath) != sourceID {
+			continue
+		}
+		tableNames = append(tableNames, tableName)
+	}
+
+	if len(tableNames) == 0 {
+		return []storage.GeoDistributionItem{}, nil
+	}
+
+	startT, endT, err := utils.ParseAndValidateRange(startTime, endTime, utils.MaxTimeRangeLimit)
+	if err != nil {
+		return nil, err
+	}
+
+	if limit <= 0 {
+		limit = 100
+	} else if limit > 1000 {
+		limit = 1000
+	}
+
+	return s.store.GetGeoDistribution(tableNames, startT, endT, limit)
+}
+

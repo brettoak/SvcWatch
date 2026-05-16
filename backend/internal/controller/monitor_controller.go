@@ -284,6 +284,42 @@ func (ctrl *MonitorController) TopPathsHandler(c *gin.Context) {
 	utils.Success(c, result)
 }
 
+// GeoDistributionRequest represents query parameters for the geo distribution endpoint.
+type GeoDistributionRequest struct {
+	StartTime string `form:"start_time" binding:"required"`
+	EndTime   string `form:"end_time" binding:"required"`
+	SourceID  string `form:"source_id"`
+	Limit     int    `form:"limit,default=100" binding:"min=1,max=1000"`
+}
+
+// GeoDistributionHandler Get geographical distribution of requests
+// @Summary Get geographical distribution of requests
+// @Description Get geographical distribution of IP addresses from logs.
+// @Tags Monitor
+// @Produce json
+// @Security BearerAuth
+// @Param start_time query string true "Start Time" default(2026-03-19 00:00:00)
+// @Param end_time query string true "End Time" default(2026-03-20 00:00:00)
+// @Param source_id query string false "Log File or Source ID" default(access.log)
+// @Param limit query int false "Number of locations to return (default 100, max 1000)" default(100)
+// @Success 200 {array} storage.GeoDistributionItem
+// @Router /api/v1/sev/stats/geo-distribution [get]
+func (ctrl *MonitorController) GeoDistributionHandler(c *gin.Context) {
+	var req GeoDistributionRequest
+	if err := c.ShouldBindQuery(&req); err != nil {
+		utils.Error(c, 400, err.Error())
+		return
+	}
+
+	result, err := ctrl.svc.GetGeoDistribution(req.StartTime, req.EndTime, req.SourceID, req.Limit)
+	if err != nil {
+		utils.Error(c, 500, err.Error())
+		return
+	}
+
+	utils.Success(c, result)
+}
+
 // LogsWebSocketHandler Real-time logs streaming via WebSocket
 // @Summary Real-time logs streaming via WebSocket
 // @Description Upgrade connection to WebSocket and stream raw logs in real-time
