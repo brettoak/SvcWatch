@@ -62,11 +62,26 @@ const MapIcon = h('svg', { xmlns: 'http://www.w3.org/2000/svg', width: '20', hei
   h('path', { d: 'M12 21.7C17.3 17 20 13 20 10a8 8 0 1 0-16 0c0 3 2.7 7 8 11.7z' }),
 ])
 
-const navItems = [
-  { name: 'Overview', path: '/', icon: OverviewIcon },
-  { name: 'Logs', path: '/logs', icon: LogsIcon },
-  { name: 'Map', path: '/map', icon: MapIcon },
-  { name: 'Profile', path: '/profile', icon: ProfileIcon },
+const navGroups = [
+  {
+    group: 'Dashboards',
+    items: [
+      { name: 'Overview', path: '/', icon: OverviewIcon },
+    ]
+  },
+  {
+    group: 'Monitoring',
+    items: [
+      { name: 'Logs', path: '/logs', icon: LogsIcon },
+      { name: 'Map', path: '/map', icon: MapIcon },
+    ]
+  },
+  {
+    group: 'Settings',
+    items: [
+      { name: 'Profile', path: '/profile', icon: ProfileIcon },
+    ]
+  }
 ]
 
 const currentThemeIcon = computed(() => themeStore.isDark ? SunIcon : MoonIcon)
@@ -104,23 +119,31 @@ const currentThemeIcon = computed(() => themeStore.isDark ? SunIcon : MoonIcon)
     <div class="flex flex-1 overflow-hidden">
       <!-- Left Sidebar -->
       <aside class="flex flex-col border-r border-border-color bg-bg-secondary z-10 transition-[width] duration-300 ease-in-out" :class="isSidebarCollapsed ? 'w-[72px]' : 'w-60'">
-        <nav class="flex flex-col gap-2 p-4" :class="{ 'px-2': isSidebarCollapsed }">
-          <router-link
-            v-for="item in navItems"
-            :key="item.path"
-            :to="item.path"
-            class="flex items-center p-3 text-text-secondary no-underline rounded-lg font-medium text-[0.95rem] whitespace-nowrap transition-all duration-200 hover:bg-bg-primary hover:text-text-primary"
-            :class="[
-              route.path === item.path ? 'bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-primary-blue' : '',
-              isSidebarCollapsed ? 'justify-center py-3' : ''
-            ]"
-            :title="isSidebarCollapsed ? item.name : ''"
-          >
-            <span class="flex items-center justify-center min-w-[40px]">
-              <component :is="item.icon" />
-            </span>
-            <span class="ml-1 transition-opacity duration-200" v-show="!isSidebarCollapsed">{{ item.name }}</span>
-          </router-link>
+        <nav class="flex flex-col gap-6 p-4" :class="{ 'px-2': isSidebarCollapsed }">
+          <div v-for="group in navGroups" :key="group.group" class="flex flex-col gap-1">
+            <div 
+              class="px-3 mb-1 text-xs font-semibold text-text-secondary opacity-70 uppercase tracking-wider transition-opacity duration-200" 
+              v-show="!isSidebarCollapsed"
+            >
+              {{ group.group }}
+            </div>
+            <router-link
+              v-for="item in group.items"
+              :key="item.path"
+              :to="item.path"
+              class="flex items-center p-3 text-text-secondary no-underline rounded-lg font-medium text-[0.95rem] whitespace-nowrap transition-all duration-200 hover:bg-bg-primary hover:text-text-primary"
+              :class="[
+                route.path === item.path ? 'bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-primary-blue' : '',
+                isSidebarCollapsed ? 'justify-center py-3' : ''
+              ]"
+              :title="isSidebarCollapsed ? item.name : ''"
+            >
+              <span class="flex items-center justify-center min-w-[40px]">
+                <component :is="item.icon" />
+              </span>
+              <span class="ml-1 transition-opacity duration-200" v-show="!isSidebarCollapsed">{{ item.name }}</span>
+            </router-link>
+          </div>
         </nav>
       </aside>
 
