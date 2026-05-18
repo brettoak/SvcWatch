@@ -535,6 +535,30 @@ paths:
       summary: Get top requested paths
       tags:
       - Monitor
+  /api/v1/sev/stats/ws:
+    get:
+      description: Upgrade connection to WebSocket and stream real-time request counts
+        and error counts
+      parameters:
+      - default: access.log
+        description: Log File or Source ID (optional)
+        in: query
+        name: log_file
+        type: string
+      - default: 1s
+        description: Refresh interval (e.g., 1s, 2s, 5s)
+        in: query
+        name: interval
+        type: string
+      - default: false
+        description: Enable mock simulation data
+        in: query
+        name: simulate
+        type: boolean
+      responses: {}
+      summary: Real-time statistics push via WebSocket
+      tags:
+      - Monitor
 securityDefinitions:
   BearerAuth:
     description: Type "Bearer" followed by a space and JWT token.

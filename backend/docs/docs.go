@@ -482,6 +482,39 @@ const docTemplate = `{
                     }
                 }
             }
+        },
+        "/api/v1/sev/stats/ws": {
+            "get": {
+                "description": "Upgrade connection to WebSocket and stream real-time request counts and error counts",
+                "tags": [
+                    "Monitor"
+                ],
+                "summary": "Real-time statistics push via WebSocket",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "default": "access.log",
+                        "description": "Log File or Source ID (optional)",
+                        "name": "log_file",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "default": "1s",
+                        "description": "Refresh interval (e.g., 1s, 2s, 5s)",
+                        "name": "interval",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "default": false,
+                        "description": "Enable mock simulation data",
+                        "name": "simulate",
+                        "in": "query"
+                    }
+                ],
+                "responses": {}
+            }
         }
     },
     "definitions": {
