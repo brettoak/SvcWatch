@@ -195,6 +195,13 @@ type TimeSeriesResult struct {
 	Points   []TimeSeriesPoint `json:"points"`
 }
 
+// RealTimeHistoryPoint represents a single data point in real-time history.
+type RealTimeHistoryPoint struct {
+	Timestamp string `json:"ts"`
+	Total     int    `json:"total"`
+	Errors    int    `json:"errors"`
+}
+
 // BaseMetrics contains raw metric counts for a specific time period.
 type BaseMetrics struct {
 	TotalRequests   float64
@@ -643,6 +650,124 @@ func (s *SqliteStorage) GetGeoDistribution(tableNames []string, startTime, endTi
 	}
 
 	return result, nil
+}
+
+// GetRealTimeStatsForRange queries the count of total requests and error requests in a given time window for one or more tables.
+func (s *SqliteStorage) GetRealTimeStatsForRange(tableNames []string, startTime, endTime time.Time) (int, int, error) {
+	if len(tableNames) == 0 {
+		return 0, 0, nil
+	}
+
+	var unions []string
+	var args []interface{}
+	startTimeStr := startTime.UTC().Format(time.RFC3339)
+	endTimeStr := endTime.UTC().Format(time.RFC3339)
+	for _, tableName := range tableNames {
+		unions = append(unions, fmt.Sprintf("SELECT status FROM %s WHERE time_local >= ? AND time_local < ?", tableName))
+		args = append(args, startTimeStr, endTimeStr)
+	}
+	unionQuery := strings.Join(unions, " UNION ALL ")
+
+	query := fmt.Sprintf(`
+		SELECT 
+			COUNT(*) as total,
+			SUM(CASE WHEN status >= 400 THEN 1 ELSE 0 END) as errors
+		FROM (%s)
+	`, unionQuery)
+
+	var total int
+	var errors sql.NullInt64
+	err := s.db.QueryRow(query, args...).Scan(&total, &errors)
+	if err != nil {
+		return 0, 0, fmt.Errorf("failed to query real-time stats for range: %w", err)
+	}
+
+	errCount := 0
+	if errors.Valid {
+		errCount = int(errors.Int64)
+	}
+
+	return total, errCount, nil
+}
+
+// GetRealTimeHistory queries the real-time history for a given start/end time and interval.
+func (s *SqliteStorage) GetRealTimeHistory(tableNames []string, startT, endT time.Time, intervalSec float64) ([]RealTimeHistoryPoint, error) {
+	if len(tableNames) == 0 {
+		return []RealTimeHistoryPoint{}, nil
+	}
+
+	startUnix := startT.Unix()
+	// Grouping expression to round time_local to interval buckets relative to startT.
+	timeExpr := fmt.Sprintf("strftime('%%Y-%%m-%%dT%%H:%%M:%%SZ', ((CAST(strftime('%%s', time_local) AS INTEGER) - %d) / %.0f) * %.0f + %d, 'unixepoch')", startUnix, intervalSec, intervalSec, startUnix)
+
+	var unions []string
+	var args []interface{}
+	startTimeStr := startT.UTC().Format(time.RFC3339)
+	endTimeStr := endT.UTC().Format(time.RFC3339)
+	for _, tableName := range tableNames {
+		unions = append(unions, fmt.Sprintf("SELECT time_local, status FROM %s WHERE time_local >= ? AND time_local <= ?", tableName))
+		args = append(args, startTimeStr, endTimeStr)
+	}
+	unionQuery := strings.Join(unions, " UNION ALL ")
+
+	query := fmt.Sprintf(`
+		SELECT 
+			ts,
+			COUNT(*) as total,
+			SUM(CASE WHEN status >= 400 THEN 1 ELSE 0 END) as errors
+		FROM (SELECT %s as ts, status FROM (%s))
+		GROUP BY ts ORDER BY ts
+	`, timeExpr, unionQuery)
+
+	rows, err := s.db.Query(query, args...)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query real-time history: %w", err)
+	}
+	defer rows.Close()
+
+	pointMap := make(map[string]RealTimeHistoryPoint)
+	for rows.Next() {
+		var ts string
+		var total int
+		var errors sql.NullInt64
+		if err := rows.Scan(&ts, &total, &errors); err != nil {
+			return nil, fmt.Errorf("failed to scan real-time history row: %w", err)
+		}
+		errCount := 0
+		if errors.Valid {
+			errCount = int(errors.Int64)
+		}
+		pointMap[ts] = RealTimeHistoryPoint{
+			Timestamp: ts,
+			Total:     total,
+			Errors:    errCount,
+		}
+	}
+
+	// Post-process to fill in the missing seconds/buckets with 0 counts.
+	numPoints := int(math.Floor(endT.Sub(startT).Seconds()/intervalSec)) + 1
+	if numPoints <= 0 {
+		numPoints = 1
+	}
+	finalPoints := make([]RealTimeHistoryPoint, 0, numPoints)
+
+	for i := 0; i < numPoints; i++ {
+		bucketT := startT.Add(time.Duration(float64(i)*intervalSec) * time.Second)
+		tsKey := bucketT.Format("2006-01-02T15:04:05Z")
+
+		if pt, exists := pointMap[tsKey]; exists {
+			pt.Timestamp = bucketT.Format(time.RFC3339)
+			finalPoints = append(finalPoints, pt)
+		} else {
+			finalPoints = append(finalPoints, RealTimeHistoryPoint{
+				Timestamp: bucketT.Format(time.RFC3339),
+				Total:     0,
+				Errors:    0,
+			})
+		}
+	}
+
+	return finalPoints, nil
 }
 
 // Close closes the database connection.

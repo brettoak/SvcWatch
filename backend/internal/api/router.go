@@ -43,6 +43,8 @@ func SetupRouter(ctrl *controller.MonitorController, cfg *config.Config) *gin.En
 			private.GET("/logs", middleware.PermissionMiddleware(cfg.Auth.PermissionURL, cfg.Auth.SysCode, "view:logs"), ctrl.LogsHandler)
 			// Real-time logs websocket endpoint
 			private.GET("/logs/ws", middleware.PermissionMiddleware(cfg.Auth.PermissionURL, cfg.Auth.SysCode, "view:logs"), ctrl.LogsWebSocketHandler)
+			// Real-time stats websocket endpoint
+			private.GET("/stats/ws", middleware.PermissionMiddleware(cfg.Auth.PermissionURL, cfg.Auth.SysCode, "view:stats"), ctrl.StatsWebSocketHandler)
 		}
 	}
 

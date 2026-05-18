@@ -297,3 +297,59 @@ func (s *MonitorService) GetGeoDistribution(startTime, endTime string, sourceID 
 	return s.store.GetGeoDistribution(tableNames, startT, endT, limit)
 }
 
+// GetRealTimeStats retrieves real-time request and error counts for a specific time range across multiple source IDs.
+func (s *MonitorService) GetRealTimeStats(startTime, endTime time.Time, sourceIDs []string) (int, int, error) {
+	var tableNames []string
+
+	sourceMap := make(map[string]bool)
+	for _, id := range sourceIDs {
+		sourceMap[id] = true
+	}
+
+	for _, monInst := range s.monitors {
+		tableName := monInst.GetTableName()
+		logPath := monInst.GetLogPath()
+
+		if len(sourceIDs) > 0 {
+			if !sourceMap[tableName] && !sourceMap[filepath.Base(logPath)] {
+				continue
+			}
+		}
+		tableNames = append(tableNames, tableName)
+	}
+
+	if len(tableNames) == 0 {
+		return 0, 0, nil
+	}
+
+	return s.store.GetRealTimeStatsForRange(tableNames, startTime, endTime)
+}
+
+// GetRealTimeHistory retrieves historical real-time stats.
+func (s *MonitorService) GetRealTimeHistory(startT, endT time.Time, intervalSec float64, sourceIDs []string) ([]storage.RealTimeHistoryPoint, error) {
+	var tableNames []string
+
+	sourceMap := make(map[string]bool)
+	for _, id := range sourceIDs {
+		sourceMap[id] = true
+	}
+
+	for _, monInst := range s.monitors {
+		tableName := monInst.GetTableName()
+		logPath := monInst.GetLogPath()
+
+		if len(sourceIDs) > 0 {
+			if !sourceMap[tableName] && !sourceMap[filepath.Base(logPath)] {
+				continue
+			}
+		}
+		tableNames = append(tableNames, tableName)
+	}
+
+	if len(tableNames) == 0 {
+		return []storage.RealTimeHistoryPoint{}, nil
+	}
+
+	return s.store.GetRealTimeHistory(tableNames, startT, endT, intervalSec)
+}
+

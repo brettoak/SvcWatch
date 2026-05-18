@@ -5,6 +5,7 @@ import (
 	"SvcWatch/internal/storage"
 	"SvcWatch/internal/utils"
 	"fmt"
+	"math/rand"
 	"net/http"
 	"os"
 	"time"
@@ -473,5 +474,166 @@ func getLastNLinesOffset(filename string, n int) *tail.SeekInfo {
 	// If the file is large and we didn't find N lines in the chunk, 
 	// just start from the beginning of the chunk as a best effort
 	return &tail.SeekInfo{Offset: filesize - readSize, Whence: os.SEEK_SET}
+}
+
+// StatsWebSocketHandler handles real-time statistics push via WebSocket
+// @Summary Real-time statistics push via WebSocket
+// @Description Upgrade connection to WebSocket and stream real-time request counts and error counts
+// @Tags Monitor
+// @Param log_file query string false "Log File or Source ID (optional)" default(access.log)
+// @Param interval query string false "Refresh interval (e.g., 1s, 2s, 5s)" default(1s)
+// @Param simulate query bool false "Enable mock simulation data" default(false)
+// @Router /api/v1/sev/stats/ws [get]
+func (ctrl *MonitorController) StatsWebSocketHandler(c *gin.Context) {
+	logFile := c.Query("log_file")
+	sourceIDs := []string{}
+	if logFile != "" {
+		sourceIDs = append(sourceIDs, logFile)
+	}
+
+	intervalStr := c.Query("interval")
+	if intervalStr == "" {
+		intervalStr = "1s"
+	}
+	interval, err := time.ParseDuration(intervalStr)
+	if err != nil || interval <= 0 {
+		interval = 1 * time.Second
+	}
+
+	simulate := c.Query("simulate") == "true"
+
+	// Upgrade HTTP connection to WebSocket
+	conn, err := upgrader.Upgrade(c.Writer, c.Request, nil)
+	if err != nil {
+		fmt.Printf("Failed to upgrade to websocket: %v\n", err)
+		return
+	}
+	defer conn.Close()
+
+	// done channel signals all goroutines to stop on client disconnect
+	done := make(chan struct{})
+
+	// Handle client disconnection
+	conn.SetPongHandler(func(string) error { return nil })
+	go func() {
+		defer close(done)
+		for {
+			if _, _, err := conn.ReadMessage(); err != nil {
+				return
+			}
+		}
+	}()
+
+	// Heartbeat ping
+	go func() {
+		ticker := time.NewTicker(30 * time.Second)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-ticker.C:
+				if err := conn.WriteMessage(websocket.PingMessage, nil); err != nil {
+					return
+				}
+			case <-done:
+				return
+			}
+		}
+	}()
+
+	// 1. Send initial history (last 30 points)
+	var historyPoints []storage.RealTimeHistoryPoint
+	now := time.Now()
+	historyLength := 30
+	intervalSec := interval.Seconds()
+	startT := now.Add(-time.Duration(historyLength) * interval)
+
+	if simulate {
+		// Generate random mock history
+		historyPoints = make([]storage.RealTimeHistoryPoint, historyLength)
+		for i := 0; i < historyLength; i++ {
+			ptTime := startT.Add(time.Duration(float64(i)*intervalSec) * time.Second)
+			total := 5 + rand.Intn(16) // between 5 and 20
+			errors := 0
+			if rand.Intn(10) > 7 {
+				errors = rand.Intn(3) // 0 to 2 errors
+			}
+			if errors > total {
+				errors = total
+			}
+			historyPoints[i] = storage.RealTimeHistoryPoint{
+				Timestamp: ptTime.Format(time.RFC3339),
+				Total:     total,
+				Errors:    errors,
+			}
+		}
+	} else {
+		// Get real history from SQLite
+		historyPoints, err = ctrl.svc.GetRealTimeHistory(startT, now, intervalSec, sourceIDs)
+		if err != nil {
+			fmt.Printf("Error fetching real-time history: %v\n", err)
+			historyPoints = []storage.RealTimeHistoryPoint{}
+		}
+	}
+
+	initMsg := gin.H{
+		"type": "init",
+		"data": historyPoints,
+	}
+	if err := conn.WriteJSON(initMsg); err != nil {
+		return
+	}
+
+	// 2. Start ticker for real-time updates
+	ticker := time.NewTicker(interval)
+	defer ticker.Stop()
+
+	// Track the last pushed time to avoid overlap or missing logs
+	lastTime := now
+
+	for {
+		select {
+		case <-done:
+			return
+		case tickTime := <-ticker.C:
+			var point storage.RealTimeHistoryPoint
+			if simulate {
+				total := 5 + rand.Intn(16)
+				errors := 0
+				if rand.Intn(10) > 7 {
+					errors = rand.Intn(3)
+				}
+				if errors > total {
+					errors = total
+				}
+				point = storage.RealTimeHistoryPoint{
+					Timestamp: tickTime.Format(time.RFC3339),
+					Total:     total,
+					Errors:    errors,
+				}
+			} else {
+				// Query database for logs between lastTime and tickTime
+				total, errors, err := ctrl.svc.GetRealTimeStats(lastTime, tickTime, sourceIDs)
+				if err != nil {
+					fmt.Printf("Error querying real-time stats: %v\n", err)
+					total = 0
+					errors = 0
+				}
+				point = storage.RealTimeHistoryPoint{
+					Timestamp: tickTime.Format(time.RFC3339),
+					Total:     total,
+					Errors:    errors,
+				}
+				lastTime = tickTime
+			}
+
+			updateMsg := gin.H{
+				"type": "update",
+				"data": point,
+			}
+			if err := conn.WriteJSON(updateMsg); err != nil {
+				return
+			}
+		}
+	}
 }
 
