@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { ref, onMounted, watch } from 'vue'
+import { ref, onMounted } from 'vue'
 import { getLogs } from '@/services/api'
 import type { Log, LogQueryParams } from '@/services/api'
+import TimeFilter from '@/components/TimeFilter.vue'
 
 const logs = ref<Log[]>([])
 const total = ref(0)
@@ -79,35 +80,12 @@ const handleSearch = () => {
 }
 
 const timeFilter = ref('30d')
-const timeOptions = [
-  { label: '5m', value: '5m' },
-  { label: '30m', value: '30m' },
-  { label: '1h', value: '1h' },
-  { label: '6h', value: '6h' },
-  { label: '24h', value: '24h' },
-  { label: '7d', value: '7d' },
-  { label: '30d', value: '30d' },
-  { label: 'Custom', value: 'custom' },
-]
 
-watch(timeFilter, (newVal) => {
-  if (newVal !== 'custom') {
-    const end = new Date()
-    let start = new Date(end)
-    switch (newVal) {
-      case '5m': start.setMinutes(start.getMinutes() - 5); break
-      case '30m': start.setMinutes(start.getMinutes() - 30); break
-      case '1h': start.setHours(start.getHours() - 1); break
-      case '6h': start.setHours(start.getHours() - 6); break
-      case '24h': start.setHours(start.getHours() - 24); break
-      case '7d': start.setDate(start.getDate() - 7); break
-      case '30d': start.setDate(start.getDate() - 30); break
-    }
-    filters.value.start_time = formatToDateTimeLocal(start)
-    filters.value.end_time = formatToDateTimeLocal(end)
-    handleSearch()
-  }
-})
+const onTimeRangeChange = (range: { localStart: string; localEnd: string }) => {
+  filters.value.start_time = range.localStart
+  filters.value.end_time = range.localEnd
+  handleSearch()
+}
 
 const handleReset = () => {
   const times = getDefaultTimes()
@@ -147,9 +125,7 @@ const prevPage = () => {
   }
 }
 
-onMounted(() => {
-  fetchLogs()
-})
+// Handled by TimeFilter on-mount change emit
 
 const getStatusColor = (status: number) => {
   if (status >= 200 && status < 300) return 'text-emerald-500 bg-emerald-500/10'
@@ -217,26 +193,7 @@ const parsePath = (request: string) => {
         </div>
         <div class="flex flex-col gap-1.5 lg:col-span-2">
           <label class="text-[0.7rem] font-bold uppercase tracking-widest text-text-secondary ml-1">Time Range</label>
-          <div class="flex flex-wrap items-center gap-2">
-            <div class="flex bg-bg-primary rounded-xl p-1 border border-border-color w-fit">
-              <button 
-                type="button"
-                v-for="opt in timeOptions" 
-                :key="opt.value"
-                class="px-3 py-1.5 rounded-lg text-xs font-bold cursor-pointer transition-all duration-200 border-none outline-none"
-                :class="timeFilter === opt.value ? 'bg-primary-blue text-white shadow-md shadow-primary-blue/30' : 'bg-transparent text-text-secondary hover:text-text-primary'"
-                @click="timeFilter = opt.value"
-              >
-                {{ opt.label }}
-              </button>
-            </div>
-            
-            <div v-if="timeFilter === 'custom'" class="flex items-center gap-1 animate-fade-in flex-1 min-w-[300px]">
-              <input v-model="filters.start_time" type="datetime-local" step="1" class="bg-bg-primary border border-border-color rounded-xl px-3 py-1.5 text-sm outline-none focus:border-primary-blue transition-all w-full" />
-              <span class="text-text-secondary text-xs font-bold px-1">to</span>
-              <input v-model="filters.end_time" type="datetime-local" step="1" class="bg-bg-primary border border-border-color rounded-xl px-3 py-1.5 text-sm outline-none focus:border-primary-blue transition-all w-full" />
-            </div>
-          </div>
+          <TimeFilter v-model="timeFilter" bgClass="bg-bg-primary border border-border-color shadow-sm" @change="onTimeRangeChange" />
         </div>
       </div>
 

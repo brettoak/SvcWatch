@@ -4,24 +4,19 @@ import { getDashboardOverview, getStatusDistribution, getTimeSeriesStats, getTop
 import type { DashboardOverviewResponse, StatusDistributionResponse, TimeSeriesResponse, TopPathItem } from '@/services/api'
 import { useAuthStore } from '@/stores/auth'
 
+import TimeFilter from '@/components/TimeFilter.vue'
+
 type DashboardData = DashboardOverviewResponse['data']
 type DistributionData = StatusDistributionResponse['data']
 type TimeSeriesData = TimeSeriesResponse['data']
 
 const timeFilter = ref('7d')
-const timeOptions = [
-  { label: '5m', value: '5m' },
-  { label: '30m', value: '30m' },
-  { label: '1h', value: '1h' },
-  { label: '6h', value: '6h' },
-  { label: '24h', value: '24h' },
-  { label: '7d', value: '7d' },
-  { label: '30d', value: '30d' },
-  { label: 'Custom', value: 'custom' },
-]
+const currentRange = ref<{ startStr: string; endStr: string } | null>(null)
 
-const customStartTime = ref('')
-const customEndTime = ref('')
+const onTimeRangeChange = (range: { startStr: string; endStr: string }) => {
+  currentRange.value = range
+  fetchData()
+}
 
 const dashboardData = ref<DashboardData | null>(null)
 const distributionData = ref<DistributionData | null>(null)
@@ -159,31 +154,7 @@ const formatDateStr = (date: Date) => {
 }
 
 const calculateTimeRange = () => {
-  const end = new Date()
-  let start = new Date(end)
-
-  if (timeFilter.value === 'custom') {
-    if (!customStartTime.value || !customEndTime.value) return null
-    return {
-      startStr: new Date(customStartTime.value).toISOString(),
-      endStr: new Date(customEndTime.value).toISOString()
-    }
-  }
-
-  switch (timeFilter.value) {
-    case '5m': start.setMinutes(start.getMinutes() - 5); break
-    case '30m': start.setMinutes(start.getMinutes() - 30); break
-    case '1h': start.setHours(start.getHours() - 1); break
-    case '6h': start.setHours(start.getHours() - 6); break
-    case '24h': start.setHours(start.getHours() - 24); break
-    case '7d': start.setDate(start.getDate() - 7); break
-    case '30d': start.setDate(start.getDate() - 30); break
-  }
-
-  return {
-    startStr: start.toISOString(),
-    endStr: end.toISOString()
-  }
+  return currentRange.value
 }
 
 const fetchTimeSeries = async () => {
@@ -245,26 +216,7 @@ watch(selectedMetric, () => {
   fetchTimeSeries()
 })
 
-watch(timeFilter, (newVal) => {
-  if (newVal !== 'custom') {
-    fetchData()
-  }
-})
-
 onMounted(() => {
-  const end = new Date()
-  const start = new Date(end)
-  start.setHours(start.getHours() - 1)
-  
-  const toLocalISO = (d: Date) => {
-    const pad = (n: number) => n.toString().padStart(2, '0')
-    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
-  }
-  
-  customEndTime.value = toLocalISO(end)
-  customStartTime.value = toLocalISO(start)
-
-  fetchData()
   connectWebSocket()
 })
 
@@ -458,26 +410,7 @@ const tsAreaPath = computed(() => {
           </button>
         </div>
 
-        <div class="flex flex-col gap-2 items-end">
-          <div class="flex bg-bg-secondary rounded-xl p-1 shadow-sm border border-border-color">
-            <button 
-              v-for="opt in timeOptions" 
-              :key="opt.value"
-              class="px-3.5 py-1.5 rounded-lg text-xs font-bold cursor-pointer transition-all duration-200"
-              :class="timeFilter === opt.value ? 'bg-primary-blue text-white shadow-md shadow-primary-blue/30' : 'bg-transparent text-text-secondary hover:text-text-primary'"
-              @click="timeFilter = opt.value"
-            >
-              {{ opt.label }}
-            </button>
-          </div>
-
-          <div v-if="timeFilter === 'custom'" class="flex items-center gap-2 bg-bg-secondary p-1.5 rounded-xl shadow-sm border border-border-color animate-fade-in mt-1">
-            <input type="datetime-local" v-model="customStartTime" class="bg-transparent border border-border-color text-text-primary px-2.5 py-1.5 rounded-md text-sm outline-none transition-all focus:border-primary-blue" />
-            <span class="text-text-secondary text-sm">to</span>
-            <input type="datetime-local" v-model="customEndTime" class="bg-transparent border border-border-color text-text-primary px-2.5 py-1.5 rounded-md text-sm outline-none transition-all focus:border-primary-blue" />
-            <button class="bg-primary-blue text-white border-none py-1.5 px-4 rounded-md text-sm font-bold cursor-pointer transition-all hover:brightness-110 hover:-translate-y-px disabled:opacity-60 disabled:cursor-not-allowed" @click="fetchData" :disabled="loading">Search</button>
-          </div>
-        </div>
+          <TimeFilter v-model="timeFilter" @change="onTimeRangeChange" />
       </div>
     </div>
 
