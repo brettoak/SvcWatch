@@ -45,3 +45,16 @@ type TopPathsResponseWrapper struct {
 	Message string                `json:"message" example:"success"`
 	Data    []storage.TopPathItem `json:"data"`
 }
+
+// StatsWSInitResponse represents the initial history payload pushed via Stats WebSocket.
+type StatsWSInitResponse struct {
+	Type string                         `json:"type" example:"init"`
+	Data []storage.RealTimeHistoryPoint `json:"data"`
+}
+
+// StatsWSUpdateResponse represents the periodic update payload pushed via Stats WebSocket.
+type StatsWSUpdateResponse struct {
+	Type string                       `json:"type" example:"update"`
+	Data storage.RealTimeHistoryPoint `json:"data"`
+}
+

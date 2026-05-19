@@ -34,6 +34,24 @@ definitions:
         example: success
         type: string
     type: object
+  controller.StatsWSInitResponse:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/storage.RealTimeHistoryPoint'
+        type: array
+      type:
+        example: init
+        type: string
+    type: object
+  controller.StatsWSUpdateResponse:
+    properties:
+      data:
+        $ref: '#/definitions/storage.RealTimeHistoryPoint'
+      type:
+        example: update
+        type: string
+    type: object
   controller.StatusDistributionResponseWrapper:
     properties:
       code:
@@ -157,6 +175,15 @@ definitions:
         $ref: '#/definitions/storage.MetricValue'
       total_requests:
         $ref: '#/definitions/storage.MetricValue'
+    type: object
+  storage.RealTimeHistoryPoint:
+    properties:
+      errors:
+        type: integer
+      total:
+        type: integer
+      ts:
+        type: string
     type: object
   storage.StatusDistributionEntry:
     properties:
@@ -338,14 +365,20 @@ paths:
       - Monitor
   /api/v1/sev/logs/ws:
     get:
-      description: Upgrade connection to WebSocket and stream raw logs in real-time
+      description: Upgrade connection to WebSocket and stream raw logs in real-time.
+        Pushes standard Nginx log lines as text frames.
       parameters:
       - default: access.log
         description: Log File or Source ID (optional)
         in: query
         name: log_file
         type: string
-      responses: {}
+      responses:
+        "101":
+          description: Switching Protocols (Handshake Success). Streams raw nginx
+            log lines as text frames.
+          schema:
+            type: string
       summary: Real-time logs streaming via WebSocket
       tags:
       - Monitor
@@ -538,7 +571,8 @@ paths:
   /api/v1/sev/stats/ws:
     get:
       description: Upgrade connection to WebSocket and stream real-time request counts
-        and error counts
+        and error counts. Pushes initial history as 'init' event and periodic updates
+        as 'update' event.
       parameters:
       - default: access.log
         description: Log File or Source ID (optional)
@@ -555,7 +589,17 @@ paths:
         in: query
         name: simulate
         type: boolean
-      responses: {}
+      responses:
+        "101":
+          description: Switching Protocols (Handshake Success). Initial history data
+            frame pushed immediately.
+          schema:
+            $ref: '#/definitions/controller.StatsWSInitResponse'
+        "200":
+          description: Periodic real-time update data frame pushed at the specified
+            interval.
+          schema:
+            $ref: '#/definitions/controller.StatsWSUpdateResponse'
       summary: Real-time statistics push via WebSocket
       tags:
       - Monitor

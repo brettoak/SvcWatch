@@ -323,9 +323,10 @@ func (ctrl *MonitorController) GeoDistributionHandler(c *gin.Context) {
 
 // LogsWebSocketHandler Real-time logs streaming via WebSocket
 // @Summary Real-time logs streaming via WebSocket
-// @Description Upgrade connection to WebSocket and stream raw logs in real-time
+// @Description Upgrade connection to WebSocket and stream raw logs in real-time. Pushes standard Nginx log lines as text frames.
 // @Tags Monitor
 // @Param log_file query string false "Log File or Source ID (optional)" default(access.log)
+// @Success 101 {string} string "Switching Protocols (Handshake Success). Streams raw nginx log lines as text frames."
 // @Router /api/v1/sev/logs/ws [get]
 func (ctrl *MonitorController) LogsWebSocketHandler(c *gin.Context) {
 	logFile := c.Query("log_file")
@@ -478,11 +479,13 @@ func getLastNLinesOffset(filename string, n int) *tail.SeekInfo {
 
 // StatsWebSocketHandler handles real-time statistics push via WebSocket
 // @Summary Real-time statistics push via WebSocket
-// @Description Upgrade connection to WebSocket and stream real-time request counts and error counts
+// @Description Upgrade connection to WebSocket and stream real-time request counts and error counts. Pushes initial history as 'init' event and periodic updates as 'update' event.
 // @Tags Monitor
 // @Param log_file query string false "Log File or Source ID (optional)" default(access.log)
 // @Param interval query string false "Refresh interval (e.g., 1s, 2s, 5s)" default(1s)
 // @Param simulate query bool false "Enable mock simulation data" default(false)
+// @Success 101 {object} StatsWSInitResponse "Switching Protocols (Handshake Success). Initial history data frame pushed immediately."
+// @Success 200 {object} StatsWSUpdateResponse "Periodic real-time update data frame pushed at the specified interval."
 // @Router /api/v1/sev/stats/ws [get]
 func (ctrl *MonitorController) StatsWebSocketHandler(c *gin.Context) {
 	logFile := c.Query("log_file")

@@ -188,7 +188,7 @@ const docTemplate = `{
         },
         "/api/v1/sev/logs/ws": {
             "get": {
-                "description": "Upgrade connection to WebSocket and stream raw logs in real-time",
+                "description": "Upgrade connection to WebSocket and stream raw logs in real-time. Pushes standard Nginx log lines as text frames.",
                 "tags": [
                     "Monitor"
                 ],
@@ -202,7 +202,14 @@ const docTemplate = `{
                         "in": "query"
                     }
                 ],
-                "responses": {}
+                "responses": {
+                    "101": {
+                        "description": "Switching Protocols (Handshake Success). Streams raw nginx log lines as text frames.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
             }
         },
         "/api/v1/sev/overview": {
@@ -485,7 +492,7 @@ const docTemplate = `{
         },
         "/api/v1/sev/stats/ws": {
             "get": {
-                "description": "Upgrade connection to WebSocket and stream real-time request counts and error counts",
+                "description": "Upgrade connection to WebSocket and stream real-time request counts and error counts. Pushes initial history as 'init' event and periodic updates as 'update' event.",
                 "tags": [
                     "Monitor"
                 ],
@@ -513,7 +520,20 @@ const docTemplate = `{
                         "in": "query"
                     }
                 ],
-                "responses": {}
+                "responses": {
+                    "101": {
+                        "description": "Switching Protocols (Handshake Success). Initial history data frame pushed immediately.",
+                        "schema": {
+                            "$ref": "#/definitions/controller.StatsWSInitResponse"
+                        }
+                    },
+                    "200": {
+                        "description": "Periodic real-time update data frame pushed at the specified interval.",
+                        "schema": {
+                            "$ref": "#/definitions/controller.StatsWSUpdateResponse"
+                        }
+                    }
+                }
             }
         }
     },
@@ -564,6 +584,33 @@ const docTemplate = `{
                 "message": {
                     "type": "string",
                     "example": "success"
+                }
+            }
+        },
+        "controller.StatsWSInitResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/storage.RealTimeHistoryPoint"
+                    }
+                },
+                "type": {
+                    "type": "string",
+                    "example": "init"
+                }
+            }
+        },
+        "controller.StatsWSUpdateResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "$ref": "#/definitions/storage.RealTimeHistoryPoint"
+                },
+                "type": {
+                    "type": "string",
+                    "example": "update"
                 }
             }
         },
@@ -751,6 +798,20 @@ const docTemplate = `{
                 },
                 "total_requests": {
                     "$ref": "#/definitions/storage.MetricValue"
+                }
+            }
+        },
+        "storage.RealTimeHistoryPoint": {
+            "type": "object",
+            "properties": {
+                "errors": {
+                    "type": "integer"
+                },
+                "total": {
+                    "type": "integer"
+                },
+                "ts": {
+                    "type": "string"
                 }
             }
         },
