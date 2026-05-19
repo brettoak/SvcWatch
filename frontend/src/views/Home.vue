@@ -85,7 +85,7 @@ const connectStatsWebSocket = () => {
   const authStore = useAuthStore()
   if (!authStore.token) return
   const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
-  const wsUrl = `${protocol}//${window.location.host}/api/sev/stats/ws?token=${authStore.token}&simulate=false&interval=2s`
+  const wsUrl = `${protocol}//${window.location.host}/api/sev/stats/ws?token=${authStore.token}&simulate=false&interval=3s`
   
   statsWsStatus.value = 'connecting'
   statsWs = new WebSocket(wsUrl)
