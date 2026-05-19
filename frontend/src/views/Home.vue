@@ -21,9 +21,17 @@ const onTimeRangeChange = (range: { startStr: string; endStr: string }) => {
 const dashboardData = ref<DashboardData | null>(null)
 const distributionData = ref<DistributionData | null>(null)
 const realTimePoints = ref<any[]>([])
+const isMockSimulate = ref(true)
 const topPathsData = ref<TopPathItem[]>([])
 let statsWs: WebSocket | null = null
 const statsWsStatus = ref<'connecting' | 'connected' | 'error' | 'closed'>('connecting')
+
+watch(isMockSimulate, () => {
+  if (statsWs) {
+    statsWs.close()
+  }
+  connectStatsWebSocket()
+})
 
 const logsStream = ref<any[]>([])
 const totalLogsReceived = ref(0)
@@ -85,7 +93,7 @@ const connectStatsWebSocket = () => {
   const authStore = useAuthStore()
   if (!authStore.token) return
   const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
-  const wsUrl = `${protocol}//${window.location.host}/api/sev/stats/ws?token=${authStore.token}&simulate=false&interval=3s`
+  const wsUrl = `${protocol}//${window.location.host}/api/sev/stats/ws?token=${authStore.token}&simulate=${isMockSimulate.value}&interval=3s`
   
   statsWsStatus.value = 'connecting'
   statsWs = new WebSocket(wsUrl)
@@ -535,7 +543,7 @@ const hoveredBar = computed(() => {
       <!-- Timeseries Bar Chart Card -->
       <div class="lg:col-span-2 relative bg-bg-secondary rounded-2xl p-7 shadow-card border border-border-color flex flex-col gap-5 transition-all duration-300 overflow-hidden z-10 h-full" :class="{ 'opacity-50 pointer-events-none': loading }">
         <div class="flex flex-col gap-4 sm:flex-row sm:justify-between sm:items-center">
-          <div class="flex items-center gap-3">
+          <div class="flex items-center gap-3 flex-wrap">
             <h3 class="text-text-secondary text-[0.75rem] font-bold uppercase tracking-widest m-0">Real-time Requests</h3>
             <div class="flex items-center gap-1.5 bg-bg-primary border border-border-color rounded-full px-2 py-0.5 shadow-sm">
               <span class="w-1.5 h-1.5 rounded-full" 
@@ -547,6 +555,21 @@ const hoveredBar = computed(() => {
               <span class="text-[0.55rem] font-black uppercase tracking-widest text-text-secondary">
                 {{ statsWsStatus === 'connected' ? 'Live' : statsWsStatus }}
               </span>
+            </div>
+            <!-- Mock Simulation Toggle -->
+            <div class="flex items-center gap-2 bg-bg-primary border border-border-color rounded-full px-2.5 py-0.5 shadow-sm hover:border-text-secondary/30 transition-colors duration-200">
+              <span class="text-[0.55rem] font-black uppercase tracking-widest text-text-secondary">Mock Data</span>
+              <button 
+                @click="isMockSimulate = !isMockSimulate"
+                class="relative inline-flex h-4 w-7 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none"
+                :class="isMockSimulate ? 'bg-primary-blue' : 'bg-slate-700'"
+                :title="isMockSimulate ? 'Disable Mock Data' : 'Enable Mock Data'"
+              >
+                <span 
+                  class="pointer-events-none inline-block h-3 w-3 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out"
+                  :class="isMockSimulate ? 'translate-x-3' : 'translate-x-0'"
+                ></span>
+              </button>
             </div>
           </div>
           <div class="flex bg-bg-primary rounded-lg p-1 border border-border-color shrink-0">

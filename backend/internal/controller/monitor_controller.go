@@ -8,6 +8,7 @@ import (
 	"math/rand"
 	"net/http"
 	"os"
+	"sync"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -345,6 +346,8 @@ func (ctrl *MonitorController) LogsWebSocketHandler(c *gin.Context) {
 	}
 	defer conn.Close()
 
+	var writeMu sync.Mutex
+
 	// Calculate offset for the last 10 lines
 	seekInfo := getLastNLinesOffset(actualPath, 10)
 
@@ -358,7 +361,9 @@ func (ctrl *MonitorController) LogsWebSocketHandler(c *gin.Context) {
 
 	t, err := tail.TailFile(actualPath, config)
 	if err != nil {
+		writeMu.Lock()
 		_ = conn.WriteMessage(websocket.TextMessage, []byte(fmt.Sprintf("Error tailing file: %v", err)))
+		writeMu.Unlock()
 		return
 	}
 	defer t.Stop()
@@ -387,7 +392,10 @@ func (ctrl *MonitorController) LogsWebSocketHandler(c *gin.Context) {
 		for {
 			select {
 			case <-ticker.C:
-				if err := conn.WriteMessage(websocket.PingMessage, nil); err != nil {
+				writeMu.Lock()
+				err := conn.WriteMessage(websocket.PingMessage, nil)
+				writeMu.Unlock()
+				if err != nil {
 					return
 				}
 			case <-done:
@@ -409,7 +417,10 @@ func (ctrl *MonitorController) LogsWebSocketHandler(c *gin.Context) {
 				fmt.Printf("Tail error: %v\n", line.Err)
 				continue
 			}
-			if err := conn.WriteMessage(websocket.TextMessage, []byte(line.Text)); err != nil {
+			writeMu.Lock()
+			err := conn.WriteMessage(websocket.TextMessage, []byte(line.Text))
+			writeMu.Unlock()
+			if err != nil {
 				return
 			}
 		}
@@ -513,6 +524,8 @@ func (ctrl *MonitorController) StatsWebSocketHandler(c *gin.Context) {
 	}
 	defer conn.Close()
 
+	var writeMu sync.Mutex
+
 	// done channel signals all goroutines to stop on client disconnect
 	done := make(chan struct{})
 
@@ -534,7 +547,10 @@ func (ctrl *MonitorController) StatsWebSocketHandler(c *gin.Context) {
 		for {
 			select {
 			case <-ticker.C:
-				if err := conn.WriteMessage(websocket.PingMessage, nil); err != nil {
+				writeMu.Lock()
+				err := conn.WriteMessage(websocket.PingMessage, nil)
+				writeMu.Unlock()
+				if err != nil {
 					return
 				}
 			case <-done:
@@ -582,7 +598,10 @@ func (ctrl *MonitorController) StatsWebSocketHandler(c *gin.Context) {
 		"type": "init",
 		"data": historyPoints,
 	}
-	if err := conn.WriteJSON(initMsg); err != nil {
+	writeMu.Lock()
+	err = conn.WriteJSON(initMsg)
+	writeMu.Unlock()
+	if err != nil {
 		return
 	}
 
@@ -633,7 +652,10 @@ func (ctrl *MonitorController) StatsWebSocketHandler(c *gin.Context) {
 				"type": "update",
 				"data": point,
 			}
-			if err := conn.WriteJSON(updateMsg); err != nil {
+			writeMu.Lock()
+			err = conn.WriteJSON(updateMsg)
+			writeMu.Unlock()
+			if err != nil {
 				return
 			}
 		}
