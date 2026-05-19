@@ -424,7 +424,7 @@ const getSuccessRate = () => {
 // Chart Helpers & Paths
 const generateBezierPath = (points: { x: number; y: number }[]) => {
   if (points.length === 0 || !points[0]) return ''
-  let d = `M ${points[0].x} ${points[0].y}`
+  let d = `M -50 ${points[0].y} L ${points[0].x} ${points[0].y}`
   for (let i = 0; i < points.length - 1; i++) {
     const p0 = points[i]
     const p1 = points[i + 1]
@@ -435,12 +435,17 @@ const generateBezierPath = (points: { x: number; y: number }[]) => {
     const cp2y = p1.y
     d += ` C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${p1.x} ${p1.y}`
   }
+  const lastPt = points[points.length - 1]
+  if (lastPt) {
+    d += ` L 650 ${lastPt.y}`
+  }
   return d
 }
 
 const generateAreaPath = (points: { x: number; y: number }[], height = 150) => {
   if (points.length === 0 || !points[0]) return ''
-  let d = `M ${points[0].x} ${height}`
+  let d = `M -50 ${height}`
+  d += ` L -50 ${points[0].y}`
   d += ` L ${points[0].x} ${points[0].y}`
   for (let i = 0; i < points.length - 1; i++) {
     const p0 = points[i]
@@ -454,7 +459,8 @@ const generateAreaPath = (points: { x: number; y: number }[], height = 150) => {
   }
   const lastPt = points[points.length - 1]
   if (lastPt) {
-    d += ` L ${lastPt.x} ${height} Z`
+    d += ` L 650 ${lastPt.y}`
+    d += ` L 650 ${height} Z`
   }
   return d
 }
@@ -635,7 +641,7 @@ const hoveredBar = computed(() => {
             </g>
             
             <!-- ====== Metric Wave Paths ====== -->
-            <g :style="chartGroupStyle">
+            <g :style="chartGroupStyle" clip-path="url(#chartClip)">
               <!-- 1. QPS & Throughput Tab (Success + Errors) -->
               <template v-if="selectedMetric === 'throughput'">
                 <!-- Success (Emerald Area & Line) -->
@@ -749,6 +755,9 @@ const hoveredBar = computed(() => {
 
             <!-- Definitions -->
             <defs>
+              <clipPath id="chartClip">
+                <rect x="0" y="-10" width="600" height="190" />
+              </clipPath>
               <linearGradient id="successGradient" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="0%" stop-color="#10b981" stop-opacity="0.25" />
                 <stop offset="100%" stop-color="#10b981" stop-opacity="0.0" />
