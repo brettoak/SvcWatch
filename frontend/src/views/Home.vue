@@ -172,7 +172,7 @@ const highlightRequestLine = (req: string) => {
   return `<span class="text-slate-200">${req}</span>`
 }
 
-const selectedMetric = ref('total')
+const selectedMetric = ref('throughput')
 const hoveredBarIdx = ref<number | null>(null)
 const mouseX = ref(0)
 const mouseY = ref(0)
@@ -183,8 +183,7 @@ const handleMouseMove = (e: MouseEvent) => {
 }
 
 const metricOptions = [
-  { label: 'QPS / Throughput', value: 'total' },
-  { label: 'Errors', value: 'errors' },
+  { label: 'QPS / Throughput', value: 'throughput' },
   { label: 'Error Rate', value: 'error_rate' },
 ]
 
@@ -202,21 +201,53 @@ const calculateTimeRange = () => {
   return currentRange.value
 }
 
-const pts = computed(() => {
-  return realTimePoints.value.map(p => {
-    let val = 0
-    if (selectedMetric.value === 'total') {
-      val = p.total
-    } else if (selectedMetric.value === 'errors') {
-      val = p.errors
-    } else if (selectedMetric.value === 'error_rate') {
-      val = p.total > 0 ? (p.errors / p.total) * 100 : 0
-    }
+const tsDataSeries = computed(() => {
+  if (realTimePoints.value.length === 0) return { success: [], errors: [], errorRate: [] }
+  
+  const maxRequestsVal = Math.max(...realTimePoints.value.map(p => Math.max(p.total - p.errors, p.errors, 1)))
+  const maxErrorRateVal = Math.max(...realTimePoints.value.map(p => p.total > 0 ? (p.errors / p.total) * 100 : 0), 1)
+  
+  const height = 150
+  const width = 600
+  const xSpan = width / realTimePoints.value.length
+  
+  const success = realTimePoints.value.map((p, i) => {
+    const val = p.total - p.errors
+    const h = (val / maxRequestsVal) * height
     return {
-      ts: p.ts,
-      value: val
+      x: i * xSpan + xSpan / 2,
+      y: height - h,
+      val: val,
+      ts: formatDateStr(new Date(p.ts)),
+      fullTs: new Date(p.ts).toLocaleString()
     }
   })
+
+  const errors = realTimePoints.value.map((p, i) => {
+    const val = p.errors
+    const h = (val / maxRequestsVal) * height
+    return {
+      x: i * xSpan + xSpan / 2,
+      y: height - h,
+      val: val,
+      ts: formatDateStr(new Date(p.ts)),
+      fullTs: new Date(p.ts).toLocaleString()
+    }
+  })
+
+  const errorRate = realTimePoints.value.map((p, i) => {
+    const val = p.total > 0 ? (p.errors / p.total) * 100 : 0
+    const h = (val / maxErrorRateVal) * height
+    return {
+      x: i * xSpan + xSpan / 2,
+      y: height - h,
+      val: val,
+      ts: formatDateStr(new Date(p.ts)),
+      fullTs: new Date(p.ts).toLocaleString()
+    }
+  })
+
+  return { success, errors, errorRate }
 })
 
 const fetchData = async () => {
@@ -342,49 +373,13 @@ const getSuccessRate = () => {
   return s2xx.toFixed(2)
 }
 
-// Bar Chart Helpers
-const tsBars = computed(() => {
-  if (pts.value.length === 0) return []
-  const maxVal = Math.max(...pts.value.map(p => p.value), 1)
-  const height = 150
-  const width = 600
-  const barWidth = Math.max((width / pts.value.length) - 8, 4)
-  const xSpan = width / pts.value.length
-  
-  return pts.value.map((p, i) => {
-    const h = (p.value / maxVal) * height
-    return {
-      x: i * xSpan + (xSpan - barWidth) / 2,
-      y: height - h,
-      w: barWidth,
-      h: Math.max(h, 2),
-      val: p.value,
-      ts: formatDateStr(new Date(p.ts)),
-      fullTs: new Date(p.ts).toLocaleString()
-    }
-  })
-})
-
-const hoveredBar = computed(() => {
-  if (hoveredBarIdx.value === null) return null
-  return tsBars.value[hoveredBarIdx.value] || null
-})
-
-const formatBarTooltip = (val: number) => {
-  if (selectedMetric.value === 'error_rate') return val.toFixed(2) + '%'
-  if (selectedMetric.value === 'errors') return val.toFixed(0) + ' errs'
-  return val.toFixed(0) + ' reqs'
-}
-
-const tsWavePath = computed(() => {
-  if (tsBars.value.length === 0) return ''
-  const pts = tsBars.value.map(bar => ({ x: bar.x + bar.w / 2, y: bar.y }))
-  if (pts.length === 0 || !pts[0]) return ''
-  
-  let d = `M ${pts[0].x} ${pts[0].y}`
-  for (let i = 0; i < pts.length - 1; i++) {
-    const p0 = pts[i]
-    const p1 = pts[i + 1]
+// Chart Helpers & Paths
+const generateBezierPath = (points: { x: number; y: number }[]) => {
+  if (points.length === 0 || !points[0]) return ''
+  let d = `M ${points[0].x} ${points[0].y}`
+  for (let i = 0; i < points.length - 1; i++) {
+    const p0 = points[i]
+    const p1 = points[i + 1]
     if (!p0 || !p1) continue
     const cp1x = p0.x + (p1.x - p0.x) / 2
     const cp1y = p0.y
@@ -393,19 +388,15 @@ const tsWavePath = computed(() => {
     d += ` C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${p1.x} ${p1.y}`
   }
   return d
-})
+}
 
-const tsAreaPath = computed(() => {
-  if (tsBars.value.length === 0) return ''
-  const pts = tsBars.value.map(bar => ({ x: bar.x + bar.w / 2, y: bar.y }))
-  if (pts.length === 0 || !pts[0]) return ''
-  const height = 150
-  
-  let d = `M ${pts[0].x} ${height}`
-  d += ` L ${pts[0].x} ${pts[0].y}`
-  for (let i = 0; i < pts.length - 1; i++) {
-    const p0 = pts[i]
-    const p1 = pts[i + 1]
+const generateAreaPath = (points: { x: number; y: number }[], height = 150) => {
+  if (points.length === 0 || !points[0]) return ''
+  let d = `M ${points[0].x} ${height}`
+  d += ` L ${points[0].x} ${points[0].y}`
+  for (let i = 0; i < points.length - 1; i++) {
+    const p0 = points[i]
+    const p1 = points[i + 1]
     if (!p0 || !p1) continue
     const cp1x = p0.x + (p1.x - p0.x) / 2
     const cp1y = p0.y
@@ -413,11 +404,46 @@ const tsAreaPath = computed(() => {
     const cp2y = p1.y
     d += ` C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${p1.x} ${p1.y}`
   }
-  const lastPt = pts[pts.length - 1]
+  const lastPt = points[points.length - 1]
   if (lastPt) {
     d += ` L ${lastPt.x} ${height} Z`
   }
   return d
+}
+
+// Success Paths (Emerald Green)
+const successLinePath = computed(() => generateBezierPath(tsDataSeries.value.success))
+const successAreaPath = computed(() => generateAreaPath(tsDataSeries.value.success))
+
+// Error Paths (Rose Red)
+const errorLinePath = computed(() => generateBezierPath(tsDataSeries.value.errors))
+const errorAreaPath = computed(() => generateAreaPath(tsDataSeries.value.errors))
+
+// Error Rate Paths (Amber Orange)
+const errorRateLinePath = computed(() => generateBezierPath(tsDataSeries.value.errorRate))
+const errorRateAreaPath = computed(() => generateAreaPath(tsDataSeries.value.errorRate))
+
+// Hover Tracker
+const hoveredBar = computed(() => {
+  if (hoveredBarIdx.value === null) return null
+  const idx = hoveredBarIdx.value
+  const sPt = tsDataSeries.value.success[idx]
+  const ePt = tsDataSeries.value.errors[idx]
+  const rPt = tsDataSeries.value.errorRate[idx]
+  if (!sPt || !ePt || !rPt) return null
+  return {
+    ts: sPt.ts,
+    fullTs: sPt.fullTs,
+    successVal: sPt.val,
+    errorVal: ePt.val,
+    rateVal: rPt.val,
+    successY: sPt.y,
+    successX: sPt.x,
+    errorY: ePt.y,
+    errorX: ePt.x,
+    rateY: rPt.y,
+    rateX: rPt.x,
+  }
 })
 </script>
 
@@ -545,34 +571,74 @@ const tsAreaPath = computed(() => {
               <line x1="0" y1="170" x2="600" y2="170" class="stroke-slate-200 dark:stroke-slate-700" stroke-width="1"/>
             </g>
             
-            <!-- Area Fill -->
-            <path
-              v-if="tsAreaPath"
-              :d="tsAreaPath"
-              fill="url(#waveGradient)"
-              class="transition-all duration-300"
-            />
-            
-            <!-- Smooth Line -->
-            <path
-              v-if="tsWavePath"
-              :d="tsWavePath"
-              fill="none"
-              stroke="var(--color-primary-blue)"
-              stroke-width="3"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              class="transition-all duration-300 drop-shadow-md"
-            />
+            <!-- ====== Metric Wave Paths ====== -->
+            <!-- 1. QPS & Throughput Tab (Success + Errors) -->
+            <template v-if="selectedMetric === 'throughput'">
+              <!-- Success (Emerald Area & Line) -->
+              <path
+                v-if="successAreaPath"
+                :d="successAreaPath"
+                fill="url(#successGradient)"
+                class="transition-all duration-300"
+              />
+              <path
+                v-if="successLinePath"
+                :d="successLinePath"
+                fill="none"
+                stroke="#10b981"
+                stroke-width="3"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                class="transition-all duration-300 drop-shadow-md"
+              />
+
+              <!-- Errors (Rose Area & Line) -->
+              <path
+                v-if="errorAreaPath"
+                :d="errorAreaPath"
+                fill="url(#errorGradient)"
+                class="transition-all duration-300"
+              />
+              <path
+                v-if="errorLinePath"
+                :d="errorLinePath"
+                fill="none"
+                stroke="#f43f5e"
+                stroke-width="2.5"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                class="transition-all duration-300 drop-shadow-md"
+              />
+            </template>
+
+            <!-- 2. Error Rate Tab -->
+            <template v-else-if="selectedMetric === 'error_rate'">
+              <path
+                v-if="errorRateAreaPath"
+                :d="errorRateAreaPath"
+                fill="url(#errorRateGradient)"
+                class="transition-all duration-300"
+              />
+              <path
+                v-if="errorRateLinePath"
+                :d="errorRateLinePath"
+                fill="none"
+                stroke="#f59e0b"
+                stroke-width="3"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                class="transition-all duration-300 drop-shadow-md"
+              />
+            </template>
             
             <!-- Hover detection regions (invisible columns) -->
-            <g>
+            <g v-if="tsDataSeries.success.length">
               <rect
-                v-for="(bar, idx) in tsBars" 
+                v-for="(pt, idx) in tsDataSeries.success" 
                 :key="idx"
-                :x="bar.x + bar.w / 2 - (600 / tsBars.length) / 2"
+                :x="pt.x - (600 / tsDataSeries.success.length) / 2"
                 :y="0"
-                :width="600 / tsBars.length"
+                :width="600 / tsDataSeries.success.length"
                 :height="170"
                 fill="transparent"
                 class="cursor-pointer"
@@ -582,22 +648,53 @@ const tsAreaPath = computed(() => {
               </rect>
             </g>
 
-            <!-- Highlight dot for hovered item -->
-            <circle
-              v-if="hoveredBar"
-              :cx="hoveredBar.x + hoveredBar.w / 2"
-              :cy="hoveredBar.y"
-              r="4"
-              class="transition-all duration-200 stroke-white dark:stroke-slate-900"
-              fill="var(--color-primary-blue)"
-              stroke-width="2"
-            />
+            <!-- Highlight dots for hovered item -->
+            <template v-if="hoveredBar">
+              <!-- QPS / Throughput Tab: Two dots -->
+              <template v-if="selectedMetric === 'throughput'">
+                <circle
+                  :cx="hoveredBar.successX"
+                  :cy="hoveredBar.successY"
+                  r="5"
+                  class="transition-all duration-200 stroke-white dark:stroke-slate-900"
+                  fill="#10b981"
+                  stroke-width="2"
+                />
+                <circle
+                  :cx="hoveredBar.errorX"
+                  :cy="hoveredBar.errorY"
+                  r="5"
+                  class="transition-all duration-200 stroke-white dark:stroke-slate-900"
+                  fill="#f43f5e"
+                  stroke-width="2"
+                />
+              </template>
+              <!-- Error Rate Tab: One dot -->
+              <template v-else-if="selectedMetric === 'error_rate'">
+                <circle
+                  :cx="hoveredBar.rateX"
+                  :cy="hoveredBar.rateY"
+                  r="5"
+                  class="transition-all duration-200 stroke-white dark:stroke-slate-900"
+                  fill="#f59e0b"
+                  stroke-width="2"
+                />
+              </template>
+            </template>
 
             <!-- Definitions -->
             <defs>
-              <linearGradient id="waveGradient" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stop-color="var(--color-primary-blue)" stop-opacity="0.3" />
-                <stop offset="100%" stop-color="var(--color-primary-blue)" stop-opacity="0.0" />
+              <linearGradient id="successGradient" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#10b981" stop-opacity="0.25" />
+                <stop offset="100%" stop-color="#10b981" stop-opacity="0.0" />
+              </linearGradient>
+              <linearGradient id="errorGradient" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#f43f5e" stop-opacity="0.2" />
+                <stop offset="100%" stop-color="#f43f5e" stop-opacity="0.0" />
+              </linearGradient>
+              <linearGradient id="errorRateGradient" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#f59e0b" stop-opacity="0.25" />
+                <stop offset="100%" stop-color="#f59e0b" stop-opacity="0.0" />
               </linearGradient>
             </defs>
           </svg>
@@ -605,26 +702,56 @@ const tsAreaPath = computed(() => {
           <!-- Custom Tooltip -->
           <div 
             v-if="hoveredBar" 
-            class="fixed pointer-events-none z-[100] bg-slate-900/90 text-white px-3 py-2 rounded-lg text-[0.7rem] shadow-xl backdrop-blur-md border border-white/10 flex flex-col gap-0.5 min-w-[120px] transition-opacity duration-200"
+            class="fixed pointer-events-none z-[100] bg-slate-900/90 text-white px-3.5 py-2.5 rounded-xl text-[0.7rem] shadow-xl backdrop-blur-md border border-white/10 flex flex-col gap-1.5 min-w-[155px] transition-opacity duration-200"
             :style="{ left: mouseX + 15 + 'px', top: mouseY + 15 + 'px' }"
           >
-            <div class="flex items-center gap-2 mb-1 border-b border-white/10 pb-1">
-              <span class="w-2 h-2 rounded-full bg-primary-blue"></span>
-              <span class="font-bold text-white/90">{{ hoveredBar.fullTs }}</span>
+            <!-- Header: Time -->
+            <div class="flex items-center gap-2 border-b border-white/10 pb-1.5 mb-0.5">
+              <span class="font-bold text-white/90 text-[0.65rem] tracking-tight">{{ hoveredBar.fullTs }}</span>
             </div>
-            <div class="flex justify-between items-baseline">
-              <span class="text-white/50 uppercase text-[0.6rem] font-bold tracking-wider">{{ selectedMetric.replace('_', ' ') }}</span>
-              <span class="text-[0.9rem] font-black text-white">{{ formatBarTooltip(hoveredBar.val || 0) }}</span>
-            </div>
+
+            <!-- Content for Throughput (Success + Errors) -->
+            <template v-if="selectedMetric === 'throughput'">
+              <div class="flex items-center justify-between gap-4">
+                <div class="flex items-center gap-1.5">
+                  <span class="w-1.5 h-1.5 rounded-full bg-[#10b981]"></span>
+                  <span class="text-white/60 font-semibold uppercase text-[0.55rem] tracking-wider">Success</span>
+                </div>
+                <span class="text-[0.75rem] font-black text-white">{{ hoveredBar.successVal }} reqs</span>
+              </div>
+              <div class="flex items-center justify-between gap-4">
+                <div class="flex items-center gap-1.5">
+                  <span class="w-1.5 h-1.5 rounded-full bg-[#f43f5e]"></span>
+                  <span class="text-white/60 font-semibold uppercase text-[0.55rem] tracking-wider">Failed</span>
+                </div>
+                <span class="text-[0.75rem] font-black text-[#f43f5e]">{{ hoveredBar.errorVal }} errs</span>
+              </div>
+              <div class="flex items-center justify-between gap-4 border-t border-white/5 pt-1.5 mt-0.5">
+                <span class="text-white/40 font-bold uppercase text-[0.55rem] tracking-wider">Total</span>
+                <span class="text-[0.75rem] font-black text-white/80">{{ hoveredBar.successVal + hoveredBar.errorVal }} reqs</span>
+              </div>
+            </template>
+
+            <!-- Content for Error Rate -->
+            <template v-else-if="selectedMetric === 'error_rate'">
+              <div class="flex items-center justify-between gap-4">
+                <div class="flex items-center gap-1.5">
+                  <span class="w-1.5 h-1.5 rounded-full bg-[#f59e0b]"></span>
+                  <span class="text-white/60 font-semibold uppercase text-[0.55rem] tracking-wider">Error Rate</span>
+                </div>
+                <span class="text-[0.75rem] font-black text-[#f59e0b]">{{ hoveredBar.rateVal.toFixed(2) }}%</span>
+              </div>
+            </template>
           </div>
+          
           <div v-if="!realTimePoints.length" class="flex-1 flex flex-col items-center justify-center text-text-secondary text-sm italic py-10">
             No real-time data available
           </div>
           
-          <div v-if="realTimePoints.length" class="flex justify-between items-center text-[0.65rem] text-text-secondary font-bold uppercase tracking-tight mt-3 px-1">
-             <span>{{ tsBars[0]?.ts || '' }}</span>
-             <span>{{ tsBars[Math.floor(tsBars.length / 2)]?.ts || '' }}</span>
-             <span>{{ tsBars[tsBars.length - 1]?.ts || '' }}</span>
+          <div v-if="realTimePoints.length && tsDataSeries.success.length" class="flex justify-between items-center text-[0.65rem] text-text-secondary font-bold uppercase tracking-tight mt-3 px-1">
+             <span>{{ tsDataSeries.success[0]?.ts || '' }}</span>
+             <span>{{ tsDataSeries.success[Math.floor(tsDataSeries.success.length / 2)]?.ts || '' }}</span>
+             <span>{{ tsDataSeries.success[tsDataSeries.success.length - 1]?.ts || '' }}</span>
           </div>
         </div>
       </div>
