@@ -20,8 +20,10 @@ const onTimeRangeChange = (range: { startStr: string; endStr: string }) => {
 
 const dashboardData = ref<DashboardData | null>(null)
 const distributionData = ref<DistributionData | null>(null)
-const timeSeriesData = ref<TimeSeriesData | null>(null)
+const realTimePoints = ref<any[]>([])
 const topPathsData = ref<TopPathItem[]>([])
+let statsWs: WebSocket | null = null
+const statsWsStatus = ref<'connecting' | 'connected' | 'error' | 'closed'>('connecting')
 
 const logsStream = ref<any[]>([])
 const totalLogsReceived = ref(0)
@@ -79,6 +81,50 @@ const connectWebSocket = () => {
   }
 }
 
+const connectStatsWebSocket = () => {
+  const authStore = useAuthStore()
+  if (!authStore.token) return
+  const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
+  const wsUrl = `${protocol}//${window.location.host}/api/sev/stats/ws?token=${authStore.token}&simulate=false`
+  
+  statsWsStatus.value = 'connecting'
+  statsWs = new WebSocket(wsUrl)
+  
+  statsWs.onopen = () => {
+    statsWsStatus.value = 'connected'
+  }
+
+  statsWs.onerror = (err) => {
+    console.error('Stats WebSocket Error:', err)
+    statsWsStatus.value = 'error'
+  }
+
+  statsWs.onclose = () => {
+    statsWsStatus.value = 'closed'
+  }
+  
+  statsWs.onmessage = (event) => {
+    if (!event.data || event.data.trim() === '') return
+    
+    try {
+      const msg = JSON.parse(event.data)
+      if (msg.type === 'init') {
+        realTimePoints.value = msg.data || []
+      } else if (msg.type === 'update') {
+        if (msg.data) {
+          realTimePoints.value.push(msg.data)
+          if (realTimePoints.value.length > 30) {
+            realTimePoints.value.shift()
+          }
+        }
+      }
+    } catch (e) {
+      console.error('Error parsing stats websocket message:', e)
+    }
+  }
+}
+
+
 const highlightRawLog = (text: string) => {
   if (!text) return ''
   let highlighted = text.replace(/</g, '&lt;').replace(/>/g, '&gt;')
@@ -126,7 +172,7 @@ const highlightRequestLine = (req: string) => {
   return `<span class="text-slate-200">${req}</span>`
 }
 
-const selectedMetric = ref('bandwidth')
+const selectedMetric = ref('total')
 const hoveredBarIdx = ref<number | null>(null)
 const mouseX = ref(0)
 const mouseY = ref(0)
@@ -137,10 +183,9 @@ const handleMouseMove = (e: MouseEvent) => {
 }
 
 const metricOptions = [
-  { label: 'QPS', value: 'qps' },
+  { label: 'QPS / Throughput', value: 'total' },
+  { label: 'Errors', value: 'errors' },
   { label: 'Error Rate', value: 'error_rate' },
-  { label: 'Latency', value: 'latency_p99' },
-  { label: 'Bandwidth', value: 'bandwidth' },
 ]
 
 const loading = ref(false)
@@ -157,21 +202,22 @@ const calculateTimeRange = () => {
   return currentRange.value
 }
 
-const fetchTimeSeries = async () => {
-  const range = calculateTimeRange()
-  if (!range) return
-  tsLoading.value = true
-  try {
-    const tsResp = await getTimeSeriesStats(selectedMetric.value, range.startStr, range.endStr)
-    if (tsResp.data && tsResp.data.code === 200) {
-      timeSeriesData.value = tsResp.data.data
+const pts = computed(() => {
+  return realTimePoints.value.map(p => {
+    let val = 0
+    if (selectedMetric.value === 'total') {
+      val = p.total
+    } else if (selectedMetric.value === 'errors') {
+      val = p.errors
+    } else if (selectedMetric.value === 'error_rate') {
+      val = p.total > 0 ? (p.errors / p.total) * 100 : 0
     }
-  } catch (err: any) {
-    console.error('Timeseries load failed', err)
-  } finally {
-    tsLoading.value = false
-  }
-}
+    return {
+      ts: p.ts,
+      value: val
+    }
+  })
+})
 
 const fetchData = async () => {
   const range = calculateTimeRange()
@@ -202,8 +248,6 @@ const fetchData = async () => {
       topPathsData.value = topPathsResp.data.data || []
     }
 
-    await fetchTimeSeries()
-
     lastUpdated.value = formatDateStr(new Date())
   } catch (err: any) {
     errorMsg.value = err.response?.data?.message || err.message || 'API request failed'
@@ -212,16 +256,14 @@ const fetchData = async () => {
   }
 }
 
-watch(selectedMetric, () => {
-  fetchTimeSeries()
-})
-
 onMounted(() => {
   connectWebSocket()
+  connectStatsWebSocket()
 })
 
 onUnmounted(() => {
   if (ws) ws.close()
+  if (statsWs) statsWs.close()
 })
 
 const getTrendClass = (val: number, isErrorRate = false) => {
@@ -302,28 +344,25 @@ const getSuccessRate = () => {
 
 // Bar Chart Helpers
 const tsBars = computed(() => {
-  if (!timeSeriesData.value?.points || timeSeriesData.value.points.length === 0) return []
-  const pts = timeSeriesData.value.points
-  const maxVal = Math.max(...pts.map(p => p.value), 1)
+  if (pts.value.length === 0) return []
+  const maxVal = Math.max(...pts.value.map(p => p.value), 1)
   const height = 150
   const width = 600
-  const barWidth = Math.max((width / pts.length) - 8, 4)
-  const xSpan = width / pts.length
+  const barWidth = Math.max((width / pts.value.length) - 8, 4)
+  const xSpan = width / pts.value.length
   
-  return pts.map((p, i) => {
+  return pts.value.map((p, i) => {
     const h = (p.value / maxVal) * height
     return {
       x: i * xSpan + (xSpan - barWidth) / 2,
       y: height - h,
       w: barWidth,
-      h: Math.max(h, 2), // minimum height 2px to be visible
+      h: Math.max(h, 2),
       val: p.value,
-      // Format time based on interval roughly, now includes date
-      ts: new Date(p.ts).toLocaleString([], { 
-        month: '2-digit', 
-        day: '2-digit', 
+      ts: new Date(p.ts).toLocaleTimeString([], { 
         hour: '2-digit', 
         minute: '2-digit',
+        second: '2-digit',
         hour12: false 
       }),
       fullTs: new Date(p.ts).toLocaleString()
@@ -337,15 +376,9 @@ const hoveredBar = computed(() => {
 })
 
 const formatBarTooltip = (val: number) => {
-  if (selectedMetric.value === 'bandwidth') return Math.round(val / 1024) + ' KB/s'
-  if (selectedMetric.value === 'latency_p99') return val.toFixed(1) + ' ms'
   if (selectedMetric.value === 'error_rate') return val.toFixed(2) + '%'
-  return val.toFixed(0) + ' req/s'
-}
-
-const getTsMaxVal = () => {
-  if (!timeSeriesData.value?.points || timeSeriesData.value.points.length === 0) return 0
-  return Math.max(...timeSeriesData.value.points.map(p => p.value))
+  if (selectedMetric.value === 'errors') return val.toFixed(0) + ' errs'
+  return val.toFixed(0) + ' reqs'
 }
 
 const tsWavePath = computed(() => {
@@ -479,9 +512,22 @@ const tsAreaPath = computed(() => {
 
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 items-stretch">
       <!-- Timeseries Bar Chart Card -->
-      <div class="lg:col-span-2 relative bg-bg-secondary rounded-2xl p-7 shadow-card border border-border-color flex flex-col gap-5 transition-all duration-300 overflow-hidden z-10 h-full" :class="{ 'opacity-50 pointer-events-none': loading || tsLoading }">
+      <div class="lg:col-span-2 relative bg-bg-secondary rounded-2xl p-7 shadow-card border border-border-color flex flex-col gap-5 transition-all duration-300 overflow-hidden z-10 h-full" :class="{ 'opacity-50 pointer-events-none': loading }">
         <div class="flex flex-col gap-4 sm:flex-row sm:justify-between sm:items-center">
-          <h3 class="text-text-secondary text-[0.75rem] font-bold uppercase tracking-widest flex justify-between items-center">Requests Over Time<span class="text-lg opacity-80 ml-2">📈</span></h3>
+          <div class="flex items-center gap-3">
+            <h3 class="text-text-secondary text-[0.75rem] font-bold uppercase tracking-widest m-0">Real-time Requests</h3>
+            <div class="flex items-center gap-1.5 bg-bg-primary border border-border-color rounded-full px-2 py-0.5 shadow-sm">
+              <span class="w-1.5 h-1.5 rounded-full" 
+                    :class="{
+                      'bg-emerald-500 animate-pulse shadow-[0_0_6px_rgba(16,185,129,0.8)]': statsWsStatus === 'connected',
+                      'bg-amber-500 animate-pulse': statsWsStatus === 'connecting',
+                      'bg-red-500': statsWsStatus === 'error' || statsWsStatus === 'closed'
+                    }"></span>
+              <span class="text-[0.55rem] font-black uppercase tracking-widest text-text-secondary">
+                {{ statsWsStatus === 'connected' ? 'Live' : statsWsStatus }}
+              </span>
+            </div>
+          </div>
           <div class="flex bg-bg-primary rounded-lg p-1 border border-border-color shrink-0">
             <button 
               v-for="opt in metricOptions" 
@@ -495,7 +541,7 @@ const tsAreaPath = computed(() => {
           </div>
         </div>
         <div class="relative w-full h-[180px] mt-4 flex flex-col">
-          <svg v-if="timeSeriesData?.points?.length" viewBox="0 0 600 170" class="w-full h-full overflow-visible" preserveAspectRatio="none" @mousemove="handleMouseMove">
+          <svg v-if="realTimePoints.length" viewBox="0 0 600 170" class="w-full h-full overflow-visible" preserveAspectRatio="none" @mousemove="handleMouseMove">
             <!-- Grid lines -->
             <g class="stroke-slate-200/50 dark:stroke-slate-700/50">
               <line x1="0" y1="42.5" x2="600" y2="42.5" stroke-width="1"/>
@@ -577,10 +623,10 @@ const tsAreaPath = computed(() => {
             </div>
           </div>
           <div v-else class="flex-1 flex flex-col items-center justify-center text-text-secondary text-sm italic py-10">
-            No timeseries data available
+            No real-time data available
           </div>
           
-          <div v-if="timeSeriesData?.points?.length" class="flex justify-between items-center text-[0.65rem] text-text-secondary font-bold uppercase tracking-tight mt-3 px-1">
+          <div v-if="realTimePoints.length" class="flex justify-between items-center text-[0.65rem] text-text-secondary font-bold uppercase tracking-tight mt-3 px-1">
              <span>{{ tsBars[0]?.ts || '' }}</span>
              <span>{{ tsBars[Math.floor(tsBars.length / 2)]?.ts || '' }}</span>
              <span>{{ tsBars[tsBars.length - 1]?.ts || '' }}</span>
