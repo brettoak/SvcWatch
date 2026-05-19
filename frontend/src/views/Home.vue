@@ -641,8 +641,9 @@ const hoveredBar = computed(() => {
             </g>
             
             <!-- ====== Metric Wave Paths ====== -->
-            <g :style="chartGroupStyle" clip-path="url(#chartClip)">
-              <!-- 1. QPS & Throughput Tab (Success + Errors) -->
+            <g clip-path="url(#chartClip)">
+              <g :style="chartGroupStyle">
+                <!-- 1. QPS & Throughput Tab (Success + Errors) -->
               <template v-if="selectedMetric === 'throughput'">
                 <!-- Success (Emerald Area & Line) -->
                 <path
@@ -751,6 +752,7 @@ const hoveredBar = computed(() => {
                   />
                 </template>
               </template>
+              </g>
             </g>
 
             <!-- Definitions -->
