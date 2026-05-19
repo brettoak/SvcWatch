@@ -359,12 +359,7 @@ const tsBars = computed(() => {
       w: barWidth,
       h: Math.max(h, 2),
       val: p.value,
-      ts: new Date(p.ts).toLocaleTimeString([], { 
-        hour: '2-digit', 
-        minute: '2-digit',
-        second: '2-digit',
-        hour12: false 
-      }),
+      ts: formatDateStr(new Date(p.ts)),
       fullTs: new Date(p.ts).toLocaleString()
     }
   })
@@ -622,7 +617,7 @@ const tsAreaPath = computed(() => {
               <span class="text-[0.9rem] font-black text-white">{{ formatBarTooltip(hoveredBar.val || 0) }}</span>
             </div>
           </div>
-          <div v-else class="flex-1 flex flex-col items-center justify-center text-text-secondary text-sm italic py-10">
+          <div v-if="!realTimePoints.length" class="flex-1 flex flex-col items-center justify-center text-text-secondary text-sm italic py-10">
             No real-time data available
           </div>
           
