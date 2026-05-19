@@ -22,6 +22,8 @@ const dashboardData = ref<DashboardData | null>(null)
 const distributionData = ref<DistributionData | null>(null)
 const realTimePoints = ref<any[]>([])
 const isMockSimulate = ref(true)
+const isTransitioning = ref(false)
+const translateOffset = ref(0)
 const topPathsData = ref<TopPathItem[]>([])
 let statsWs: WebSocket | null = null
 const statsWsStatus = ref<'connecting' | 'connected' | 'error' | 'closed'>('connecting')
@@ -118,18 +120,57 @@ const connectStatsWebSocket = () => {
       const msg = JSON.parse(event.data)
       if (msg.type === 'init') {
         realTimePoints.value = msg.data || []
+        isTransitioning.value = false
+        translateOffset.value = 0
       } else if (msg.type === 'update') {
         if (msg.data) {
-          realTimePoints.value.push(msg.data)
-          if (realTimePoints.value.length > 30) {
-            realTimePoints.value.shift()
-          }
+          handleNewRealTimePoint(msg.data)
         }
       }
     } catch (e) {
       console.error('Error parsing stats websocket message:', e)
     }
   }
+}
+
+const chartGroupStyle = computed(() => {
+  if (isTransitioning.value) {
+    return {
+      transform: `translate3d(${translateOffset.value}px, 0, 0)`,
+      transition: 'transform 0.5s cubic-bezier(0.4, 0, 0.2, 1)'
+    }
+  }
+  return {
+    transform: 'translate3d(0, 0, 0)',
+    transition: 'none'
+  }
+})
+
+const handleNewRealTimePoint = (newPoint: any) => {
+  // 1. If we are already transitioning, instantly finish it first to prevent overlapping ticks
+  if (isTransitioning.value) {
+    realTimePoints.value.shift()
+    isTransitioning.value = false
+    translateOffset.value = 0
+  }
+
+  // 2. Add the new point (this makes it 31 points)
+  realTimePoints.value.push(newPoint)
+
+  // 3. Trigger transition to slide left
+  nextTick(() => {
+    isTransitioning.value = true
+    translateOffset.value = -20
+
+    // 4. Set a timer to clean up the shift exactly when the transition ends (e.g. 500ms)
+    setTimeout(() => {
+      if (isTransitioning.value && realTimePoints.value.length > 30) {
+        isTransitioning.value = false
+        translateOffset.value = 0
+        realTimePoints.value.shift()
+      }
+    }, 500)
+  })
 }
 
 
@@ -216,8 +257,7 @@ const tsDataSeries = computed(() => {
   const maxErrorRateVal = Math.max(...realTimePoints.value.map(p => p.total > 0 ? (p.errors / p.total) * 100 : 0), 1)
   
   const height = 150
-  const width = 600
-  const xSpan = width / realTimePoints.value.length
+  const xSpan = 20
   
   const success = realTimePoints.value.map((p, i) => {
     const val = p.total - p.errors
@@ -595,115 +635,117 @@ const hoveredBar = computed(() => {
             </g>
             
             <!-- ====== Metric Wave Paths ====== -->
-            <!-- 1. QPS & Throughput Tab (Success + Errors) -->
-            <template v-if="selectedMetric === 'throughput'">
-              <!-- Success (Emerald Area & Line) -->
-              <path
-                v-if="successAreaPath"
-                :d="successAreaPath"
-                fill="url(#successGradient)"
-                class="transition-all duration-300"
-              />
-              <path
-                v-if="successLinePath"
-                :d="successLinePath"
-                fill="none"
-                stroke="#10b981"
-                stroke-width="3"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                class="transition-all duration-300 drop-shadow-md"
-              />
-
-              <!-- Errors (Rose Area & Line) -->
-              <path
-                v-if="errorAreaPath"
-                :d="errorAreaPath"
-                fill="url(#errorGradient)"
-                class="transition-all duration-300"
-              />
-              <path
-                v-if="errorLinePath"
-                :d="errorLinePath"
-                fill="none"
-                stroke="#f43f5e"
-                stroke-width="2.5"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                class="transition-all duration-300 drop-shadow-md"
-              />
-            </template>
-
-            <!-- 2. Error Rate Tab -->
-            <template v-else-if="selectedMetric === 'error_rate'">
-              <path
-                v-if="errorRateAreaPath"
-                :d="errorRateAreaPath"
-                fill="url(#errorRateGradient)"
-                class="transition-all duration-300"
-              />
-              <path
-                v-if="errorRateLinePath"
-                :d="errorRateLinePath"
-                fill="none"
-                stroke="#f59e0b"
-                stroke-width="3"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                class="transition-all duration-300 drop-shadow-md"
-              />
-            </template>
-            
-            <!-- Hover detection regions (invisible columns) -->
-            <g v-if="tsDataSeries.success.length">
-              <rect
-                v-for="(pt, idx) in tsDataSeries.success" 
-                :key="idx"
-                :x="pt.x - (600 / tsDataSeries.success.length) / 2"
-                :y="0"
-                :width="600 / tsDataSeries.success.length"
-                :height="170"
-                fill="transparent"
-                class="cursor-pointer"
-                @mouseenter="hoveredBarIdx = idx"
-                @mouseleave="hoveredBarIdx = null"
-              >
-              </rect>
-            </g>
-
-            <!-- Highlight dots for hovered item -->
-            <template v-if="hoveredBar">
-              <!-- QPS / Throughput Tab: Two dots -->
+            <g :style="chartGroupStyle">
+              <!-- 1. QPS & Throughput Tab (Success + Errors) -->
               <template v-if="selectedMetric === 'throughput'">
-                <circle
-                  :cx="hoveredBar.successX"
-                  :cy="hoveredBar.successY"
-                  r="5"
-                  class="transition-all duration-200 stroke-white dark:stroke-slate-900"
-                  fill="#10b981"
-                  stroke-width="2"
+                <!-- Success (Emerald Area & Line) -->
+                <path
+                  v-if="successAreaPath"
+                  :d="successAreaPath"
+                  fill="url(#successGradient)"
+                  class="transition-all duration-300"
                 />
-                <circle
-                  :cx="hoveredBar.errorX"
-                  :cy="hoveredBar.errorY"
-                  r="5"
-                  class="transition-all duration-200 stroke-white dark:stroke-slate-900"
-                  fill="#f43f5e"
-                  stroke-width="2"
+                <path
+                  v-if="successLinePath"
+                  :d="successLinePath"
+                  fill="none"
+                  stroke="#10b981"
+                  stroke-width="3"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  class="transition-all duration-300 drop-shadow-md"
+                />
+
+                <!-- Errors (Rose Area & Line) -->
+                <path
+                  v-if="errorAreaPath"
+                  :d="errorAreaPath"
+                  fill="url(#errorGradient)"
+                  class="transition-all duration-300"
+                />
+                <path
+                  v-if="errorLinePath"
+                  :d="errorLinePath"
+                  fill="none"
+                  stroke="#f43f5e"
+                  stroke-width="2.5"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  class="transition-all duration-300 drop-shadow-md"
                 />
               </template>
-              <!-- Error Rate Tab: One dot -->
+
+              <!-- 2. Error Rate Tab -->
               <template v-else-if="selectedMetric === 'error_rate'">
-                <circle
-                  :cx="hoveredBar.rateX"
-                  :cy="hoveredBar.rateY"
-                  r="5"
-                  class="transition-all duration-200 stroke-white dark:stroke-slate-900"
-                  fill="#f59e0b"
-                  stroke-width="2"
+                <path
+                  v-if="errorRateAreaPath"
+                  :d="errorRateAreaPath"
+                  fill="url(#errorRateGradient)"
+                  class="transition-all duration-300"
+                />
+                <path
+                  v-if="errorRateLinePath"
+                  :d="errorRateLinePath"
+                  fill="none"
+                  stroke="#f59e0b"
+                  stroke-width="3"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  class="transition-all duration-300 drop-shadow-md"
                 />
               </template>
-            </template>
+              
+              <!-- Hover detection regions (invisible columns) -->
+              <g v-if="tsDataSeries.success.length">
+                <rect
+                  v-for="(pt, idx) in tsDataSeries.success" 
+                  :key="idx"
+                  :x="pt.x - 10"
+                  :y="0"
+                  :width="20"
+                  :height="170"
+                  fill="transparent"
+                  class="cursor-pointer"
+                  @mouseenter="hoveredBarIdx = idx"
+                  @mouseleave="hoveredBarIdx = null"
+                >
+                </rect>
+              </g>
+
+              <!-- Highlight dots for hovered item -->
+              <template v-if="hoveredBar">
+                <!-- QPS / Throughput Tab: Two dots -->
+                <template v-if="selectedMetric === 'throughput'">
+                  <circle
+                    :cx="hoveredBar.successX"
+                    :cy="hoveredBar.successY"
+                    r="5"
+                    class="transition-all duration-200 stroke-white dark:stroke-slate-900"
+                    fill="#10b981"
+                    stroke-width="2"
+                  />
+                  <circle
+                    :cx="hoveredBar.errorX"
+                    :cy="hoveredBar.errorY"
+                    r="5"
+                    class="transition-all duration-200 stroke-white dark:stroke-slate-900"
+                    fill="#f43f5e"
+                    stroke-width="2"
+                  />
+                </template>
+                <!-- Error Rate Tab: One dot -->
+                <template v-else-if="selectedMetric === 'error_rate'">
+                  <circle
+                    :cx="hoveredBar.rateX"
+                    :cy="hoveredBar.rateY"
+                    r="5"
+                    class="transition-all duration-200 stroke-white dark:stroke-slate-900"
+                    fill="#f59e0b"
+                    stroke-width="2"
+                  />
+                </template>
+              </template>
+            </g>
 
             <!-- Definitions -->
             <defs>
