@@ -98,120 +98,6 @@ func (ctrl *MonitorController) OverviewHandler(c *gin.Context) {
 	utils.Success(c, aggregated)
 }
 
-// StatusDistributionHandler Get distribution of HTTP status codes
-// @Summary Get HTTP status code distribution
-// @Description Get distribution of status codes for a time range
-// @Tags Overview Dashboard
-// @Produce json
-// @Security BearerAuth
-// @Param start_time query string true "Start Time" default(2026-03-19 00:00:00)
-// @Param end_time query string true "End Time" default(2026-03-20 00:00:00)
-// @Param log_file query string false "Log File or Source ID (optional)" default(access.log)
-// @Success 200 {object} StatusDistributionResponseWrapper
-// @Router /api/v1/sev/distribution [get]
-func (ctrl *MonitorController) StatusDistributionHandler(c *gin.Context) {
-	var req TimeRangeRequest
-	if err := c.ShouldBindQuery(&req); err != nil {
-		utils.Error(c, 400, "start_time and end_time are required")
-		return
-	}
-
-	if req.LogFile == "" {
-		req.LogFile = "access.log"
-	}
-
-	startT, endT, err := utils.ParseAndValidateRange(req.StartTime, req.EndTime, utils.MaxTimeRangeLimit)
-	if err != nil {
-		utils.Error(c, 400, err.Error())
-		return
-	}
-
-	result, err := ctrl.svc.GetStatusDistribution(startT, endT, req.LogFile)
-	if err != nil {
-		utils.Error(c, 500, err.Error())
-		return
-	}
-
-	utils.Success(c, result)
-}
-
-// TimeSeriesRequest represents query parameters for trend data.
-type TimeSeriesRequest struct {
-	Metric    string   `form:"metric" binding:"required,oneof=qps error_rate latency_p99 bandwidth"`
-	StartTime string   `form:"start_time" binding:"required"`
-	EndTime   string   `form:"end_time" binding:"required"`
-	SourceIDs []string `form:"source_ids"`
-}
-
-// TimeSeriesHandler Get trend data for charts
-// @Summary Get trend data for charts
-// @Description Get time-series data for a metric (qps, error_rate, latency_p99, bandwidth). Range cannot exceed 1 year. Returns exactly 30 points.
-// @Tags Overview Dashboard
-// @Produce json
-// @Security BearerAuth
-// @Param metric query string true "Metric type" Enums(qps, error_rate, latency_p99, bandwidth)
-// @Param start_time query string true "Start Time" default(2026-03-19 00:00:00)
-// @Param end_time query string true "End Time" default(2026-03-20 00:00:00)
-// @Param source_ids query []string false "List of Source IDs or Log Files to aggregate"
-// @Success 200 {object} TimeSeriesResponseWrapper
-// @Router /api/v1/sev/stats/timeseries [get]
-func (ctrl *MonitorController) TimeSeriesHandler(c *gin.Context) {
-	var req TimeSeriesRequest
-	if err := c.ShouldBindQuery(&req); err != nil {
-		utils.Error(c, 400, err.Error())
-		return
-	}
-
-	if _, _, err := utils.ParseAndValidateRange(req.StartTime, req.EndTime, utils.MaxTimeRangeLimit); err != nil {
-		utils.Error(c, 400, err.Error())
-		return
-	}
-
-	result, err := ctrl.svc.GetTimeSeriesStats(req.Metric, req.StartTime, req.EndTime, req.SourceIDs)
-	if err != nil {
-		utils.Error(c, 500, err.Error())
-		return
-	}
-
-	utils.Success(c, result)
-}
-
-// TopPathsRequest represents query parameters for the top paths endpoint.
-type TopPathsRequest struct {
-	StartTime string `form:"start_time" binding:"required"`
-	EndTime   string `form:"end_time" binding:"required"`
-	SourceID  string `form:"source_id"`
-	Limit     int    `form:"limit,default=10" binding:"min=1,max=100"`
-}
-
-// TopPathsHandler Get top requested paths
-// @Summary Get top requested paths
-// @Description Get the top requested interface URIs along with their request count, average response time, and error rate.
-// @Tags Overview Dashboard
-// @Produce json
-// @Security BearerAuth
-// @Param start_time query string true "Start Time" default(2026-03-19 00:00:00)
-// @Param end_time query string true "End Time" default(2026-03-20 00:00:00)
-// @Param source_id query string false "Log File or Source ID" default(access.log)
-// @Param limit query int false "Number of top paths to return (default 10, max 100)" default(10)
-// @Success 200 {object} TopPathsResponseWrapper
-// @Router /api/v1/sev/stats/top-paths [get]
-func (ctrl *MonitorController) TopPathsHandler(c *gin.Context) {
-	var req TopPathsRequest
-	if err := c.ShouldBindQuery(&req); err != nil {
-		utils.Error(c, 400, err.Error())
-		return
-	}
-
-	result, err := ctrl.svc.GetTopPaths(req.StartTime, req.EndTime, req.SourceID, req.Limit)
-	if err != nil {
-		utils.Error(c, 500, err.Error())
-		return
-	}
-
-	utils.Success(c, result)
-}
-
 // StatsWebSocketHandler handles real-time statistics push via WebSocket
 // @Summary Real-time statistics push via WebSocket
 // @Description Upgrade connection to WebSocket and stream real-time request counts and error counts. Pushes initial history as 'init' event and periodic updates as 'update' event.
@@ -386,6 +272,43 @@ func (ctrl *MonitorController) StatsWebSocketHandler(c *gin.Context) {
 	}
 }
 
+// StatusDistributionHandler Get distribution of HTTP status codes
+// @Summary Get HTTP status code distribution
+// @Description Get distribution of status codes for a time range
+// @Tags Overview Dashboard
+// @Produce json
+// @Security BearerAuth
+// @Param start_time query string true "Start Time" default(2026-03-19 00:00:00)
+// @Param end_time query string true "End Time" default(2026-03-20 00:00:00)
+// @Param log_file query string false "Log File or Source ID (optional)" default(access.log)
+// @Success 200 {object} StatusDistributionResponseWrapper
+// @Router /api/v1/sev/distribution [get]
+func (ctrl *MonitorController) StatusDistributionHandler(c *gin.Context) {
+	var req TimeRangeRequest
+	if err := c.ShouldBindQuery(&req); err != nil {
+		utils.Error(c, 400, "start_time and end_time are required")
+		return
+	}
+
+	if req.LogFile == "" {
+		req.LogFile = "access.log"
+	}
+
+	startT, endT, err := utils.ParseAndValidateRange(req.StartTime, req.EndTime, utils.MaxTimeRangeLimit)
+	if err != nil {
+		utils.Error(c, 400, err.Error())
+		return
+	}
+
+	result, err := ctrl.svc.GetStatusDistribution(startT, endT, req.LogFile)
+	if err != nil {
+		utils.Error(c, 500, err.Error())
+		return
+	}
+
+	utils.Success(c, result)
+}
+
 // LogsWebSocketHandler Real-time logs streaming via WebSocket
 // @Summary Real-time logs streaming via WebSocket
 // @Description Upgrade connection to WebSocket and stream raw logs in real-time. Pushes standard Nginx log lines as text frames.
@@ -489,6 +412,83 @@ func (ctrl *MonitorController) LogsWebSocketHandler(c *gin.Context) {
 			}
 		}
 	}
+}
+
+// TopPathsRequest represents query parameters for the top paths endpoint.
+type TopPathsRequest struct {
+	StartTime string `form:"start_time" binding:"required"`
+	EndTime   string `form:"end_time" binding:"required"`
+	SourceID  string `form:"source_id"`
+	Limit     int    `form:"limit,default=10" binding:"min=1,max=100"`
+}
+
+// TopPathsHandler Get top requested paths
+// @Summary Get top requested paths
+// @Description Get the top requested interface URIs along with their request count, average response time, and error rate.
+// @Tags Overview Dashboard
+// @Produce json
+// @Security BearerAuth
+// @Param start_time query string true "Start Time" default(2026-03-19 00:00:00)
+// @Param end_time query string true "End Time" default(2026-03-20 00:00:00)
+// @Param source_id query string false "Log File or Source ID" default(access.log)
+// @Param limit query int false "Number of top paths to return (default 10, max 100)" default(10)
+// @Success 200 {object} TopPathsResponseWrapper
+// @Router /api/v1/sev/stats/top-paths [get]
+func (ctrl *MonitorController) TopPathsHandler(c *gin.Context) {
+	var req TopPathsRequest
+	if err := c.ShouldBindQuery(&req); err != nil {
+		utils.Error(c, 400, err.Error())
+		return
+	}
+
+	result, err := ctrl.svc.GetTopPaths(req.StartTime, req.EndTime, req.SourceID, req.Limit)
+	if err != nil {
+		utils.Error(c, 500, err.Error())
+		return
+	}
+
+	utils.Success(c, result)
+}
+
+// TimeSeriesRequest represents query parameters for trend data.
+type TimeSeriesRequest struct {
+	Metric    string   `form:"metric" binding:"required,oneof=qps error_rate latency_p99 bandwidth"`
+	StartTime string   `form:"start_time" binding:"required"`
+	EndTime   string   `form:"end_time" binding:"required"`
+	SourceIDs []string `form:"source_ids"`
+}
+
+// TimeSeriesHandler Get trend data for charts
+// @Summary Get trend data for charts
+// @Description Get time-series data for a metric (qps, error_rate, latency_p99, bandwidth). Range cannot exceed 1 year. Returns exactly 30 points.
+// @Tags Overview Dashboard
+// @Produce json
+// @Security BearerAuth
+// @Param metric query string true "Metric type" Enums(qps, error_rate, latency_p99, bandwidth)
+// @Param start_time query string true "Start Time" default(2026-03-19 00:00:00)
+// @Param end_time query string true "End Time" default(2026-03-20 00:00:00)
+// @Param source_ids query []string false "List of Source IDs or Log Files to aggregate"
+// @Success 200 {object} TimeSeriesResponseWrapper
+// @Router /api/v1/sev/stats/timeseries [get]
+func (ctrl *MonitorController) TimeSeriesHandler(c *gin.Context) {
+	var req TimeSeriesRequest
+	if err := c.ShouldBindQuery(&req); err != nil {
+		utils.Error(c, 400, err.Error())
+		return
+	}
+
+	if _, _, err := utils.ParseAndValidateRange(req.StartTime, req.EndTime, utils.MaxTimeRangeLimit); err != nil {
+		utils.Error(c, 400, err.Error())
+		return
+	}
+
+	result, err := ctrl.svc.GetTimeSeriesStats(req.Metric, req.StartTime, req.EndTime, req.SourceIDs)
+	if err != nil {
+		utils.Error(c, 500, err.Error())
+		return
+	}
+
+	utils.Success(c, result)
 }
 
 // ==========================================
