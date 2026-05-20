@@ -450,6 +450,43 @@ func (ctrl *MonitorController) TopPathsHandler(c *gin.Context) {
 	utils.Success(c, result)
 }
 
+// TopIPsRequest represents query parameters for the top IPs endpoint.
+type TopIPsRequest struct {
+	StartTime string `form:"start_time" binding:"required"`
+	EndTime   string `form:"end_time" binding:"required"`
+	SourceID  string `form:"source_id"`
+	Limit     int    `form:"limit,default=10" binding:"min=1,max=100"`
+}
+
+// TopIPsHandler Get top requested IPs
+// @Summary Get top requested IPs
+// @Description Get the top requested client IP addresses along with their request count, average response time, and error rate.
+// @Tags 2. Overview Dashboard
+// @Produce json
+// @Security BearerAuth
+// @Param start_time query string true "Start Time" default(2026-03-19 00:00:00)
+// @Param end_time query string true "End Time" default(2026-03-20 00:00:00)
+// @Param source_id query string false "Log File or Source ID" default(access.log)
+// @Param limit query int false "Number of top IPs to return (default 10, max 100)" default(10)
+// @Success 200 {object} TopIPsResponseWrapper
+// @Router /api/v1/sev/stats/top-ips [get]
+func (ctrl *MonitorController) TopIPsHandler(c *gin.Context) {
+	var req TopIPsRequest
+	if err := c.ShouldBindQuery(&req); err != nil {
+		utils.Error(c, 400, err.Error())
+		return
+	}
+
+	result, err := ctrl.svc.GetTopIPs(req.StartTime, req.EndTime, req.SourceID, req.Limit)
+	if err != nil {
+		utils.Error(c, 500, err.Error())
+		return
+	}
+
+	utils.Success(c, result)
+}
+
+
 // TimeSeriesRequest represents query parameters for trend data.
 type TimeSeriesRequest struct {
 	Metric    string   `form:"metric" binding:"required,oneof=qps error_rate latency_p99 bandwidth"`

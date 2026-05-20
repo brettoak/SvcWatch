@@ -265,6 +265,71 @@ func (s *MonitorService) GetTopPaths(startTime, endTime string, sourceID string,
 	return s.store.GetTopPaths(tableNames, startT, endT, limit)
 }
 
+// GetTopIPs retrieves the top requested IPs and their statistics.
+func (s *MonitorService) GetTopIPs(startTime, endTime string, sourceID string, limit int) ([]storage.TopIPItem, error) {
+	var tableNames []string
+
+	for _, monInst := range s.monitors {
+		tableName := monInst.GetTableName()
+		logPath := monInst.GetLogPath()
+		
+		if sourceID != "" && tableName != sourceID && filepath.Base(logPath) != sourceID {
+			continue
+		}
+		tableNames = append(tableNames, tableName)
+	}
+
+	if len(tableNames) == 0 {
+		return []storage.TopIPItem{}, nil
+	}
+
+	startT, endT, err := utils.ParseAndValidateRange(startTime, endTime, utils.MaxTimeRangeLimit)
+	if err != nil {
+		return nil, err
+	}
+
+	if limit <= 0 {
+		limit = 10
+	} else if limit > 100 {
+		limit = 100
+	}
+
+	return s.store.GetTopIPs(tableNames, startT, endT, limit)
+}
+
+// GetTopUserAgents retrieves the top requested User-Agents and their statistics.
+func (s *MonitorService) GetTopUserAgents(startTime, endTime string, sourceID string, limit int) ([]storage.TopUserAgentItem, error) {
+	var tableNames []string
+
+	for _, monInst := range s.monitors {
+		tableName := monInst.GetTableName()
+		logPath := monInst.GetLogPath()
+		
+		if sourceID != "" && tableName != sourceID && filepath.Base(logPath) != sourceID {
+			continue
+		}
+		tableNames = append(tableNames, tableName)
+	}
+
+	if len(tableNames) == 0 {
+		return []storage.TopUserAgentItem{}, nil
+	}
+
+	startT, endT, err := utils.ParseAndValidateRange(startTime, endTime, utils.MaxTimeRangeLimit)
+	if err != nil {
+		return nil, err
+	}
+
+	if limit <= 0 {
+		limit = 10
+	} else if limit > 100 {
+		limit = 100
+	}
+
+	return s.store.GetTopUserAgents(tableNames, startT, endT, limit)
+}
+
+
 // GetGeoDistribution retrieves the geographical distribution of requests.
 func (s *MonitorService) GetGeoDistribution(startTime, endTime string, sourceID string, limit int) ([]storage.GeoDistributionItem, error) {
 	var tableNames []string

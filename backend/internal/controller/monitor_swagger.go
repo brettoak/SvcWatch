@@ -46,6 +46,22 @@ type TopPathsResponseWrapper struct {
 	Data    []storage.TopPathItem `json:"data"`
 }
 
+// TopIPsResponseWrapper is the Swagger representation of the Top IPs API response.
+type TopIPsResponseWrapper struct {
+	Code    int                 `json:"code" example:"200"`
+	Message string              `json:"message" example:"success"`
+	Data    []storage.TopIPItem `json:"data"`
+}
+
+// TopUserAgentsResponseWrapper is the Swagger representation of the Top User Agents API response.
+type TopUserAgentsResponseWrapper struct {
+	Code    int                        `json:"code" example:"200"`
+	Message string                     `json:"message" example:"success"`
+	Data    []storage.TopUserAgentItem `json:"data"`
+}
+
+
+
 // StatsWSInitResponse represents the initial history payload pushed via Stats WebSocket.
 type StatsWSInitResponse struct {
 	Type string                         `json:"type" example:"init"`

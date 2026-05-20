@@ -33,6 +33,8 @@ func SetupRouter(ctrl *controller.MonitorController, cfg *config.Config) *gin.En
 			private.GET("/stats/timeseries", middleware.PermissionMiddleware(cfg.Auth.PermissionURL, cfg.Auth.SysCode, "view:stats"), ctrl.TimeSeriesHandler)
 			// Top paths endpoint
 			private.GET("/stats/top-paths", middleware.PermissionMiddleware(cfg.Auth.PermissionURL, cfg.Auth.SysCode, "view:stats"), ctrl.TopPathsHandler)
+			// Top IPs endpoint
+			private.GET("/stats/top-ips", middleware.PermissionMiddleware(cfg.Auth.PermissionURL, cfg.Auth.SysCode, "view:stats"), ctrl.TopIPsHandler)
 			// Geo distribution endpoint
 			private.GET("/stats/geo-distribution", middleware.PermissionMiddleware(cfg.Auth.PermissionURL, cfg.Auth.SysCode, "view:stats"), ctrl.GeoDistributionHandler)
 			// Overview endpoint
@@ -79,10 +81,11 @@ func SetupRouter(ctrl *controller.MonitorController, cfg *config.Config) *gin.En
         "/api/v1/sev/distribution": 4,
         "/api/v1/sev/logs/ws": 5,
         "/api/v1/sev/stats/top-paths": 6,
-        "/api/v1/sev/stats/timeseries": 7,
-        "/api/v1/sev/logs": 8,
-        "/api/v1/sev/stats/geo-distribution": 9,
-        "/api/v1/sev/stats": 10
+        "/api/v1/sev/stats/top-ips": 7,
+        "/api/v1/sev/stats/timeseries": 8,
+        "/api/v1/sev/logs": 9,
+        "/api/v1/sev/stats/geo-distribution": 10,
+        "/api/v1/sev/stats": 11
       };
       const pathA = a.get("path");
       const pathB = b.get("path");

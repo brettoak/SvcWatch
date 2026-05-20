@@ -588,6 +588,133 @@ func (s *SqliteStorage) GetTopPaths(tableNames []string, startTime, endTime time
 	return result, nil
 }
 
+// TopIPItem represents a single top IP record.
+type TopIPItem struct {
+	IP              string  `json:"ip"`
+	RequestCount    int     `json:"request_count"`
+	AvgResponseTime float64 `json:"avg_response_time"`
+	ErrorRate       float64 `json:"error_rate"`
+}
+
+// GetTopIPs retrieves the top N requested IPs across multiple tables.
+func (s *SqliteStorage) GetTopIPs(tableNames []string, startTime, endTime time.Time, limit int) ([]TopIPItem, error) {
+	if len(tableNames) == 0 {
+		return []TopIPItem{}, nil
+	}
+
+	var unions []string
+	var args []interface{}
+	startTimeStr := startTime.UTC().Format(time.RFC3339)
+	endTimeStr := endTime.UTC().Format(time.RFC3339)
+	for _, tableName := range tableNames {
+		unions = append(unions, fmt.Sprintf("SELECT remote_addr, status, request_time FROM %s WHERE time_local >= ? AND time_local <= ?", tableName))
+		args = append(args, startTimeStr, endTimeStr)
+	}
+	unionQuery := strings.Join(unions, " UNION ALL ")
+
+	query := fmt.Sprintf(`
+		SELECT 
+			remote_addr as ip,
+			COUNT(*) as request_count,
+			COALESCE(AVG(request_time), 0.0) as avg_response_time,
+			CAST(SUM(CASE WHEN status < 200 OR status >= 300 THEN 1 ELSE 0 END) AS REAL) * 100.0 / COUNT(*) as error_rate
+		FROM (%s)
+		GROUP BY ip
+		ORDER BY request_count DESC
+		LIMIT ?
+	`, unionQuery)
+
+	args = append(args, limit)
+
+	rows, err := s.db.Query(query, args...)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query top IPs: %w", err)
+	}
+	defer rows.Close()
+
+	var result []TopIPItem
+	for rows.Next() {
+		var item TopIPItem
+		if err := rows.Scan(&item.IP, &item.RequestCount, &item.AvgResponseTime, &item.ErrorRate); err != nil {
+			return nil, fmt.Errorf("failed to scan top IPs row: %w", err)
+		}
+		// Round floats to 2 decimal places
+		item.AvgResponseTime = math.Round(item.AvgResponseTime*100) / 100
+		item.ErrorRate = math.Round(item.ErrorRate*100) / 100
+		result = append(result, item)
+	}
+
+	if result == nil {
+		result = []TopIPItem{}
+	}
+
+	return result, nil
+}
+
+// TopUserAgentItem represents a single top User-Agent record.
+type TopUserAgentItem struct {
+	UserAgent       string  `json:"user_agent"`
+	RequestCount    int     `json:"request_count"`
+	AvgResponseTime float64 `json:"avg_response_time"`
+	ErrorRate       float64 `json:"error_rate"`
+}
+
+// GetTopUserAgents retrieves the top N requested User-Agents across multiple tables.
+func (s *SqliteStorage) GetTopUserAgents(tableNames []string, startTime, endTime time.Time, limit int) ([]TopUserAgentItem, error) {
+	if len(tableNames) == 0 {
+		return []TopUserAgentItem{}, nil
+	}
+
+	var unions []string
+	var args []interface{}
+	startTimeStr := startTime.UTC().Format(time.RFC3339)
+	endTimeStr := endTime.UTC().Format(time.RFC3339)
+	for _, tableName := range tableNames {
+		unions = append(unions, fmt.Sprintf("SELECT http_user_agent, status, request_time FROM %s WHERE time_local >= ? AND time_local <= ?", tableName))
+		args = append(args, startTimeStr, endTimeStr)
+	}
+	unionQuery := strings.Join(unions, " UNION ALL ")
+
+	query := fmt.Sprintf(`
+		SELECT 
+			http_user_agent as user_agent,
+			COUNT(*) as request_count,
+			COALESCE(AVG(request_time), 0.0) as avg_response_time,
+			CAST(SUM(CASE WHEN status < 200 OR status >= 300 THEN 1 ELSE 0 END) AS REAL) * 100.0 / COUNT(*) as error_rate
+		FROM (%s)
+		GROUP BY user_agent
+		ORDER BY request_count DESC
+		LIMIT ?
+	`, unionQuery)
+
+	args = append(args, limit)
+
+	rows, err := s.db.Query(query, args...)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query top user agents: %w", err)
+	}
+	defer rows.Close()
+
+	var result []TopUserAgentItem
+	for rows.Next() {
+		var item TopUserAgentItem
+		if err := rows.Scan(&item.UserAgent, &item.RequestCount, &item.AvgResponseTime, &item.ErrorRate); err != nil {
+			return nil, fmt.Errorf("failed to scan top user agents row: %w", err)
+		}
+		// Round floats to 2 decimal places
+		item.AvgResponseTime = math.Round(item.AvgResponseTime*100) / 100
+		item.ErrorRate = math.Round(item.ErrorRate*100) / 100
+		result = append(result, item)
+	}
+
+	if result == nil {
+		result = []TopUserAgentItem{}
+	}
+
+	return result, nil
+}
+
+
 // GeoDistributionItem represents a single geographical distribution record.
 type GeoDistributionItem struct {
 	Country   string  `json:"country"`
