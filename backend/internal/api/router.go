@@ -48,7 +48,61 @@ func SetupRouter(ctrl *controller.MonitorController, cfg *config.Config) *gin.En
 		}
 	}
 
-	// Register Swagger UI
+	// Intercept /swagger/swagger-initializer.js requests using middleware to inject our custom operationsSorter configuration.
+	// This avoids Gin's panic where wildcard routes (/swagger/*any) conflict with static routes (/swagger/swagger-initializer.js).
+	router.Use(func(c *gin.Context) {
+		if c.Request.Method == "GET" && c.Request.URL.Path == "/swagger/swagger-initializer.js" {
+			c.Header("Content-Type", "application/javascript")
+			c.String(200, `window.onload = function() {
+  const ui = SwaggerUIBundle({
+    url: "doc.json",
+    dom_id: '#swagger-ui',
+    validatorUrl: null,
+    oauth2RedirectUrl: window.location.protocol + "//" + window.location.host + window.location.pathname.split('/').slice(0, window.location.pathname.split('/').length - 1).join('/') + "/oauth2-redirect.html",
+    persistAuthorization: false,
+    presets: [
+      SwaggerUIBundle.presets.apis,
+      SwaggerUIStandalonePreset
+    ],
+    plugins: [
+      SwaggerUIBundle.plugins.DownloadUrl
+    ],
+    layout: "StandaloneLayout",
+    docExpansion: "list",
+    deepLinking: true,
+    defaultModelsExpandDepth: 1,
+    operationsSorter: function(a, b) {
+      const pathOrder = {
+        "/api/v1/sev/ping": 1,
+        "/api/v1/sev/overview": 2,
+        "/api/v1/sev/stats/ws": 3,
+        "/api/v1/sev/distribution": 4,
+        "/api/v1/sev/logs/ws": 5,
+        "/api/v1/sev/stats/top-paths": 6,
+        "/api/v1/sev/stats/timeseries": 7,
+        "/api/v1/sev/logs": 8,
+        "/api/v1/sev/stats/geo-distribution": 9,
+        "/api/v1/sev/stats": 10
+      };
+      const pathA = a.get("path");
+      const pathB = b.get("path");
+      const rankA = pathOrder[pathA] || 999;
+      const rankB = pathOrder[pathB] || 999;
+      if (rankA !== rankB) {
+        return rankA - rankB;
+      }
+      return pathA.localeCompare(pathB);
+    }
+  })
+
+  window.ui = ui
+}`)
+			c.Abort()
+			return
+		}
+		c.Next()
+	})
+
 	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
 	return router

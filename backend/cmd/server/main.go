@@ -19,7 +19,16 @@ import (
 // @version 1.0
 // @description SvcWatch is a real-time Nginx log monitoring system.
 // @BasePath /
-
+// @tag.name 1. System
+// @tag.description System Health Check APIs
+// @tag.name 2. Overview Dashboard
+// @tag.description Real-time Overview Dashboard APIs
+// @tag.name 3. Logs Analysis
+// @tag.description Nginx Log Analysis APIs
+// @tag.name 4. Geo Analysis
+// @tag.description Geographical Traffic Analysis APIs
+// @tag.name 5. System Stats
+// @tag.description Administrative System Aggregated Stats APIs
 // @securityDefinitions.apikey BearerAuth
 // @in header
 // @name Authorization

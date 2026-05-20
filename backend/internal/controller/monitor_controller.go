@@ -48,7 +48,7 @@ type TimeRangeRequest struct {
 // PingHandler Health Check
 // @Summary Health Check
 // @Description Returns pong message to check if API is alive
-// @Tags System
+// @Tags 1. System
 // @Produce json
 // @Success 200 {object} utils.Response
 // @Router /api/v1/sev/ping [get]
@@ -65,7 +65,7 @@ func (ctrl *MonitorController) PingHandler(c *gin.Context) {
 // OverviewHandler Get business overview key metrics
 // @Summary Get business overview key metrics
 // @Description Get overview statistics with comparison for a time range
-// @Tags Overview Dashboard
+// @Tags 2. Overview Dashboard
 // @Produce json
 // @Security BearerAuth
 // @Param start_time query string true "Start Time" default(2026-03-19 00:00:00)
@@ -101,7 +101,7 @@ func (ctrl *MonitorController) OverviewHandler(c *gin.Context) {
 // StatsWebSocketHandler handles real-time statistics push via WebSocket
 // @Summary Real-time statistics push via WebSocket
 // @Description Upgrade connection to WebSocket and stream real-time request counts and error counts. Pushes initial history as 'init' event and periodic updates as 'update' event.
-// @Tags Overview Dashboard
+// @Tags 2. Overview Dashboard
 // @Param log_file query string false "Log File or Source ID (optional)" default(access.log)
 // @Param interval query string false "Refresh interval (e.g., 1s, 2s, 5s)" default(1s)
 // @Param simulate query bool false "Enable mock simulation data" default(false)
@@ -275,7 +275,7 @@ func (ctrl *MonitorController) StatsWebSocketHandler(c *gin.Context) {
 // StatusDistributionHandler Get distribution of HTTP status codes
 // @Summary Get HTTP status code distribution
 // @Description Get distribution of status codes for a time range
-// @Tags Overview Dashboard
+// @Tags 2. Overview Dashboard
 // @Produce json
 // @Security BearerAuth
 // @Param start_time query string true "Start Time" default(2026-03-19 00:00:00)
@@ -312,7 +312,7 @@ func (ctrl *MonitorController) StatusDistributionHandler(c *gin.Context) {
 // LogsWebSocketHandler Real-time logs streaming via WebSocket
 // @Summary Real-time logs streaming via WebSocket
 // @Description Upgrade connection to WebSocket and stream raw logs in real-time. Pushes standard Nginx log lines as text frames.
-// @Tags Overview Dashboard
+// @Tags 2. Overview Dashboard
 // @Param log_file query string false "Log File or Source ID (optional)" default(access.log)
 // @Success 101 {string} string "Switching Protocols (Handshake Success). Streams raw nginx log lines as text frames."
 // @Router /api/v1/sev/logs/ws [get]
@@ -425,7 +425,7 @@ type TopPathsRequest struct {
 // TopPathsHandler Get top requested paths
 // @Summary Get top requested paths
 // @Description Get the top requested interface URIs along with their request count, average response time, and error rate.
-// @Tags Overview Dashboard
+// @Tags 2. Overview Dashboard
 // @Produce json
 // @Security BearerAuth
 // @Param start_time query string true "Start Time" default(2026-03-19 00:00:00)
@@ -461,7 +461,7 @@ type TimeSeriesRequest struct {
 // TimeSeriesHandler Get trend data for charts
 // @Summary Get trend data for charts
 // @Description Get time-series data for a metric (qps, error_rate, latency_p99, bandwidth). Range cannot exceed 1 year. Returns exactly 30 points.
-// @Tags Overview Dashboard
+// @Tags 2. Overview Dashboard
 // @Produce json
 // @Security BearerAuth
 // @Param metric query string true "Metric type" Enums(qps, error_rate, latency_p99, bandwidth)
@@ -515,7 +515,7 @@ type LogQueryRequest struct {
 // LogsHandler queries log details
 // @Summary Query detailed logs
 // @Description Query parsed Nginx logs with comprehensive filtering, sorting, and pagination
-// @Tags Logs Analysis
+// @Tags 3. Logs Analysis
 // @Produce json
 // @Security BearerAuth
 // @Param page query int false "Page number (default 1)" default(1)
@@ -579,7 +579,7 @@ type GeoDistributionRequest struct {
 // GeoDistributionHandler Get geographical distribution of requests
 // @Summary Get geographical distribution of requests
 // @Description Get geographical distribution of IP addresses from logs.
-// @Tags Geo Analysis
+// @Tags 4. Geo Analysis
 // @Produce json
 // @Security BearerAuth
 // @Param start_time query string true "Start Time" default(2026-03-19 00:00:00)
@@ -611,7 +611,7 @@ func (ctrl *MonitorController) GeoDistributionHandler(c *gin.Context) {
 // StatsHandler Get aggregated logs statistics
 // @Summary Get aggregated logs statistics
 // @Description Get total logs count for all monitored tables
-// @Tags System Stats
+// @Tags 5. System Stats
 // @Produce json
 // @Security BearerAuth
 // @Success 200 {object} StatsResponseWrapper

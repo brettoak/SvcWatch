@@ -27,7 +27,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Overview Dashboard"
+                    "2. Overview Dashboard"
                 ],
                 "summary": "Get HTTP status code distribution",
                 "parameters": [
@@ -77,7 +77,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Logs Analysis"
+                    "3. Logs Analysis"
                 ],
                 "summary": "Query detailed logs",
                 "parameters": [
@@ -190,7 +190,7 @@ const docTemplate = `{
             "get": {
                 "description": "Upgrade connection to WebSocket and stream raw logs in real-time. Pushes standard Nginx log lines as text frames.",
                 "tags": [
-                    "Overview Dashboard"
+                    "2. Overview Dashboard"
                 ],
                 "summary": "Real-time logs streaming via WebSocket",
                 "parameters": [
@@ -224,7 +224,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Overview Dashboard"
+                    "2. Overview Dashboard"
                 ],
                 "summary": "Get business overview key metrics",
                 "parameters": [
@@ -269,7 +269,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "System"
+                    "1. System"
                 ],
                 "summary": "Health Check",
                 "responses": {
@@ -294,7 +294,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "System Stats"
+                    "5. System Stats"
                 ],
                 "summary": "Get aggregated logs statistics",
                 "responses": {
@@ -319,7 +319,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Geo Analysis"
+                    "4. Geo Analysis"
                 ],
                 "summary": "Get geographical distribution of requests",
                 "parameters": [
@@ -379,7 +379,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Overview Dashboard"
+                    "2. Overview Dashboard"
                 ],
                 "summary": "Get trend data for charts",
                 "parameters": [
@@ -445,7 +445,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Overview Dashboard"
+                    "2. Overview Dashboard"
                 ],
                 "summary": "Get top requested paths",
                 "parameters": [
@@ -494,7 +494,7 @@ const docTemplate = `{
             "get": {
                 "description": "Upgrade connection to WebSocket and stream real-time request counts and error counts. Pushes initial history as 'init' event and periodic updates as 'update' event.",
                 "tags": [
-                    "Overview Dashboard"
+                    "2. Overview Dashboard"
                 ],
                 "summary": "Real-time statistics push via WebSocket",
                 "parameters": [
@@ -908,7 +908,29 @@ const docTemplate = `{
             "name": "Authorization",
             "in": "header"
         }
-    }
+    },
+    "tags": [
+        {
+            "description": "System Health Check APIs",
+            "name": "1. System"
+        },
+        {
+            "description": "Real-time Overview Dashboard APIs",
+            "name": "2. Overview Dashboard"
+        },
+        {
+            "description": "Nginx Log Analysis APIs",
+            "name": "3. Logs Analysis"
+        },
+        {
+            "description": "Geographical Traffic Analysis APIs",
+            "name": "4. Geo Analysis"
+        },
+        {
+            "description": "Administrative System Aggregated Stats APIs",
+            "name": "5. System Stats"
+        }
+    ]
 }`
 
 // SwaggerInfo holds exported Swagger Info so clients can modify it
