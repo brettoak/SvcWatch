@@ -486,6 +486,43 @@ func (ctrl *MonitorController) TopIPsHandler(c *gin.Context) {
 	utils.Success(c, result)
 }
 
+// TopUserAgentsRequest represents query parameters for the top User-Agents endpoint.
+type TopUserAgentsRequest struct {
+	StartTime string `form:"start_time" binding:"required"`
+	EndTime   string `form:"end_time" binding:"required"`
+	SourceID  string `form:"source_id"`
+	Limit     int    `form:"limit,default=10" binding:"min=1,max=100"`
+}
+
+// TopUserAgentsHandler Get top requested User-Agents
+// @Summary Get top requested User-Agents
+// @Description Get the top requested client User-Agent strings along with their request count, average response time, and error rate.
+// @Tags 2. Overview Dashboard
+// @Produce json
+// @Security BearerAuth
+// @Param start_time query string true "Start Time" default(2026-03-19 00:00:00)
+// @Param end_time query string true "End Time" default(2026-03-20 00:00:00)
+// @Param source_id query string false "Log File or Source ID" default(access.log)
+// @Param limit query int false "Number of top User-Agents to return (default 10, max 100)" default(10)
+// @Success 200 {object} TopUserAgentsResponseWrapper
+// @Router /api/v1/sev/stats/top-user-agents [get]
+func (ctrl *MonitorController) TopUserAgentsHandler(c *gin.Context) {
+	var req TopUserAgentsRequest
+	if err := c.ShouldBindQuery(&req); err != nil {
+		utils.Error(c, 400, err.Error())
+		return
+	}
+
+	result, err := ctrl.svc.GetTopUserAgents(req.StartTime, req.EndTime, req.SourceID, req.Limit)
+	if err != nil {
+		utils.Error(c, 500, err.Error())
+		return
+	}
+
+	utils.Success(c, result)
+}
+
+
 
 // TimeSeriesRequest represents query parameters for trend data.
 type TimeSeriesRequest struct {

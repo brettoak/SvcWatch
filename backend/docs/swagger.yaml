@@ -100,6 +100,19 @@ definitions:
         example: success
         type: string
     type: object
+  controller.TopUserAgentsResponseWrapper:
+    properties:
+      code:
+        example: 200
+        type: integer
+      data:
+        items:
+          $ref: '#/definitions/storage.TopUserAgentItem'
+        type: array
+      message:
+        example: success
+        type: string
+    type: object
   model.LogEntry:
     properties:
       body_bytes_sent:
@@ -254,6 +267,17 @@ definitions:
       request_count:
         type: integer
       uri:
+        type: string
+    type: object
+  storage.TopUserAgentItem:
+    properties:
+      avg_response_time:
+        type: number
+      error_rate:
+        type: number
+      request_count:
+        type: integer
+      user_agent:
         type: string
     type: object
   utils.Response:
@@ -629,6 +653,45 @@ paths:
       security:
       - BearerAuth: []
       summary: Get top requested paths
+      tags:
+      - 2. Overview Dashboard
+  /api/v1/sev/stats/top-user-agents:
+    get:
+      description: Get the top requested client User-Agent strings along with their
+        request count, average response time, and error rate.
+      parameters:
+      - default: "2026-03-19 00:00:00"
+        description: Start Time
+        in: query
+        name: start_time
+        required: true
+        type: string
+      - default: "2026-03-20 00:00:00"
+        description: End Time
+        in: query
+        name: end_time
+        required: true
+        type: string
+      - default: access.log
+        description: Log File or Source ID
+        in: query
+        name: source_id
+        type: string
+      - default: 10
+        description: Number of top User-Agents to return (default 10, max 100)
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.TopUserAgentsResponseWrapper'
+      security:
+      - BearerAuth: []
+      summary: Get top requested User-Agents
       tags:
       - 2. Overview Dashboard
   /api/v1/sev/stats/ws:
