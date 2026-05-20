@@ -41,13 +41,9 @@ type TimeRangeRequest struct {
 	LogFile   string `form:"log_file"`
 }
 
-// TimeSeriesRequest represents query parameters for trend data.
-type TimeSeriesRequest struct {
-	Metric    string   `form:"metric" binding:"required,oneof=qps error_rate latency_p99 bandwidth"`
-	StartTime string   `form:"start_time" binding:"required"`
-	EndTime   string   `form:"end_time" binding:"required"`
-	SourceIDs []string `form:"source_ids"`
-}
+// ==========================================
+// 1. System & Utility Endpoints
+// ==========================================
 
 // PingHandler Health Check
 // @Summary Health Check
@@ -62,23 +58,14 @@ func (ctrl *MonitorController) PingHandler(c *gin.Context) {
 	})
 }
 
-// StatsHandler Get aggregated logs statistics
-// @Summary Get aggregated logs statistics
-// @Description Get total logs count for all monitored tables
-// @Tags Monitor
-// @Produce json
-// @Security BearerAuth
-// @Success 200 {object} StatsResponseWrapper
-// @Router /api/v1/sev/stats [get]
-func (ctrl *MonitorController) StatsHandler(c *gin.Context) {
-	stats := ctrl.svc.GetStats()
-	utils.Success(c, stats)
-}
+// ==========================================
+// 2. Overview Dashboard Endpoints
+// ==========================================
 
 // OverviewHandler Get business overview key metrics
 // @Summary Get business overview key metrics
 // @Description Get overview statistics with comparison for a time range
-// @Tags Monitor
+// @Tags Overview Dashboard
 // @Produce json
 // @Security BearerAuth
 // @Param start_time query string true "Start Time" default(2026-03-19 00:00:00)
@@ -114,7 +101,7 @@ func (ctrl *MonitorController) OverviewHandler(c *gin.Context) {
 // StatusDistributionHandler Get distribution of HTTP status codes
 // @Summary Get HTTP status code distribution
 // @Description Get distribution of status codes for a time range
-// @Tags Monitor
+// @Tags Overview Dashboard
 // @Produce json
 // @Security BearerAuth
 // @Param start_time query string true "Start Time" default(2026-03-19 00:00:00)
@@ -148,79 +135,18 @@ func (ctrl *MonitorController) StatusDistributionHandler(c *gin.Context) {
 	utils.Success(c, result)
 }
 
-// LogQueryRequest represents query parameters for detailed log querying.
-type LogQueryRequest struct {
-	Page        int    `form:"page,default=1" binding:"min=1"`
-	Size        int    `form:"size,default=50" binding:"min=1,max=500"`
-	StartTime   string `form:"start_time"`
-	EndTime     string `form:"end_time"`
-	SourceID    string `form:"source_id"`
-	IP          string `form:"ip"`
-	Method      string `form:"method"`
-	Status      *int   `form:"status"`
-	StatusClass string `form:"status_class"`
-	PathKeyword string `form:"path_keyword"`
-	MinLatency  *int   `form:"min_latency"`
-	MaxLatency  *int   `form:"max_latency"`
-	Sort        string `form:"sort"`
-}
-
-// LogsHandler queries log details
-// @Summary Query detailed logs
-// @Description Query parsed Nginx logs with comprehensive filtering, sorting, and pagination
-// @Tags Monitor
-// @Produce json
-// @Security BearerAuth
-// @Param page query int false "Page number (default 1)" default(1)
-// @Param size query int false "Page size (default 50, max 500)" default(50)
-// @Param start_time query string false "Start Time" example(2026-03-19 00:00:00)
-// @Param end_time query string false "End Time" example(2026-03-20 00:00:00)
-// @Param source_id query string false "Log File or Source ID"
-// @Param ip query string false "IP address (supports prefix match)" example(192.168.1.1)
-// @Param method query string false "HTTP Method (e.g. GET)" example(GET)
-// @Param status query int false "Exact HTTP Status (e.g. 500)" example(200)
-// @Param status_class query string false "HTTP Status Class (e.g. 5xx)" example(5xx)
-// @Param path_keyword query string false "Keyword to search in URL path" example(api)
-// @Param min_latency query int false "Minimum Latency in ms" example(100)
-// @Param max_latency query int false "Maximum Latency in ms" example(5000)
-// @Param sort query string false "Sort order (time_desc or latency_desc)" Enums(time_desc, latency_desc) default(time_desc)
-// @Success 200 {object} LogsResponseWrapper
-// @Router /api/v1/sev/logs [get]
-func (ctrl *MonitorController) LogsHandler(c *gin.Context) {
-	var req LogQueryRequest
-	if err := c.ShouldBindQuery(&req); err != nil {
-		utils.Error(c, 400, err.Error())
-		return
-	}
-
-	filter := storage.LogQueryFilter{
-		Page:        req.Page,
-		Size:        req.Size,
-		StartTime:   req.StartTime,
-		EndTime:     req.EndTime,
-		IP:          req.IP,
-		Method:      req.Method,
-		Status:      req.Status,
-		StatusClass: req.StatusClass,
-		PathKeyword: req.PathKeyword,
-		MinLatency:  req.MinLatency,
-		MaxLatency:  req.MaxLatency,
-		Sort:        req.Sort,
-	}
-
-	resp, err := ctrl.svc.GetLogs(req.SourceID, filter)
-	if err != nil {
-		utils.Error(c, 500, err.Error())
-		return
-	}
-
-	utils.Success(c, resp)
+// TimeSeriesRequest represents query parameters for trend data.
+type TimeSeriesRequest struct {
+	Metric    string   `form:"metric" binding:"required,oneof=qps error_rate latency_p99 bandwidth"`
+	StartTime string   `form:"start_time" binding:"required"`
+	EndTime   string   `form:"end_time" binding:"required"`
+	SourceIDs []string `form:"source_ids"`
 }
 
 // TimeSeriesHandler Get trend data for charts
 // @Summary Get trend data for charts
 // @Description Get time-series data for a metric (qps, error_rate, latency_p99, bandwidth). Range cannot exceed 1 year. Returns exactly 30 points.
-// @Tags Monitor
+// @Tags Overview Dashboard
 // @Produce json
 // @Security BearerAuth
 // @Param metric query string true "Metric type" Enums(qps, error_rate, latency_p99, bandwidth)
@@ -261,7 +187,7 @@ type TopPathsRequest struct {
 // TopPathsHandler Get top requested paths
 // @Summary Get top requested paths
 // @Description Get the top requested interface URIs along with their request count, average response time, and error rate.
-// @Tags Monitor
+// @Tags Overview Dashboard
 // @Produce json
 // @Security BearerAuth
 // @Param start_time query string true "Start Time" default(2026-03-19 00:00:00)
@@ -286,212 +212,10 @@ func (ctrl *MonitorController) TopPathsHandler(c *gin.Context) {
 	utils.Success(c, result)
 }
 
-// GeoDistributionRequest represents query parameters for the geo distribution endpoint.
-type GeoDistributionRequest struct {
-	StartTime string `form:"start_time" binding:"required"`
-	EndTime   string `form:"end_time" binding:"required"`
-	SourceID  string `form:"source_id"`
-	Limit     int    `form:"limit,default=100" binding:"min=1,max=1000"`
-}
-
-// GeoDistributionHandler Get geographical distribution of requests
-// @Summary Get geographical distribution of requests
-// @Description Get geographical distribution of IP addresses from logs.
-// @Tags Monitor
-// @Produce json
-// @Security BearerAuth
-// @Param start_time query string true "Start Time" default(2026-03-19 00:00:00)
-// @Param end_time query string true "End Time" default(2026-03-20 00:00:00)
-// @Param source_id query string false "Log File or Source ID" default(access.log)
-// @Param limit query int false "Number of locations to return (default 100, max 1000)" default(100)
-// @Success 200 {array} storage.GeoDistributionItem
-// @Router /api/v1/sev/stats/geo-distribution [get]
-func (ctrl *MonitorController) GeoDistributionHandler(c *gin.Context) {
-	var req GeoDistributionRequest
-	if err := c.ShouldBindQuery(&req); err != nil {
-		utils.Error(c, 400, err.Error())
-		return
-	}
-
-	result, err := ctrl.svc.GetGeoDistribution(req.StartTime, req.EndTime, req.SourceID, req.Limit)
-	if err != nil {
-		utils.Error(c, 500, err.Error())
-		return
-	}
-
-	utils.Success(c, result)
-}
-
-// LogsWebSocketHandler Real-time logs streaming via WebSocket
-// @Summary Real-time logs streaming via WebSocket
-// @Description Upgrade connection to WebSocket and stream raw logs in real-time. Pushes standard Nginx log lines as text frames.
-// @Tags Monitor
-// @Param log_file query string false "Log File or Source ID (optional)" default(access.log)
-// @Success 101 {string} string "Switching Protocols (Handshake Success). Streams raw nginx log lines as text frames."
-// @Router /api/v1/sev/logs/ws [get]
-func (ctrl *MonitorController) LogsWebSocketHandler(c *gin.Context) {
-	logFile := c.Query("log_file")
-	if logFile == "" {
-		logFile = "access.log"
-	}
-
-	// Resolve the actual file path from the monitor configuration
-	actualPath := ctrl.svc.ResolveLogPath(logFile)
-
-	// Upgrade HTTP connection to WebSocket
-	conn, err := upgrader.Upgrade(c.Writer, c.Request, nil)
-	if err != nil {
-		fmt.Printf("Failed to upgrade to websocket: %v\n", err)
-		return
-	}
-	defer conn.Close()
-
-	var writeMu sync.Mutex
-
-	// Calculate offset for the last 10 lines
-	seekInfo := getLastNLinesOffset(actualPath, 10)
-
-	// Configure tail to read from the calculated offset
-	config := tail.Config{
-		ReOpen:    true,
-		Follow:    true,
-		MustExist: false,
-		Location:  seekInfo,
-	}
-
-	t, err := tail.TailFile(actualPath, config)
-	if err != nil {
-		writeMu.Lock()
-		_ = conn.WriteMessage(websocket.TextMessage, []byte(fmt.Sprintf("Error tailing file: %v", err)))
-		writeMu.Unlock()
-		return
-	}
-	defer t.Stop()
-
-	// done channel signals all goroutines to stop on client disconnect
-	done := make(chan struct{})
-
-	// Handle client disconnection and pong responses
-	conn.SetPongHandler(func(string) error { return nil })
-	go func() {
-		defer close(done)
-		for {
-			if _, _, err := conn.ReadMessage(); err != nil {
-				// Client disconnected or error
-				t.Stop()
-				return
-			}
-		}
-	}()
-
-	// Heartbeat: send a WebSocket ping every 30s to keep the connection alive
-	// through Nginx and other reverse proxies that close idle connections.
-	go func() {
-		ticker := time.NewTicker(30 * time.Second)
-		defer ticker.Stop()
-		for {
-			select {
-			case <-ticker.C:
-				writeMu.Lock()
-				err := conn.WriteMessage(websocket.PingMessage, nil)
-				writeMu.Unlock()
-				if err != nil {
-					return
-				}
-			case <-done:
-				return
-			}
-		}
-	}()
-
-	// Send lines to client
-	for {
-		select {
-		case <-done:
-			return
-		case line, ok := <-t.Lines:
-			if !ok {
-				return
-			}
-			if line.Err != nil {
-				fmt.Printf("Tail error: %v\n", line.Err)
-				continue
-			}
-			writeMu.Lock()
-			err := conn.WriteMessage(websocket.TextMessage, []byte(line.Text))
-			writeMu.Unlock()
-			if err != nil {
-				return
-			}
-		}
-	}
-}
-
-// getLastNLinesOffset finds the offset of the Nth line from the end of the file.
-func getLastNLinesOffset(filename string, n int) *tail.SeekInfo {
-	file, err := os.Open(filename)
-	if err != nil {
-		return &tail.SeekInfo{Offset: 0, Whence: os.SEEK_END}
-	}
-	defer file.Close()
-
-	stat, err := file.Stat()
-	if err != nil {
-		return &tail.SeekInfo{Offset: 0, Whence: os.SEEK_END}
-	}
-
-	filesize := stat.Size()
-	if filesize == 0 {
-		return &tail.SeekInfo{Offset: 0, Whence: os.SEEK_END}
-	}
-
-	// Read a chunk from the end of the file
-	// 8KB should be more than enough for 10 lines of typical logs
-	const maxChunk = 8192
-	var readSize int64 = maxChunk
-	if filesize < readSize {
-		readSize = filesize
-	}
-
-	buf := make([]byte, readSize)
-	_, err = file.ReadAt(buf, filesize-readSize)
-	if err != nil {
-		return &tail.SeekInfo{Offset: 0, Whence: os.SEEK_END}
-	}
-
-	count := 0
-	pos := int64(len(buf)) - 1
-
-	// If the file ends with a newline, skip it so we don't count it as one of the N lines
-	if pos >= 0 && buf[pos] == '\n' {
-		pos--
-	}
-
-	for ; pos >= 0; pos-- {
-		if buf[pos] == '\n' {
-			count++
-			if count == n {
-				// Found the start of the Nth line from the end
-				return &tail.SeekInfo{Offset: filesize - readSize + pos + 1, Whence: os.SEEK_SET}
-			}
-		}
-	}
-
-	// If we didn't find N lines:
-	// If the whole file was read, start from the beginning
-	if filesize <= readSize {
-		return &tail.SeekInfo{Offset: 0, Whence: os.SEEK_SET}
-	}
-
-	// If the file is large and we didn't find N lines in the chunk, 
-	// just start from the beginning of the chunk as a best effort
-	return &tail.SeekInfo{Offset: filesize - readSize, Whence: os.SEEK_SET}
-}
-
 // StatsWebSocketHandler handles real-time statistics push via WebSocket
 // @Summary Real-time statistics push via WebSocket
 // @Description Upgrade connection to WebSocket and stream real-time request counts and error counts. Pushes initial history as 'init' event and periodic updates as 'update' event.
-// @Tags Monitor
+// @Tags Overview Dashboard
 // @Param log_file query string false "Log File or Source ID (optional)" default(access.log)
 // @Param interval query string false "Refresh interval (e.g., 1s, 2s, 5s)" default(1s)
 // @Param simulate query bool false "Enable mock simulation data" default(false)
@@ -662,3 +386,302 @@ func (ctrl *MonitorController) StatsWebSocketHandler(c *gin.Context) {
 	}
 }
 
+// LogsWebSocketHandler Real-time logs streaming via WebSocket
+// @Summary Real-time logs streaming via WebSocket
+// @Description Upgrade connection to WebSocket and stream raw logs in real-time. Pushes standard Nginx log lines as text frames.
+// @Tags Overview Dashboard
+// @Param log_file query string false "Log File or Source ID (optional)" default(access.log)
+// @Success 101 {string} string "Switching Protocols (Handshake Success). Streams raw nginx log lines as text frames."
+// @Router /api/v1/sev/logs/ws [get]
+func (ctrl *MonitorController) LogsWebSocketHandler(c *gin.Context) {
+	logFile := c.Query("log_file")
+	if logFile == "" {
+		logFile = "access.log"
+	}
+
+	// Resolve the actual file path from the monitor configuration
+	actualPath := ctrl.svc.ResolveLogPath(logFile)
+
+	// Upgrade HTTP connection to WebSocket
+	conn, err := upgrader.Upgrade(c.Writer, c.Request, nil)
+	if err != nil {
+		fmt.Printf("Failed to upgrade to websocket: %v\n", err)
+		return
+	}
+	defer conn.Close()
+
+	var writeMu sync.Mutex
+
+	// Calculate offset for the last 10 lines
+	seekInfo := getLastNLinesOffset(actualPath, 10)
+
+	// Configure tail to read from the calculated offset
+	config := tail.Config{
+		ReOpen:    true,
+		Follow:    true,
+		MustExist: false,
+		Location:  seekInfo,
+	}
+
+	t, err := tail.TailFile(actualPath, config)
+	if err != nil {
+		writeMu.Lock()
+		_ = conn.WriteMessage(websocket.TextMessage, []byte(fmt.Sprintf("Error tailing file: %v", err)))
+		writeMu.Unlock()
+		return
+	}
+	defer t.Stop()
+
+	// done channel signals all goroutines to stop on client disconnect
+	done := make(chan struct{})
+
+	// Handle client disconnection and pong responses
+	conn.SetPongHandler(func(string) error { return nil })
+	go func() {
+		defer close(done)
+		for {
+			if _, _, err := conn.ReadMessage(); err != nil {
+				// Client disconnected or error
+				t.Stop()
+				return
+			}
+		}
+	}()
+
+	// Heartbeat: send a WebSocket ping every 30s to keep the connection alive
+	// through Nginx and other reverse proxies that close idle connections.
+	go func() {
+		ticker := time.NewTicker(30 * time.Second)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-ticker.C:
+				writeMu.Lock()
+				err := conn.WriteMessage(websocket.PingMessage, nil)
+				writeMu.Unlock()
+				if err != nil {
+					return
+				}
+			case <-done:
+				return
+			}
+		}
+	}()
+
+	// Send lines to client
+	for {
+		select {
+		case <-done:
+			return
+		case line, ok := <-t.Lines:
+			if !ok {
+				return
+			}
+			if line.Err != nil {
+				fmt.Printf("Tail error: %v\n", line.Err)
+				continue
+			}
+			writeMu.Lock()
+			err := conn.WriteMessage(websocket.TextMessage, []byte(line.Text))
+			writeMu.Unlock()
+			if err != nil {
+				return
+			}
+		}
+	}
+}
+
+// ==========================================
+// 3. Logs Analysis Endpoints
+// ==========================================
+
+// LogQueryRequest represents query parameters for detailed log querying.
+type LogQueryRequest struct {
+	Page        int    `form:"page,default=1" binding:"min=1"`
+	Size        int    `form:"size,default=50" binding:"min=1,max=500"`
+	StartTime   string `form:"start_time"`
+	EndTime     string `form:"end_time"`
+	SourceID    string `form:"source_id"`
+	IP          string `form:"ip"`
+	Method      string `form:"method"`
+	Status      *int   `form:"status"`
+	StatusClass string `form:"status_class"`
+	PathKeyword string `form:"path_keyword"`
+	MinLatency  *int   `form:"min_latency"`
+	MaxLatency  *int   `form:"max_latency"`
+	Sort        string `form:"sort"`
+}
+
+// LogsHandler queries log details
+// @Summary Query detailed logs
+// @Description Query parsed Nginx logs with comprehensive filtering, sorting, and pagination
+// @Tags Logs Analysis
+// @Produce json
+// @Security BearerAuth
+// @Param page query int false "Page number (default 1)" default(1)
+// @Param size query int false "Page size (default 50, max 500)" default(50)
+// @Param start_time query string false "Start Time" example(2026-03-19 00:00:00)
+// @Param end_time query string false "End Time" example(2026-03-20 00:00:00)
+// @Param source_id query string false "Log File or Source ID"
+// @Param ip query string false "IP address (supports prefix match)" example(192.168.1.1)
+// @Param method query string false "HTTP Method (e.g. GET)" example(GET)
+// @Param status query int false "Exact HTTP Status (e.g. 500)" example(200)
+// @Param status_class query string false "HTTP Status Class (e.g. 5xx)" example(5xx)
+// @Param path_keyword query string false "Keyword to search in URL path" example(api)
+// @Param min_latency query int false "Minimum Latency in ms" example(100)
+// @Param max_latency query int false "Maximum Latency in ms" example(5000)
+// @Param sort query string false "Sort order (time_desc or latency_desc)" Enums(time_desc, latency_desc) default(time_desc)
+// @Success 200 {object} LogsResponseWrapper
+// @Router /api/v1/sev/logs [get]
+func (ctrl *MonitorController) LogsHandler(c *gin.Context) {
+	var req LogQueryRequest
+	if err := c.ShouldBindQuery(&req); err != nil {
+		utils.Error(c, 400, err.Error())
+		return
+	}
+
+	filter := storage.LogQueryFilter{
+		Page:        req.Page,
+		Size:        req.Size,
+		StartTime:   req.StartTime,
+		EndTime:     req.EndTime,
+		IP:          req.IP,
+		Method:      req.Method,
+		Status:      req.Status,
+		StatusClass: req.StatusClass,
+		PathKeyword: req.PathKeyword,
+		MinLatency:  req.MinLatency,
+		MaxLatency:  req.MaxLatency,
+		Sort:        req.Sort,
+	}
+
+	resp, err := ctrl.svc.GetLogs(req.SourceID, filter)
+	if err != nil {
+		utils.Error(c, 500, err.Error())
+		return
+	}
+
+	utils.Success(c, resp)
+}
+
+// ==========================================
+// 4. Geo Analysis Endpoints
+// ==========================================
+
+// GeoDistributionRequest represents query parameters for the geo distribution endpoint.
+type GeoDistributionRequest struct {
+	StartTime string `form:"start_time" binding:"required"`
+	EndTime   string `form:"end_time" binding:"required"`
+	SourceID  string `form:"source_id"`
+	Limit     int    `form:"limit,default=100" binding:"min=1,max=1000"`
+}
+
+// GeoDistributionHandler Get geographical distribution of requests
+// @Summary Get geographical distribution of requests
+// @Description Get geographical distribution of IP addresses from logs.
+// @Tags Geo Analysis
+// @Produce json
+// @Security BearerAuth
+// @Param start_time query string true "Start Time" default(2026-03-19 00:00:00)
+// @Param end_time query string true "End Time" default(2026-03-20 00:00:00)
+// @Param source_id query string false "Log File or Source ID" default(access.log)
+// @Param limit query int false "Number of locations to return (default 100, max 1000)" default(100)
+// @Success 200 {array} storage.GeoDistributionItem
+// @Router /api/v1/sev/stats/geo-distribution [get]
+func (ctrl *MonitorController) GeoDistributionHandler(c *gin.Context) {
+	var req GeoDistributionRequest
+	if err := c.ShouldBindQuery(&req); err != nil {
+		utils.Error(c, 400, err.Error())
+		return
+	}
+
+	result, err := ctrl.svc.GetGeoDistribution(req.StartTime, req.EndTime, req.SourceID, req.Limit)
+	if err != nil {
+		utils.Error(c, 500, err.Error())
+		return
+	}
+
+	utils.Success(c, result)
+}
+
+// ==========================================
+// 5. System Stats Endpoints
+// ==========================================
+
+// StatsHandler Get aggregated logs statistics
+// @Summary Get aggregated logs statistics
+// @Description Get total logs count for all monitored tables
+// @Tags System Stats
+// @Produce json
+// @Security BearerAuth
+// @Success 200 {object} StatsResponseWrapper
+// @Router /api/v1/sev/stats [get]
+func (ctrl *MonitorController) StatsHandler(c *gin.Context) {
+	stats := ctrl.svc.GetStats()
+	utils.Success(c, stats)
+}
+
+// ==========================================
+// Helper functions
+// ==========================================
+
+// getLastNLinesOffset finds the offset of the Nth line from the end of the file.
+func getLastNLinesOffset(filename string, n int) *tail.SeekInfo {
+	file, err := os.Open(filename)
+	if err != nil {
+		return &tail.SeekInfo{Offset: 0, Whence: os.SEEK_END}
+	}
+	defer file.Close()
+
+	stat, err := file.Stat()
+	if err != nil {
+		return &tail.SeekInfo{Offset: 0, Whence: os.SEEK_END}
+	}
+
+	filesize := stat.Size()
+	if filesize == 0 {
+		return &tail.SeekInfo{Offset: 0, Whence: os.SEEK_END}
+	}
+
+	// Read a chunk from the end of the file
+	// 8KB should be more than enough for 10 lines of typical logs
+	const maxChunk = 8192
+	var readSize int64 = maxChunk
+	if filesize < readSize {
+		readSize = filesize
+	}
+
+	buf := make([]byte, readSize)
+	_, err = file.ReadAt(buf, filesize-readSize)
+	if err != nil {
+		return &tail.SeekInfo{Offset: 0, Whence: os.SEEK_END}
+	}
+
+	count := 0
+	pos := int64(len(buf)) - 1
+
+	// If the file ends with a newline, skip it so we don't count it as one of the N lines
+	if pos >= 0 && buf[pos] == '\n' {
+		pos--
+	}
+
+	for ; pos >= 0; pos-- {
+		if buf[pos] == '\n' {
+			count++
+			if count == n {
+				// Found the start of the Nth line from the end
+				return &tail.SeekInfo{Offset: filesize - readSize + pos + 1, Whence: os.SEEK_SET}
+			}
+		}
+	}
+
+	// If we didn't find N lines:
+	// If the whole file was read, start from the beginning
+	if filesize <= readSize {
+		return &tail.SeekInfo{Offset: 0, Whence: os.SEEK_SET}
+	}
+
+	// If the file is large and we didn't find N lines in the chunk, 
+	// just start from the beginning of the chunk as a best effort
+	return &tail.SeekInfo{Offset: filesize - readSize, Whence: os.SEEK_SET}
+}

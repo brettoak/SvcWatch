@@ -27,7 +27,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Monitor"
+                    "Overview Dashboard"
                 ],
                 "summary": "Get HTTP status code distribution",
                 "parameters": [
@@ -77,7 +77,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Monitor"
+                    "Logs Analysis"
                 ],
                 "summary": "Query detailed logs",
                 "parameters": [
@@ -190,7 +190,7 @@ const docTemplate = `{
             "get": {
                 "description": "Upgrade connection to WebSocket and stream raw logs in real-time. Pushes standard Nginx log lines as text frames.",
                 "tags": [
-                    "Monitor"
+                    "Overview Dashboard"
                 ],
                 "summary": "Real-time logs streaming via WebSocket",
                 "parameters": [
@@ -224,7 +224,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Monitor"
+                    "Overview Dashboard"
                 ],
                 "summary": "Get business overview key metrics",
                 "parameters": [
@@ -294,7 +294,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Monitor"
+                    "System Stats"
                 ],
                 "summary": "Get aggregated logs statistics",
                 "responses": {
@@ -319,7 +319,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Monitor"
+                    "Geo Analysis"
                 ],
                 "summary": "Get geographical distribution of requests",
                 "parameters": [
@@ -379,7 +379,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Monitor"
+                    "Overview Dashboard"
                 ],
                 "summary": "Get trend data for charts",
                 "parameters": [
@@ -445,7 +445,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Monitor"
+                    "Overview Dashboard"
                 ],
                 "summary": "Get top requested paths",
                 "parameters": [
@@ -494,7 +494,7 @@ const docTemplate = `{
             "get": {
                 "description": "Upgrade connection to WebSocket and stream real-time request counts and error counts. Pushes initial history as 'init' event and periodic updates as 'update' event.",
                 "tags": [
-                    "Monitor"
+                    "Overview Dashboard"
                 ],
                 "summary": "Real-time statistics push via WebSocket",
                 "parameters": [

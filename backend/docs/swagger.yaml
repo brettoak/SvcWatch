@@ -278,7 +278,7 @@ paths:
       - BearerAuth: []
       summary: Get HTTP status code distribution
       tags:
-      - Monitor
+      - Overview Dashboard
   /api/v1/sev/logs:
     get:
       description: Query parsed Nginx logs with comprehensive filtering, sorting,
@@ -362,7 +362,7 @@ paths:
       - BearerAuth: []
       summary: Query detailed logs
       tags:
-      - Monitor
+      - Logs Analysis
   /api/v1/sev/logs/ws:
     get:
       description: Upgrade connection to WebSocket and stream raw logs in real-time.
@@ -381,7 +381,7 @@ paths:
             type: string
       summary: Real-time logs streaming via WebSocket
       tags:
-      - Monitor
+      - Overview Dashboard
   /api/v1/sev/overview:
     get:
       description: Get overview statistics with comparison for a time range
@@ -414,7 +414,7 @@ paths:
       - BearerAuth: []
       summary: Get business overview key metrics
       tags:
-      - Monitor
+      - Overview Dashboard
   /api/v1/sev/ping:
     get:
       description: Returns pong message to check if API is alive
@@ -442,7 +442,7 @@ paths:
       - BearerAuth: []
       summary: Get aggregated logs statistics
       tags:
-      - Monitor
+      - System Stats
   /api/v1/sev/stats/geo-distribution:
     get:
       description: Get geographical distribution of IP addresses from logs.
@@ -482,7 +482,7 @@ paths:
       - BearerAuth: []
       summary: Get geographical distribution of requests
       tags:
-      - Monitor
+      - Geo Analysis
   /api/v1/sev/stats/timeseries:
     get:
       description: Get time-series data for a metric (qps, error_rate, latency_p99,
@@ -528,7 +528,7 @@ paths:
       - BearerAuth: []
       summary: Get trend data for charts
       tags:
-      - Monitor
+      - Overview Dashboard
   /api/v1/sev/stats/top-paths:
     get:
       description: Get the top requested interface URIs along with their request count,
@@ -567,7 +567,7 @@ paths:
       - BearerAuth: []
       summary: Get top requested paths
       tags:
-      - Monitor
+      - Overview Dashboard
   /api/v1/sev/stats/ws:
     get:
       description: Upgrade connection to WebSocket and stream real-time request counts
@@ -602,7 +602,7 @@ paths:
             $ref: '#/definitions/controller.StatsWSUpdateResponse'
       summary: Real-time statistics push via WebSocket
       tags:
-      - Monitor
+      - Overview Dashboard
 securityDefinitions:
   BearerAuth:
     description: Type "Bearer" followed by a space and JWT token.
