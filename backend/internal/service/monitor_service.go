@@ -233,8 +233,8 @@ func (s *MonitorService) GetTimeSeriesStats(metric, startTime, endTime string, s
 	return result, nil
 }
 
-// GetTopPaths retrieves the top requested paths and their statistics.
-func (s *MonitorService) GetTopPaths(startTime, endTime string, sourceID string, limit int) ([]storage.TopPathItem, error) {
+// resolveTablesAndRange processes the sourceID, start/end times and limit values, returning validated tableNames, parsed times, and limit.
+func (s *MonitorService) resolveTablesAndRange(startTime, endTime string, sourceID string, limit int) ([]string, time.Time, time.Time, int, error) {
 	var tableNames []string
 
 	for _, monInst := range s.monitors {
@@ -247,13 +247,9 @@ func (s *MonitorService) GetTopPaths(startTime, endTime string, sourceID string,
 		tableNames = append(tableNames, tableName)
 	}
 
-	if len(tableNames) == 0 {
-		return []storage.TopPathItem{}, nil
-	}
-
 	startT, endT, err := utils.ParseAndValidateRange(startTime, endTime, utils.MaxTimeRangeLimit)
 	if err != nil {
-		return nil, err
+		return nil, time.Time{}, time.Time{}, 0, err
 	}
 
 	if limit <= 0 {
@@ -262,72 +258,45 @@ func (s *MonitorService) GetTopPaths(startTime, endTime string, sourceID string,
 		limit = 100
 	}
 
+	return tableNames, startT, endT, limit, nil
+}
+
+// GetTopPaths retrieves the top requested paths and their statistics.
+func (s *MonitorService) GetTopPaths(startTime, endTime string, sourceID string, limit int) ([]storage.TopPathItem, error) {
+	tableNames, startT, endT, limit, err := s.resolveTablesAndRange(startTime, endTime, sourceID, limit)
+	if err != nil {
+		return nil, err
+	}
+	if len(tableNames) == 0 {
+		return []storage.TopPathItem{}, nil
+	}
 	return s.store.GetTopPaths(tableNames, startT, endT, limit)
 }
 
 // GetTopIPs retrieves the top requested IPs and their statistics.
 func (s *MonitorService) GetTopIPs(startTime, endTime string, sourceID string, limit int) ([]storage.TopIPItem, error) {
-	var tableNames []string
-
-	for _, monInst := range s.monitors {
-		tableName := monInst.GetTableName()
-		logPath := monInst.GetLogPath()
-		
-		if sourceID != "" && tableName != sourceID && filepath.Base(logPath) != sourceID {
-			continue
-		}
-		tableNames = append(tableNames, tableName)
-	}
-
-	if len(tableNames) == 0 {
-		return []storage.TopIPItem{}, nil
-	}
-
-	startT, endT, err := utils.ParseAndValidateRange(startTime, endTime, utils.MaxTimeRangeLimit)
+	tableNames, startT, endT, limit, err := s.resolveTablesAndRange(startTime, endTime, sourceID, limit)
 	if err != nil {
 		return nil, err
 	}
-
-	if limit <= 0 {
-		limit = 10
-	} else if limit > 100 {
-		limit = 100
+	if len(tableNames) == 0 {
+		return []storage.TopIPItem{}, nil
 	}
-
 	return s.store.GetTopIPs(tableNames, startT, endT, limit)
 }
 
 // GetTopUserAgents retrieves the top requested User-Agents and their statistics.
 func (s *MonitorService) GetTopUserAgents(startTime, endTime string, sourceID string, limit int) ([]storage.TopUserAgentItem, error) {
-	var tableNames []string
-
-	for _, monInst := range s.monitors {
-		tableName := monInst.GetTableName()
-		logPath := monInst.GetLogPath()
-		
-		if sourceID != "" && tableName != sourceID && filepath.Base(logPath) != sourceID {
-			continue
-		}
-		tableNames = append(tableNames, tableName)
-	}
-
-	if len(tableNames) == 0 {
-		return []storage.TopUserAgentItem{}, nil
-	}
-
-	startT, endT, err := utils.ParseAndValidateRange(startTime, endTime, utils.MaxTimeRangeLimit)
+	tableNames, startT, endT, limit, err := s.resolveTablesAndRange(startTime, endTime, sourceID, limit)
 	if err != nil {
 		return nil, err
 	}
-
-	if limit <= 0 {
-		limit = 10
-	} else if limit > 100 {
-		limit = 100
+	if len(tableNames) == 0 {
+		return []storage.TopUserAgentItem{}, nil
 	}
-
 	return s.store.GetTopUserAgents(tableNames, startT, endT, limit)
 }
+
 
 
 // GetGeoDistribution retrieves the geographical distribution of requests.

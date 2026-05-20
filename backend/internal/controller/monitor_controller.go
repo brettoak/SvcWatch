@@ -414,8 +414,8 @@ func (ctrl *MonitorController) LogsWebSocketHandler(c *gin.Context) {
 	}
 }
 
-// TopPathsRequest represents query parameters for the top paths endpoint.
-type TopPathsRequest struct {
+// TopStatsRequest represents common query parameters for ranking/top-stats endpoints.
+type TopStatsRequest struct {
 	StartTime string `form:"start_time" binding:"required"`
 	EndTime   string `form:"end_time" binding:"required"`
 	SourceID  string `form:"source_id"`
@@ -435,7 +435,7 @@ type TopPathsRequest struct {
 // @Success 200 {object} TopPathsResponseWrapper
 // @Router /api/v1/sev/stats/top-paths [get]
 func (ctrl *MonitorController) TopPathsHandler(c *gin.Context) {
-	var req TopPathsRequest
+	var req TopStatsRequest
 	if err := c.ShouldBindQuery(&req); err != nil {
 		utils.Error(c, 400, err.Error())
 		return
@@ -448,14 +448,6 @@ func (ctrl *MonitorController) TopPathsHandler(c *gin.Context) {
 	}
 
 	utils.Success(c, result)
-}
-
-// TopIPsRequest represents query parameters for the top IPs endpoint.
-type TopIPsRequest struct {
-	StartTime string `form:"start_time" binding:"required"`
-	EndTime   string `form:"end_time" binding:"required"`
-	SourceID  string `form:"source_id"`
-	Limit     int    `form:"limit,default=10" binding:"min=1,max=100"`
 }
 
 // TopIPsHandler Get top requested IPs
@@ -471,7 +463,7 @@ type TopIPsRequest struct {
 // @Success 200 {object} TopIPsResponseWrapper
 // @Router /api/v1/sev/stats/top-ips [get]
 func (ctrl *MonitorController) TopIPsHandler(c *gin.Context) {
-	var req TopIPsRequest
+	var req TopStatsRequest
 	if err := c.ShouldBindQuery(&req); err != nil {
 		utils.Error(c, 400, err.Error())
 		return
@@ -484,14 +476,6 @@ func (ctrl *MonitorController) TopIPsHandler(c *gin.Context) {
 	}
 
 	utils.Success(c, result)
-}
-
-// TopUserAgentsRequest represents query parameters for the top User-Agents endpoint.
-type TopUserAgentsRequest struct {
-	StartTime string `form:"start_time" binding:"required"`
-	EndTime   string `form:"end_time" binding:"required"`
-	SourceID  string `form:"source_id"`
-	Limit     int    `form:"limit,default=10" binding:"min=1,max=100"`
 }
 
 // TopUserAgentsHandler Get top requested User-Agents
@@ -507,7 +491,7 @@ type TopUserAgentsRequest struct {
 // @Success 200 {object} TopUserAgentsResponseWrapper
 // @Router /api/v1/sev/stats/top-user-agents [get]
 func (ctrl *MonitorController) TopUserAgentsHandler(c *gin.Context) {
-	var req TopUserAgentsRequest
+	var req TopStatsRequest
 	if err := c.ShouldBindQuery(&req); err != nil {
 		utils.Error(c, 400, err.Error())
 		return
@@ -521,6 +505,7 @@ func (ctrl *MonitorController) TopUserAgentsHandler(c *gin.Context) {
 
 	utils.Success(c, result)
 }
+
 
 
 

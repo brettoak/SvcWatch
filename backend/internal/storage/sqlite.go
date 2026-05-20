@@ -520,21 +520,26 @@ type TopPathItem struct {
 	ErrorRate       float64 `json:"error_rate"`
 }
 
+// buildUnionQuery generates a UNION ALL query across multiple dynamic tables for a given select fields layout and time range.
+func (s *SqliteStorage) buildUnionQuery(tableNames []string, selectFields string, startTime, endTime time.Time) (string, []interface{}) {
+	var unions []string
+	var args []interface{}
+	startTimeStr := startTime.UTC().Format(time.RFC3339)
+	endTimeStr := endTime.UTC().Format(time.RFC3339)
+	for _, tableName := range tableNames {
+		unions = append(unions, fmt.Sprintf("SELECT %s FROM %s WHERE time_local >= ? AND time_local <= ?", selectFields, tableName))
+		args = append(args, startTimeStr, endTimeStr)
+	}
+	return strings.Join(unions, " UNION ALL "), args
+}
+
 // GetTopPaths retrieves the top N requested paths across multiple tables.
 func (s *SqliteStorage) GetTopPaths(tableNames []string, startTime, endTime time.Time, limit int) ([]TopPathItem, error) {
 	if len(tableNames) == 0 {
 		return []TopPathItem{}, nil
 	}
 
-	var unions []string
-	var args []interface{}
-	startTimeStr := startTime.UTC().Format(time.RFC3339)
-	endTimeStr := endTime.UTC().Format(time.RFC3339)
-	for _, tableName := range tableNames {
-		unions = append(unions, fmt.Sprintf("SELECT request, status, request_time FROM %s WHERE time_local >= ? AND time_local <= ?", tableName))
-		args = append(args, startTimeStr, endTimeStr)
-	}
-	unionQuery := strings.Join(unions, " UNION ALL ")
+	unionQuery, args := s.buildUnionQuery(tableNames, "request, status, request_time", startTime, endTime)
 
 	query := fmt.Sprintf(`
 		SELECT 
@@ -602,15 +607,7 @@ func (s *SqliteStorage) GetTopIPs(tableNames []string, startTime, endTime time.T
 		return []TopIPItem{}, nil
 	}
 
-	var unions []string
-	var args []interface{}
-	startTimeStr := startTime.UTC().Format(time.RFC3339)
-	endTimeStr := endTime.UTC().Format(time.RFC3339)
-	for _, tableName := range tableNames {
-		unions = append(unions, fmt.Sprintf("SELECT remote_addr, status, request_time FROM %s WHERE time_local >= ? AND time_local <= ?", tableName))
-		args = append(args, startTimeStr, endTimeStr)
-	}
-	unionQuery := strings.Join(unions, " UNION ALL ")
+	unionQuery, args := s.buildUnionQuery(tableNames, "remote_addr, status, request_time", startTime, endTime)
 
 	query := fmt.Sprintf(`
 		SELECT 
@@ -665,15 +662,7 @@ func (s *SqliteStorage) GetTopUserAgents(tableNames []string, startTime, endTime
 		return []TopUserAgentItem{}, nil
 	}
 
-	var unions []string
-	var args []interface{}
-	startTimeStr := startTime.UTC().Format(time.RFC3339)
-	endTimeStr := endTime.UTC().Format(time.RFC3339)
-	for _, tableName := range tableNames {
-		unions = append(unions, fmt.Sprintf("SELECT http_user_agent, status, request_time FROM %s WHERE time_local >= ? AND time_local <= ?", tableName))
-		args = append(args, startTimeStr, endTimeStr)
-	}
-	unionQuery := strings.Join(unions, " UNION ALL ")
+	unionQuery, args := s.buildUnionQuery(tableNames, "http_user_agent, status, request_time", startTime, endTime)
 
 	query := fmt.Sprintf(`
 		SELECT 
@@ -713,6 +702,7 @@ func (s *SqliteStorage) GetTopUserAgents(tableNames []string, startTime, endTime
 
 	return result, nil
 }
+
 
 
 // GeoDistributionItem represents a single geographical distribution record.
