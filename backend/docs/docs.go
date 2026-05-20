@@ -433,6 +433,63 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/v1/sev/stats/top-ips": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Get the top requested client IP addresses along with their request count, average response time, and error rate.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "2. Overview Dashboard"
+                ],
+                "summary": "Get top requested IPs",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "default": "2026-03-19 00:00:00",
+                        "description": "Start Time",
+                        "name": "start_time",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "default": "2026-03-20 00:00:00",
+                        "description": "End Time",
+                        "name": "end_time",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "default": "access.log",
+                        "description": "Log File or Source ID",
+                        "name": "source_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 10,
+                        "description": "Number of top IPs to return (default 10, max 100)",
+                        "name": "limit",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controller.TopIPsResponseWrapper"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/sev/stats/top-paths": {
             "get": {
                 "security": [
@@ -639,6 +696,25 @@ const docTemplate = `{
                 },
                 "data": {
                     "$ref": "#/definitions/storage.TimeSeriesResult"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "success"
+                }
+            }
+        },
+        "controller.TopIPsResponseWrapper": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer",
+                    "example": 200
+                },
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/storage.TopIPItem"
+                    }
                 },
                 "message": {
                     "type": "string",
@@ -868,6 +944,23 @@ const docTemplate = `{
                     "items": {
                         "$ref": "#/definitions/storage.TimeSeriesPoint"
                     }
+                }
+            }
+        },
+        "storage.TopIPItem": {
+            "type": "object",
+            "properties": {
+                "avg_response_time": {
+                    "type": "number"
+                },
+                "error_rate": {
+                    "type": "number"
+                },
+                "ip": {
+                    "type": "string"
+                },
+                "request_count": {
+                    "type": "integer"
                 }
             }
         },
