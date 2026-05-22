@@ -239,6 +239,9 @@ export interface TopIPItem {
   request_count: number
   avg_response_time: number
   error_rate: number
+  country?: string
+  region?: string
+  city?: string
 }
 
 export interface TopIPsResponse {

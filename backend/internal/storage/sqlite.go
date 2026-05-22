@@ -599,6 +599,9 @@ type TopIPItem struct {
 	RequestCount    int     `json:"request_count"`
 	AvgResponseTime float64 `json:"avg_response_time"`
 	ErrorRate       float64 `json:"error_rate"`
+	Country         string  `json:"country"`
+	Region          string  `json:"region"`
+	City            string  `json:"city"`
 }
 
 // GetTopIPs retrieves the top N requested IPs across multiple tables.
@@ -607,14 +610,17 @@ func (s *SqliteStorage) GetTopIPs(tableNames []string, startTime, endTime time.T
 		return []TopIPItem{}, nil
 	}
 
-	unionQuery, args := s.buildUnionQuery(tableNames, "remote_addr, status, request_time", startTime, endTime)
+	unionQuery, args := s.buildUnionQuery(tableNames, "remote_addr, status, request_time, country, region, city", startTime, endTime)
 
 	query := fmt.Sprintf(`
 		SELECT 
 			remote_addr as ip,
 			COUNT(*) as request_count,
 			COALESCE(AVG(request_time), 0.0) as avg_response_time,
-			CAST(SUM(CASE WHEN status < 200 OR status >= 300 THEN 1 ELSE 0 END) AS REAL) * 100.0 / COUNT(*) as error_rate
+			CAST(SUM(CASE WHEN status < 200 OR status >= 300 THEN 1 ELSE 0 END) AS REAL) * 100.0 / COUNT(*) as error_rate,
+			COALESCE(MAX(country), '') as country,
+			COALESCE(MAX(region), '') as region,
+			COALESCE(MAX(city), '') as city
 		FROM (%s)
 		GROUP BY ip
 		ORDER BY request_count DESC
@@ -632,7 +638,7 @@ func (s *SqliteStorage) GetTopIPs(tableNames []string, startTime, endTime time.T
 	var result []TopIPItem
 	for rows.Next() {
 		var item TopIPItem
-		if err := rows.Scan(&item.IP, &item.RequestCount, &item.AvgResponseTime, &item.ErrorRate); err != nil {
+		if err := rows.Scan(&item.IP, &item.RequestCount, &item.AvgResponseTime, &item.ErrorRate, &item.Country, &item.Region, &item.City); err != nil {
 			return nil, fmt.Errorf("failed to scan top IPs row: %w", err)
 		}
 		// Round floats to 2 decimal places

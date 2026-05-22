@@ -79,7 +79,12 @@ const filteredIps = computed(() => {
   const query = ipSearchQuery.value.trim().toLowerCase()
   let list = topIpsData.value
   if (query) {
-    list = list.filter(item => item.ip.toLowerCase().includes(query))
+    list = list.filter(item => 
+      item.ip.toLowerCase().includes(query) ||
+      (item.country && item.country.toLowerCase().includes(query)) ||
+      (item.region && item.region.toLowerCase().includes(query)) ||
+      (item.city && item.city.toLowerCase().includes(query))
+    )
   }
   return list.map(item => {
     const share = totalIpRequests.value > 0 ? (item.request_count / totalIpRequests.value) * 100 : 0
@@ -298,6 +303,7 @@ const copyToClipboard = async (text: string, idx: number) => {
               <tr class="bg-bg-primary/60 backdrop-blur-sm border-b border-border-color">
                 <th class="px-4 py-3 text-[0.65rem] font-bold uppercase tracking-wider text-text-secondary w-14 text-center">Rank</th>
                 <th class="px-4 py-3 text-[0.65rem] font-bold uppercase tracking-wider text-text-secondary">IP Address / Request Share</th>
+                <th class="px-4 py-3 text-[0.65rem] font-bold uppercase tracking-wider text-text-secondary w-44">Location</th>
                 <th class="px-4 py-3 text-[0.65rem] font-bold uppercase tracking-wider text-text-secondary text-right w-20">Hits</th>
                 <th class="px-4 py-3 text-[0.65rem] font-bold uppercase tracking-wider text-text-secondary text-right w-24">Avg Latency</th>
                 <th class="px-4 py-3 text-[0.65rem] font-bold uppercase tracking-wider text-text-secondary text-right w-20">Err%</th>
@@ -305,7 +311,7 @@ const copyToClipboard = async (text: string, idx: number) => {
             </thead>
             <tbody class="divide-y divide-border-color/50">
               <tr v-if="filteredIps.length === 0" class="text-center italic text-text-secondary py-8">
-                <td colspan="5" class="px-4 py-12 text-sm text-text-secondary">No matching IP analytics found</td>
+                <td colspan="6" class="px-4 py-12 text-sm text-text-secondary">No matching IP analytics found</td>
               </tr>
               <tr v-else v-for="(item, idx) in filteredIps" :key="item.ip" class="hover:bg-bg-primary/20 transition-all duration-150 group">
                 <!-- Rank Badge -->
@@ -337,6 +343,21 @@ const copyToClipboard = async (text: string, idx: number) => {
                       </div>
                       <span class="text-[0.65rem] font-bold text-text-secondary shrink-0">{{ item.share.toFixed(1) }}%</span>
                     </div>
+                  </div>
+                </td>
+
+                <!-- Location -->
+                <td class="px-4 py-4 whitespace-nowrap">
+                  <div class="flex items-center gap-1.5">
+                    <span v-if="item.country" class="inline-flex items-center gap-1 bg-primary-blue/5 border border-primary-blue/15 text-primary-blue text-[0.7rem] font-bold px-2 py-0.5 rounded-md">
+                      🌍 {{ item.country }}
+                    </span>
+                    <span v-else class="inline-flex items-center gap-1 bg-slate-500/5 border border-slate-500/15 text-text-secondary text-[0.7rem] font-bold px-2 py-0.5 rounded-md">
+                      ❓ Unknown
+                    </span>
+                    <span v-if="item.city || item.region" class="text-xs font-semibold text-text-primary max-w-[120px] truncate" :title="[item.city, item.region].filter(Boolean).join(', ')">
+                      {{ item.city || item.region }}
+                    </span>
                   </div>
                 </td>
 
