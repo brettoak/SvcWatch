@@ -54,7 +54,7 @@ onMounted(() => {
 
 const calculateAndEmit = () => {
   const end = new Date()
-  let start = new Date(end)
+  const start = new Date(end)
 
   if (props.modelValue === 'custom') {
     if (!customStartTime.value || !customEndTime.value) return

@@ -35,6 +35,11 @@ const router = createRouter({
           name: 'map',
           component: () => import('@/views/GeoMap.vue'),
         },
+        {
+          path: 'top-stats',
+          name: 'top-stats',
+          component: () => import('@/views/TopStats.vue'),
+        },
       ],
     },
   ],

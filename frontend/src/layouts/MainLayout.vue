@@ -62,6 +62,12 @@ const MapIcon = h('svg', { xmlns: 'http://www.w3.org/2000/svg', width: '20', hei
   h('path', { d: 'M12 21.7C17.3 17 20 13 20 10a8 8 0 1 0-16 0c0 3 2.7 7 8 11.7z' }),
 ])
 
+const StatsIcon = h('svg', { xmlns: 'http://www.w3.org/2000/svg', width: '20', height: '20', viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', 'stroke-width': '2', 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }, [
+  h('line', { x1: '18', y1: '20', x2: '18', y2: '10' }),
+  h('line', { x1: '12', y1: '20', x2: '12', y2: '4' }),
+  h('line', { x1: '6', y1: '20', x2: '6', y2: '14' }),
+])
+
 const navGroups = [
   {
     group: 'Dashboards',
@@ -74,6 +80,7 @@ const navGroups = [
     items: [
       { name: 'Logs', path: '/logs', icon: LogsIcon },
       { name: 'Map', path: '/map', icon: MapIcon },
+      { name: 'Top Stats', path: '/top-stats', icon: StatsIcon },
     ]
   },
   {
