@@ -234,6 +234,53 @@ export const getTopPaths = (startTime: string, endTime: string, limit: number = 
   })
 }
 
+export interface TopIPItem {
+  ip: string
+  request_count: number
+  avg_response_time: number
+  error_rate: number
+}
+
+export interface TopIPsResponse {
+  code: number
+  message: string
+  data: TopIPItem[]
+}
+
+export const getTopIPs = (startTime: string, endTime: string, limit: number = 100) => {
+  return api.get<TopIPsResponse>('/stats/top-ips', {
+    params: {
+      start_time: startTime,
+      end_time: endTime,
+      limit,
+    },
+  })
+}
+
+export interface TopUserAgentItem {
+  user_agent: string
+  request_count: number
+  avg_response_time: number
+  error_rate: number
+}
+
+export interface TopUserAgentsResponse {
+  code: number
+  message: string
+  data: TopUserAgentItem[]
+}
+
+export const getTopUserAgents = (startTime: string, endTime: string, limit: number = 100) => {
+  return api.get<TopUserAgentsResponse>('/stats/top-user-agents', {
+    params: {
+      start_time: startTime,
+      end_time: endTime,
+      limit,
+    },
+  })
+}
+
+
 export interface GeoDistributionItem {
   country: string
   region: string
