@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { getTopIPs, getTopUserAgents } from '@/services/api'
 import type { TopIPItem, TopUserAgentItem } from '@/services/api'
 import TimeFilter from '@/components/TimeFilter.vue'
@@ -198,6 +198,38 @@ const copyToClipboard = async (text: string, idx: number) => {
     console.error('Failed to copy text: ', err)
   }
 }
+
+// Scroll to Top logic
+const showScrollTop = ref(false)
+let mainScrollContainer: HTMLElement | null = null
+
+const handleScroll = () => {
+  if (mainScrollContainer) {
+    showScrollTop.value = mainScrollContainer.scrollTop > 300
+  }
+}
+
+const scrollToTop = () => {
+  if (mainScrollContainer) {
+    mainScrollContainer.scrollTo({
+      top: 0,
+      behavior: 'smooth'
+    })
+  }
+}
+
+onMounted(() => {
+  mainScrollContainer = document.querySelector('main')
+  if (mainScrollContainer) {
+    mainScrollContainer.addEventListener('scroll', handleScroll)
+  }
+})
+
+onUnmounted(() => {
+  if (mainScrollContainer) {
+    mainScrollContainer.removeEventListener('scroll', handleScroll)
+  }
+})
 </script>
 
 <template>
@@ -579,6 +611,30 @@ const copyToClipboard = async (text: string, idx: number) => {
       </div>
 
     </div>
+
+    <!-- Back to Top Floating Button -->
+    <button 
+      @click="scrollToTop" 
+      class="fixed bottom-8 right-8 z-50 p-3.5 rounded-2xl bg-bg-secondary/80 backdrop-blur-md border border-border-color text-text-primary shadow-lg hover:shadow-primary-blue/15 hover:text-primary-blue hover:border-primary-blue/30 active:scale-95 transition-all duration-300 cursor-pointer flex items-center justify-center group"
+      :class="showScrollTop ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4 pointer-events-none'"
+      title="Back to Top"
+    >
+      <svg 
+        xmlns="http://www.w3.org/2000/svg" 
+        width="20" 
+        height="20" 
+        viewBox="0 0 24 24" 
+        fill="none" 
+        stroke="currentColor" 
+        stroke-width="2.5" 
+        stroke-linecap="round" 
+        stroke-linejoin="round"
+        class="transform group-hover:-translate-y-0.5 transition-transform duration-200"
+      >
+        <line x1="12" y1="19" x2="12" y2="5"></line>
+        <polyline points="5 12 12 5 19 12"></polyline>
+      </svg>
+    </button>
   </div>
 </template>
 
