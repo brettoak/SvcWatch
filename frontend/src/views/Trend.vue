@@ -186,6 +186,18 @@ const hoveredBwPt = computed(() => {
   return bandwidthAnalysis.value.chartPoints[hoveredIdxBw.value] || null
 })
 
+// Dynamic tooltip coordinates and boundaries to prevent off-screen overflow
+const tooltipStyle = computed(() => {
+  const thresholdX = 190
+  const thresholdY = 80 // Tooltip height + padding
+  const x = window.innerWidth - mouseX.value < thresholdX ? mouseX.value - 185 : mouseX.value + 15
+  const y = window.innerHeight - mouseY.value < thresholdY ? mouseY.value - 75 : mouseY.value + 15
+  return {
+    left: `${x}px`,
+    top: `${y}px`
+  }
+})
+
 // Safe scale labels computations to avoid strict undefined check in Vue templates
 const qpsLabels = computed(() => {
   const pts = qpsAnalysis.value.chartPoints
@@ -426,7 +438,7 @@ onUnmounted(() => {
             <div 
               v-if="hoveredQpsPt" 
               class="fixed pointer-events-none z-[100] bg-slate-900/90 dark:bg-slate-950/90 text-white px-3.5 py-2.5 rounded-xl text-[0.7rem] shadow-xl backdrop-blur-md border border-white/10 flex flex-col gap-1 min-w-[160px] transition-opacity duration-150 animate-fade-in"
-              :style="{ left: mouseX + 15 + 'px', top: mouseY + 15 + 'px' }"
+              :style="tooltipStyle"
             >
               <div class="font-bold text-white/50 text-[0.62rem] uppercase tracking-wider">{{ hoveredQpsPt.ts }}</div>
               <div class="flex items-center justify-between gap-4 mt-0.5">
@@ -539,7 +551,7 @@ onUnmounted(() => {
             <div 
               v-if="hoveredErrPt" 
               class="fixed pointer-events-none z-[100] bg-slate-900/90 dark:bg-slate-950/90 text-white px-3.5 py-2.5 rounded-xl text-[0.7rem] shadow-xl backdrop-blur-md border border-white/10 flex flex-col gap-1 min-w-[160px] transition-opacity duration-150 animate-fade-in"
-              :style="{ left: mouseX + 15 + 'px', top: mouseY + 15 + 'px' }"
+              :style="tooltipStyle"
             >
               <div class="font-bold text-white/50 text-[0.62rem] uppercase tracking-wider">{{ hoveredErrPt.ts }}</div>
               <div class="flex items-center justify-between gap-4 mt-0.5">
@@ -652,7 +664,7 @@ onUnmounted(() => {
             <div 
               v-if="hoveredLatPt" 
               class="fixed pointer-events-none z-[100] bg-slate-900/90 dark:bg-slate-950/90 text-white px-3.5 py-2.5 rounded-xl text-[0.7rem] shadow-xl backdrop-blur-md border border-white/10 flex flex-col gap-1 min-w-[160px] transition-opacity duration-150 animate-fade-in"
-              :style="{ left: mouseX + 15 + 'px', top: mouseY + 15 + 'px' }"
+              :style="tooltipStyle"
             >
               <div class="font-bold text-white/50 text-[0.62rem] uppercase tracking-wider">{{ hoveredLatPt.ts }}</div>
               <div class="flex items-center justify-between gap-4 mt-0.5">
@@ -765,7 +777,7 @@ onUnmounted(() => {
             <div 
               v-if="hoveredBwPt" 
               class="fixed pointer-events-none z-[100] bg-slate-900/90 dark:bg-slate-950/90 text-white px-3.5 py-2.5 rounded-xl text-[0.7rem] shadow-xl backdrop-blur-md border border-white/10 flex flex-col gap-1 min-w-[160px] transition-opacity duration-150 animate-fade-in"
-              :style="{ left: mouseX + 15 + 'px', top: mouseY + 15 + 'px' }"
+              :style="tooltipStyle"
             >
               <div class="font-bold text-white/50 text-[0.62rem] uppercase tracking-wider">{{ hoveredBwPt.ts }}</div>
               <div class="flex items-center justify-between gap-4 mt-0.5">
