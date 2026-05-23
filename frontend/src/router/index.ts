@@ -40,6 +40,11 @@ const router = createRouter({
           name: 'top-stats',
           component: () => import('@/views/TopStats.vue'),
         },
+        {
+          path: 'trends',
+          name: 'trends',
+          component: () => import('@/views/Trend.vue'),
+        },
       ],
     },
   ],
