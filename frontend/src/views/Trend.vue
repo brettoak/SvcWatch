@@ -422,17 +422,19 @@ onUnmounted(() => {
           </svg>
 
           <!-- Floating custom tooltip -->
-          <div 
-            v-if="hoveredQpsPt" 
-            class="fixed pointer-events-none z-[100] bg-slate-900/90 dark:bg-slate-950/90 text-white px-3.5 py-2.5 rounded-xl text-[0.7rem] shadow-xl backdrop-blur-md border border-white/10 flex flex-col gap-1 min-w-[160px] transition-opacity duration-150 animate-fade-in"
-            :style="{ left: mouseX + 15 + 'px', top: mouseY + 15 + 'px' }"
-          >
-            <div class="font-bold text-white/50 text-[0.62rem] uppercase tracking-wider">{{ hoveredQpsPt.ts }}</div>
-            <div class="flex items-center justify-between gap-4 mt-0.5">
-              <span class="font-semibold text-white/90">Request Rate</span>
-              <span class="font-black text-blue-400 text-xs">{{ formatValue(hoveredQpsPt.val, 'qps') }}</span>
+          <Teleport to="body">
+            <div 
+              v-if="hoveredQpsPt" 
+              class="fixed pointer-events-none z-[100] bg-slate-900/90 dark:bg-slate-950/90 text-white px-3.5 py-2.5 rounded-xl text-[0.7rem] shadow-xl backdrop-blur-md border border-white/10 flex flex-col gap-1 min-w-[160px] transition-opacity duration-150 animate-fade-in"
+              :style="{ left: mouseX + 15 + 'px', top: mouseY + 15 + 'px' }"
+            >
+              <div class="font-bold text-white/50 text-[0.62rem] uppercase tracking-wider">{{ hoveredQpsPt.ts }}</div>
+              <div class="flex items-center justify-between gap-4 mt-0.5">
+                <span class="font-semibold text-white/90">Request Rate</span>
+                <span class="font-black text-blue-400 text-xs">{{ formatValue(hoveredQpsPt.val, 'qps') }}</span>
+              </div>
             </div>
-          </div>
+          </Teleport>
 
           <div v-if="!qpsPoints.length" class="absolute inset-0 flex items-center justify-center text-text-secondary text-sm italic">
             No historical QPS data available
@@ -533,17 +535,19 @@ onUnmounted(() => {
           </svg>
 
           <!-- Floating custom tooltip -->
-          <div 
-            v-if="hoveredErrPt" 
-            class="fixed pointer-events-none z-[100] bg-slate-900/90 dark:bg-slate-950/90 text-white px-3.5 py-2.5 rounded-xl text-[0.7rem] shadow-xl backdrop-blur-md border border-white/10 flex flex-col gap-1 min-w-[160px] transition-opacity duration-150 animate-fade-in"
-            :style="{ left: mouseX + 15 + 'px', top: mouseY + 15 + 'px' }"
-          >
-            <div class="font-bold text-white/50 text-[0.62rem] uppercase tracking-wider">{{ hoveredErrPt.ts }}</div>
-            <div class="flex items-center justify-between gap-4 mt-0.5">
-              <span class="font-semibold text-white/90">Error Ratio</span>
-              <span class="font-black text-rose-400 text-xs">{{ formatValue(hoveredErrPt.val, 'error_rate') }}</span>
+          <Teleport to="body">
+            <div 
+              v-if="hoveredErrPt" 
+              class="fixed pointer-events-none z-[100] bg-slate-900/90 dark:bg-slate-950/90 text-white px-3.5 py-2.5 rounded-xl text-[0.7rem] shadow-xl backdrop-blur-md border border-white/10 flex flex-col gap-1 min-w-[160px] transition-opacity duration-150 animate-fade-in"
+              :style="{ left: mouseX + 15 + 'px', top: mouseY + 15 + 'px' }"
+            >
+              <div class="font-bold text-white/50 text-[0.62rem] uppercase tracking-wider">{{ hoveredErrPt.ts }}</div>
+              <div class="flex items-center justify-between gap-4 mt-0.5">
+                <span class="font-semibold text-white/90">Error Ratio</span>
+                <span class="font-black text-rose-400 text-xs">{{ formatValue(hoveredErrPt.val, 'error_rate') }}</span>
+              </div>
             </div>
-          </div>
+          </Teleport>
 
           <div v-if="!errorRatePoints.length" class="absolute inset-0 flex items-center justify-center text-text-secondary text-sm italic">
             No historical Error Rate data available
@@ -644,17 +648,19 @@ onUnmounted(() => {
           </svg>
 
           <!-- Floating custom tooltip -->
-          <div 
-            v-if="hoveredLatPt" 
-            class="fixed pointer-events-none z-[100] bg-slate-900/90 dark:bg-slate-950/90 text-white px-3.5 py-2.5 rounded-xl text-[0.7rem] shadow-xl backdrop-blur-md border border-white/10 flex flex-col gap-1 min-w-[160px] transition-opacity duration-150 animate-fade-in"
-            :style="{ left: mouseX + 15 + 'px', top: mouseY + 15 + 'px' }"
-          >
-            <div class="font-bold text-white/50 text-[0.62rem] uppercase tracking-wider">{{ hoveredLatPt.ts }}</div>
-            <div class="flex items-center justify-between gap-4 mt-0.5">
-              <span class="font-semibold text-white/90">P99 Latency</span>
-              <span class="font-black text-purple-400 text-xs">{{ formatValue(hoveredLatPt.val, 'latency') }}</span>
+          <Teleport to="body">
+            <div 
+              v-if="hoveredLatPt" 
+              class="fixed pointer-events-none z-[100] bg-slate-900/90 dark:bg-slate-950/90 text-white px-3.5 py-2.5 rounded-xl text-[0.7rem] shadow-xl backdrop-blur-md border border-white/10 flex flex-col gap-1 min-w-[160px] transition-opacity duration-150 animate-fade-in"
+              :style="{ left: mouseX + 15 + 'px', top: mouseY + 15 + 'px' }"
+            >
+              <div class="font-bold text-white/50 text-[0.62rem] uppercase tracking-wider">{{ hoveredLatPt.ts }}</div>
+              <div class="flex items-center justify-between gap-4 mt-0.5">
+                <span class="font-semibold text-white/90">P99 Latency</span>
+                <span class="font-black text-purple-400 text-xs">{{ formatValue(hoveredLatPt.val, 'latency') }}</span>
+              </div>
             </div>
-          </div>
+          </Teleport>
 
           <div v-if="!latencyPoints.length" class="absolute inset-0 flex items-center justify-center text-text-secondary text-sm italic">
             No historical P99 Latency data available
@@ -755,17 +761,19 @@ onUnmounted(() => {
           </svg>
 
           <!-- Floating custom tooltip -->
-          <div 
-            v-if="hoveredBwPt" 
-            class="fixed pointer-events-none z-[100] bg-slate-900/90 dark:bg-slate-950/90 text-white px-3.5 py-2.5 rounded-xl text-[0.7rem] shadow-xl backdrop-blur-md border border-white/10 flex flex-col gap-1 min-w-[160px] transition-opacity duration-150 animate-fade-in"
-            :style="{ left: mouseX + 15 + 'px', top: mouseY + 15 + 'px' }"
-          >
-            <div class="font-bold text-white/50 text-[0.62rem] uppercase tracking-wider">{{ hoveredBwPt.ts }}</div>
-            <div class="flex items-center justify-between gap-4 mt-0.5">
-              <span class="font-semibold text-white/90">Egress Rate</span>
-              <span class="font-black text-cyan-400 text-xs">{{ formatValue(hoveredBwPt.val, 'bandwidth') }}</span>
+          <Teleport to="body">
+            <div 
+              v-if="hoveredBwPt" 
+              class="fixed pointer-events-none z-[100] bg-slate-900/90 dark:bg-slate-950/90 text-white px-3.5 py-2.5 rounded-xl text-[0.7rem] shadow-xl backdrop-blur-md border border-white/10 flex flex-col gap-1 min-w-[160px] transition-opacity duration-150 animate-fade-in"
+              :style="{ left: mouseX + 15 + 'px', top: mouseY + 15 + 'px' }"
+            >
+              <div class="font-bold text-white/50 text-[0.62rem] uppercase tracking-wider">{{ hoveredBwPt.ts }}</div>
+              <div class="flex items-center justify-between gap-4 mt-0.5">
+                <span class="font-semibold text-white/90">Egress Rate</span>
+                <span class="font-black text-cyan-400 text-xs">{{ formatValue(hoveredBwPt.val, 'bandwidth') }}</span>
+              </div>
             </div>
-          </div>
+          </Teleport>
 
           <div v-if="!bandwidthPoints.length" class="absolute inset-0 flex items-center justify-center text-text-secondary text-sm italic">
             No historical Bandwidth data available
