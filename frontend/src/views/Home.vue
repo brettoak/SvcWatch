@@ -235,10 +235,15 @@ const tooltipStyle = computed(() => {
   if (mouseX.value === 0 && mouseY.value === 0) return {}
   const tooltipWidth = 180
   const tooltipHeight = 120
-  const spaceOnRight = window.innerWidth - mouseX.value
+  
+  // Determine if the hovered point is in the right area (e.g. right 40%) of the Real-time Requests chart
+  const isRightSideOfChart = hoveredBarIdx.value !== null && 
+    tsDataSeries.value.success.length > 0 && 
+    hoveredBarIdx.value >= tsDataSeries.value.success.length * 0.6
+  
   const spaceOnBottom = window.innerHeight - mouseY.value
   
-  const left = spaceOnRight < tooltipWidth + 20 
+  const left = isRightSideOfChart 
     ? mouseX.value - tooltipWidth - 15 
     : mouseX.value + 15
     
