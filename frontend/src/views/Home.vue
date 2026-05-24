@@ -231,6 +231,27 @@ const handleMouseMove = (e: MouseEvent) => {
   mouseY.value = e.clientY
 }
 
+const tooltipStyle = computed(() => {
+  if (mouseX.value === 0 && mouseY.value === 0) return {}
+  const tooltipWidth = 180
+  const tooltipHeight = 120
+  const spaceOnRight = window.innerWidth - mouseX.value
+  const spaceOnBottom = window.innerHeight - mouseY.value
+  
+  const left = spaceOnRight < tooltipWidth + 20 
+    ? mouseX.value - tooltipWidth - 15 
+    : mouseX.value + 15
+    
+  const top = spaceOnBottom < tooltipHeight + 20 
+    ? mouseY.value - tooltipHeight - 15 
+    : mouseY.value + 15
+    
+  return {
+    left: `${left}px`,
+    top: `${top}px`
+  }
+})
+
 const metricOptions = [
   { label: 'QPS / Throughput', value: 'throughput' },
   { label: 'Error Rate', value: 'error_rate' },
@@ -943,7 +964,7 @@ const hoveredBar = computed(() => {
     <div 
       v-if="hoveredBar" 
       class="fixed pointer-events-none z-[100] bg-slate-900/90 text-white px-3.5 py-2.5 rounded-xl text-[0.7rem] shadow-xl backdrop-blur-md border border-white/10 flex flex-col gap-1.5 min-w-[155px] transition-opacity duration-200"
-      :style="{ left: mouseX + 15 + 'px', top: mouseY + 15 + 'px' }"
+      :style="tooltipStyle"
     >
       <!-- Header: Time -->
       <div class="flex items-center gap-2 border-b border-white/10 pb-1.5 mb-0.5">
