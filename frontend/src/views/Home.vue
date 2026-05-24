@@ -775,50 +775,7 @@ const hoveredBar = computed(() => {
             </defs>
           </svg>
           
-          <!-- Custom Tooltip -->
-          <div 
-            v-if="hoveredBar" 
-            class="fixed pointer-events-none z-[100] bg-slate-900/90 text-white px-3.5 py-2.5 rounded-xl text-[0.7rem] shadow-xl backdrop-blur-md border border-white/10 flex flex-col gap-1.5 min-w-[155px] transition-opacity duration-200"
-            :style="{ left: mouseX + 15 + 'px', top: mouseY + 15 + 'px' }"
-          >
-            <!-- Header: Time -->
-            <div class="flex items-center gap-2 border-b border-white/10 pb-1.5 mb-0.5">
-              <span class="font-bold text-white/90 text-[0.65rem] tracking-tight">{{ hoveredBar.fullTs }}</span>
-            </div>
 
-            <!-- Content for Throughput (Success + Errors) -->
-            <template v-if="selectedMetric === 'throughput'">
-              <div class="flex items-center justify-between gap-4">
-                <div class="flex items-center gap-1.5">
-                  <span class="w-1.5 h-1.5 rounded-full bg-[#10b981]"></span>
-                  <span class="text-white/60 font-semibold uppercase text-[0.55rem] tracking-wider">Success</span>
-                </div>
-                <span class="text-[0.75rem] font-black text-white">{{ hoveredBar.successVal }} reqs</span>
-              </div>
-              <div class="flex items-center justify-between gap-4">
-                <div class="flex items-center gap-1.5">
-                  <span class="w-1.5 h-1.5 rounded-full bg-[#f43f5e]"></span>
-                  <span class="text-white/60 font-semibold uppercase text-[0.55rem] tracking-wider">Failed</span>
-                </div>
-                <span class="text-[0.75rem] font-black text-[#f43f5e]">{{ hoveredBar.errorVal }} errs</span>
-              </div>
-              <div class="flex items-center justify-between gap-4 border-t border-white/5 pt-1.5 mt-0.5">
-                <span class="text-white/40 font-bold uppercase text-[0.55rem] tracking-wider">Total</span>
-                <span class="text-[0.75rem] font-black text-white/80">{{ hoveredBar.successVal + hoveredBar.errorVal }} reqs</span>
-              </div>
-            </template>
-
-            <!-- Content for Error Rate -->
-            <template v-else-if="selectedMetric === 'error_rate'">
-              <div class="flex items-center justify-between gap-4">
-                <div class="flex items-center gap-1.5">
-                  <span class="w-1.5 h-1.5 rounded-full bg-[#f59e0b]"></span>
-                  <span class="text-white/60 font-semibold uppercase text-[0.55rem] tracking-wider">Error Rate</span>
-                </div>
-                <span class="text-[0.75rem] font-black text-[#f59e0b]">{{ hoveredBar.rateVal.toFixed(2) }}%</span>
-              </div>
-            </template>
-          </div>
           
           <div v-if="!realTimePoints.length" class="flex-1 flex flex-col items-center justify-center text-text-secondary text-sm italic py-10">
             No real-time data available
@@ -980,6 +937,51 @@ const hoveredBar = computed(() => {
         </table>
       </div>
     </div>
+    </div>
+
+    <!-- Custom Tooltip (placed at root level to prevent z-index/clipping issues) -->
+    <div 
+      v-if="hoveredBar" 
+      class="fixed pointer-events-none z-[100] bg-slate-900/90 text-white px-3.5 py-2.5 rounded-xl text-[0.7rem] shadow-xl backdrop-blur-md border border-white/10 flex flex-col gap-1.5 min-w-[155px] transition-opacity duration-200"
+      :style="{ left: mouseX + 15 + 'px', top: mouseY + 15 + 'px' }"
+    >
+      <!-- Header: Time -->
+      <div class="flex items-center gap-2 border-b border-white/10 pb-1.5 mb-0.5">
+        <span class="font-bold text-white/90 text-[0.65rem] tracking-tight">{{ hoveredBar.fullTs }}</span>
+      </div>
+
+      <!-- Content for Throughput (Success + Errors) -->
+      <template v-if="selectedMetric === 'throughput'">
+        <div class="flex items-center justify-between gap-4">
+          <div class="flex items-center gap-1.5">
+            <span class="w-1.5 h-1.5 rounded-full bg-[#10b981]"></span>
+            <span class="text-white/60 font-semibold uppercase text-[0.55rem] tracking-wider">Success</span>
+          </div>
+          <span class="text-[0.75rem] font-black text-white">{{ hoveredBar.successVal }} reqs</span>
+        </div>
+        <div class="flex items-center justify-between gap-4">
+          <div class="flex items-center gap-1.5">
+            <span class="w-1.5 h-1.5 rounded-full bg-[#f43f5e]"></span>
+            <span class="text-white/60 font-semibold uppercase text-[0.55rem] tracking-wider">Failed</span>
+          </div>
+          <span class="text-[0.75rem] font-black text-[#f43f5e]">{{ hoveredBar.errorVal }} errs</span>
+        </div>
+        <div class="flex items-center justify-between gap-4 border-t border-white/5 pt-1.5 mt-0.5">
+          <span class="text-white/40 font-bold uppercase text-[0.55rem] tracking-wider">Total</span>
+          <span class="text-[0.75rem] font-black text-white/80">{{ hoveredBar.successVal + hoveredBar.errorVal }} reqs</span>
+        </div>
+      </template>
+
+      <!-- Content for Error Rate -->
+      <template v-else-if="selectedMetric === 'error_rate'">
+        <div class="flex items-center justify-between gap-4">
+          <div class="flex items-center gap-1.5">
+            <span class="w-1.5 h-1.5 rounded-full bg-[#f59e0b]"></span>
+            <span class="text-white/60 font-semibold uppercase text-[0.55rem] tracking-wider">Error Rate</span>
+          </div>
+          <span class="text-[0.75rem] font-black text-[#f59e0b]">{{ hoveredBar.rateVal.toFixed(2) }}%</span>
+        </div>
+      </template>
     </div>
   </div>
 </template>
