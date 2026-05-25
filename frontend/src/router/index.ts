@@ -45,6 +45,11 @@ const router = createRouter({
           name: 'trends',
           component: () => import('@/views/Trend.vue'),
         },
+        {
+          path: 'sources',
+          name: 'sources',
+          component: () => import('@/views/Sources.vue'),
+        },
       ],
     },
   ],

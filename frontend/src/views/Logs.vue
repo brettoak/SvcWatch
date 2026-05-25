@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
+import { useRoute } from 'vue-router'
 import { getLogs } from '@/services/api'
 import type { Log, LogQueryParams } from '@/services/api'
 import TimeFilter from '@/components/TimeFilter.vue'
 
+const route = useRoute()
 const logs = ref<Log[]>([])
 const total = ref(0)
 const loading = ref(false)
@@ -35,7 +37,7 @@ const filters = ref<LogQueryParams>({
   size: 50,
   start_time: defaultTimes.start,
   end_time: defaultTimes.end,
-  source_id: 'access.log',
+  source_id: (route.query.source_id as string) || 'access.log',
   ip: '',
   method: '',
   status: undefined,

@@ -73,6 +73,12 @@ const TrendIcon = h('svg', { xmlns: 'http://www.w3.org/2000/svg', width: '20', h
   h('polyline', { points: '17 6 23 6 23 12' })
 ])
 
+const DatabaseIcon = h('svg', { xmlns: 'http://www.w3.org/2000/svg', width: '20', height: '20', viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', 'stroke-width': '2', 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }, [
+  h('ellipse', { cx: '12', cy: '5', rx: '9', ry: '3' }),
+  h('path', { d: 'M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5' }),
+  h('path', { d: 'M3 12c0 1.66 4 3 9 3s9-1.34 9-3' }),
+])
+
 const navGroups = [
   {
     group: 'Dashboards',
@@ -87,6 +93,7 @@ const navGroups = [
       { name: 'Map', path: '/map', icon: MapIcon },
       { name: 'Top Stats', path: '/top-stats', icon: StatsIcon },
       { name: 'Trends', path: '/trends', icon: TrendIcon },
+      { name: 'Sources', path: '/sources', icon: DatabaseIcon },
     ]
   },
   {
