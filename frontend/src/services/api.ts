@@ -309,3 +309,14 @@ export const getGeoDistribution = (startTime: string, endTime: string, sourceId?
     },
   })
 }
+
+export interface SystemStatsResponse {
+  code: number
+  message: string
+  data: Record<string, number>
+}
+
+export const getSystemStats = () => {
+  return api.get<SystemStatsResponse>('/stats')
+}
+
