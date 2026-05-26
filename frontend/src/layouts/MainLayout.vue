@@ -81,18 +81,23 @@ const DatabaseIcon = h('svg', { xmlns: 'http://www.w3.org/2000/svg', width: '20'
 
 const navGroups = [
   {
-    group: 'Dashboards',
+    group: 'Dashboards & Metrics',
     items: [
       { name: 'Overview', path: '/', icon: OverviewIcon },
+      { name: 'Trends', path: '/trends', icon: TrendIcon },
     ]
   },
   {
-    group: 'Monitoring',
+    group: 'Analytics & Space',
+    items: [
+      { name: 'Top Stats', path: '/top-stats', icon: StatsIcon },
+      { name: 'Map', path: '/map', icon: MapIcon },
+    ]
+  },
+  {
+    group: 'Diagnostics & Data',
     items: [
       { name: 'Logs', path: '/logs', icon: LogsIcon },
-      { name: 'Map', path: '/map', icon: MapIcon },
-      { name: 'Top Stats', path: '/top-stats', icon: StatsIcon },
-      { name: 'Trends', path: '/trends', icon: TrendIcon },
       { name: 'Sources', path: '/sources', icon: DatabaseIcon },
     ]
   },
