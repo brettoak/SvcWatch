@@ -1,0 +1,14 @@
+{
+  "servers": [
+    {
+      "name": "Default Proxy Server",
+      "backendUrl": "/api/sev",
+      "passportUrl": "/api/passport"
+    },
+    {
+      "name": "Local Direct Server",
+      "backendUrl": "http://127.0.0.1:8080/api/v1/sev",
+      "passportUrl": "http://127.0.0.1:8089/api/v1"
+    }
+  ]
+}
