@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch, onMounted, computed } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { useThemeStore } from '@/stores/theme'
 import { getGeoDistribution } from '@/services/api'
 import type { GeoDistributionItem } from '@/services/api'
@@ -33,6 +33,16 @@ const geoData = ref<GeoDistributionItem[]>([])
 const timeFilter = ref('30d')
 const currentRange = ref<{ startStr: string; endStr: string } | null>(null)
 const sourceId = ref('')
+
+const displayedCities = computed(() => {
+  return geoData.value
+    .filter(item => item.city)
+    .sort((a, b) => b.count - a.count)
+})
+
+const displayedRequestCount = computed(() => {
+  return displayedCities.value.reduce((total, item) => total + item.count, 0)
+})
 
 const onTimeRangeChange = (range: { startStr: string; endStr: string }) => {
   currentRange.value = range
@@ -177,14 +187,55 @@ const option = computed(() => {
       </div>
     </div>
     
-    <div class="flex-1 bg-bg-secondary rounded-2xl shadow-card border border-border-color p-4 relative overflow-hidden">
-      <div v-if="loading || !mapLoaded" class="absolute inset-0 flex items-center justify-center bg-bg-secondary/50 backdrop-blur-sm z-10">
-        <div class="flex flex-col items-center gap-3">
-          <div class="w-8 h-8 border-4 border-primary-blue border-t-transparent rounded-full animate-spin"></div>
-          <span class="text-text-secondary font-bold tracking-widest uppercase text-xs">Initializing Map...</span>
+    <div class="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_18rem] gap-4">
+      <div class="min-h-[28rem] lg:min-h-0 bg-bg-secondary rounded-2xl shadow-card border border-border-color p-4 relative overflow-hidden">
+        <div v-if="loading || !mapLoaded" class="absolute inset-0 flex items-center justify-center bg-bg-secondary/50 backdrop-blur-sm z-10">
+          <div class="flex flex-col items-center gap-3">
+            <div class="w-8 h-8 border-4 border-primary-blue border-t-transparent rounded-full animate-spin"></div>
+            <span class="text-text-secondary font-bold tracking-widest uppercase text-xs">Initializing Map...</span>
+          </div>
         </div>
+        <v-chart v-if="mapLoaded" class="w-full h-full" :option="option" :autoresize="true" />
       </div>
-      <v-chart v-if="mapLoaded" class="w-full h-full" :option="option" :autoresize="true" />
+
+      <aside class="min-h-0 bg-bg-secondary rounded-2xl shadow-card border border-border-color overflow-hidden flex flex-col">
+        <div class="p-4 border-b border-border-color">
+          <div class="flex items-center justify-between gap-3">
+            <div>
+              <p class="m-0 text-xs font-bold uppercase tracking-widest text-text-secondary">Displayed Cities</p>
+              <p class="m-0 mt-1 text-2xl font-bold text-text-primary">{{ displayedCities.length }}</p>
+            </div>
+            <div class="text-right">
+              <p class="m-0 text-xs text-text-secondary">Requests</p>
+              <p class="m-0 mt-1 text-sm font-bold text-primary-blue">{{ displayedRequestCount.toLocaleString() }}</p>
+            </div>
+          </div>
+        </div>
+
+        <div v-if="displayedCities.length" class="flex-1 overflow-y-auto divide-y divide-border-color">
+          <div
+            v-for="city in displayedCities"
+            :key="`${city.city}-${city.region}-${city.country}-${city.latitude}-${city.longitude}`"
+            class="flex items-center justify-between gap-3 px-4 py-3 transition-colors hover:bg-bg-primary/40"
+          >
+            <div class="min-w-0">
+              <p class="m-0 text-sm font-bold text-text-primary truncate">{{ city.city }}</p>
+              <p class="m-0 mt-0.5 text-xs text-text-secondary truncate">
+                {{ [city.region, city.country].filter(Boolean).join(', ') }}
+              </p>
+            </div>
+            <span class="shrink-0 rounded-full bg-primary-blue/10 px-2.5 py-1 text-xs font-bold text-primary-blue">
+              {{ city.count.toLocaleString() }}
+            </span>
+          </div>
+        </div>
+
+        <div v-else class="flex-1 flex items-center justify-center p-6 text-center">
+          <p class="m-0 text-sm text-text-secondary">
+            {{ loading ? 'Loading cities...' : 'No city data is available for this range.' }}
+          </p>
+        </div>
+      </aside>
     </div>
   </div>
 </template>
