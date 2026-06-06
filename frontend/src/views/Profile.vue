@@ -9,7 +9,6 @@ interface UserProfile {
   role: string
   status: string
   avatarUrl?: string
-  // Add other fields as per the actual API response
 }
 
 const profile = ref<UserProfile | null>(null)
@@ -48,7 +47,6 @@ const handleAvatarUpload = async (event: Event) => {
   
   if (!file) return
 
-  // Basic validation
   if (!file.type.startsWith('image/')) {
     alert('Please select an image file')
     return
@@ -63,9 +61,7 @@ const handleAvatarUpload = async (event: Event) => {
     isUploadingAvatar.value = true
     const response = await uploadAvatar(file)
     if (response.data && response.data.code === 200) {
-      // Assuming the backend returns the full user profile or the new avatar URL
       if (profile.value) {
-        // We'll refetch the profile to get the updated data
         await fetchProfile()
       }
     } else {
@@ -76,7 +72,6 @@ const handleAvatarUpload = async (event: Event) => {
     alert(error.response?.data?.message || 'Failed to upload avatar')
   } finally {
     isUploadingAvatar.value = false
-    // Reset the input so the same file could be selected again if needed
     if (target) {
       target.value = ''
     }
@@ -100,9 +95,15 @@ onMounted(() => {
       <p class="text-text-secondary">Loading profile...</p>
     </div>
 
-    <div v-else-if="error" class="flex flex-col items-center justify-center p-16 bg-bg-secondary rounded-xl shadow-card gap-4 text-red-600">
-      <p>{{ error }}</p>
-      <button @click="fetchProfile" class="px-4 py-2 bg-primary-blue text-white rounded-lg border-none cursor-pointer font-medium transition-all hover:bg-primary-blue-hover">Retry</button>
+    <div v-else-if="error" class="flex flex-col items-center justify-center p-16 bg-bg-secondary rounded-xl shadow-card gap-4 text-red-500 border border-red-500/10">
+      <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="10"></circle>
+        <line x1="12" y1="8" x2="12" y2="12"></line>
+        <line x1="12" y1="16" x2="12.01" y2="16"></line>
+      </svg>
+      <p class="font-medium text-center">Unable to connect to the active auth server</p>
+      <p class="text-sm text-text-secondary -mt-2 max-w-md text-center">{{ error }}</p>
+      <button @click="fetchProfile" class="px-5 py-2 bg-primary-blue text-white rounded-lg border-none cursor-pointer font-medium transition-all hover:bg-primary-blue-hover shadow-sm">Retry Connection</button>
     </div>
 
     <div v-else-if="profile" class="bg-bg-secondary rounded-xl shadow-card overflow-hidden">
@@ -159,7 +160,6 @@ onMounted(() => {
 </template>
 
 <style scoped>
-/* Spinner border-top utility if needed, but Tailwind 4 might need a custom class if not standard */
 .border-top-primary-blue {
   border-top-color: var(--color-primary-blue);
 }
