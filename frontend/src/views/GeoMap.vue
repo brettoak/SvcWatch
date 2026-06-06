@@ -36,7 +36,17 @@ const sourceId = ref('')
 
 const displayedCities = computed(() => {
   return geoData.value
-    .filter(item => item.city)
+    .map(item => {
+      const displayName = item.city || item.region || item.country || 'Unknown location'
+
+      return {
+        ...item,
+        displayName,
+        displayRegion: [item.region, item.country]
+          .filter(part => part && part !== displayName)
+          .join(', '),
+      }
+    })
     .sort((a, b) => b.count - a.count)
 })
 
@@ -219,9 +229,9 @@ const option = computed(() => {
             class="flex items-center justify-between gap-3 px-4 py-3 transition-colors hover:bg-bg-primary/40"
           >
             <div class="min-w-0">
-              <p class="m-0 text-sm font-bold text-text-primary truncate">{{ city.city }}</p>
-              <p class="m-0 mt-0.5 text-xs text-text-secondary truncate">
-                {{ [city.region, city.country].filter(Boolean).join(', ') }}
+              <p class="m-0 text-sm font-bold text-text-primary truncate">{{ city.displayName }}</p>
+              <p v-if="city.displayRegion" class="m-0 mt-0.5 text-xs text-text-secondary truncate">
+                {{ city.displayRegion }}
               </p>
             </div>
             <span class="shrink-0 rounded-full bg-primary-blue/10 px-2.5 py-1 text-xs font-bold text-primary-blue">
