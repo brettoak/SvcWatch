@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, h, computed } from 'vue'
+import { ref, h, computed, watch } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import { useThemeStore } from '@/stores/theme'
 import { useRouter, useRoute } from 'vue-router'
@@ -10,6 +10,7 @@ const router = useRouter()
 const route = useRoute()
 
 const isSidebarCollapsed = ref(false)
+const isFullWidth = ref(localStorage.getItem('svcwatch-layout-width') === 'full')
 
 const handleLogout = () => {
   authStore.logout()
@@ -19,6 +20,14 @@ const handleLogout = () => {
 const toggleSidebar = () => {
   isSidebarCollapsed.value = !isSidebarCollapsed.value
 }
+
+const toggleContentWidth = () => {
+  isFullWidth.value = !isFullWidth.value
+}
+
+watch(isFullWidth, (value) => {
+  localStorage.setItem('svcwatch-layout-width', value ? 'full' : 'contained')
+})
 
 // Icons as render functions
 const OverviewIcon = h('svg', { xmlns: 'http://www.w3.org/2000/svg', width: '20', height: '20', viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', 'stroke-width': '2', 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }, [
@@ -86,6 +95,20 @@ const DatabaseIcon = h('svg', { xmlns: 'http://www.w3.org/2000/svg', width: '20'
   h('path', { d: 'M3 12c0 1.66 4 3 9 3s9-1.34 9-3' }),
 ])
 
+const MaximizeIcon = h('svg', { xmlns: 'http://www.w3.org/2000/svg', width: '20', height: '20', viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', 'stroke-width': '2', 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }, [
+  h('polyline', { points: '15 3 21 3 21 9' }),
+  h('polyline', { points: '9 21 3 21 3 15' }),
+  h('line', { x1: '21', y1: '3', x2: '14', y2: '10' }),
+  h('line', { x1: '3', y1: '21', x2: '10', y2: '14' }),
+])
+
+const MinimizeIcon = h('svg', { xmlns: 'http://www.w3.org/2000/svg', width: '20', height: '20', viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', 'stroke-width': '2', 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }, [
+  h('polyline', { points: '4 14 10 14 10 20' }),
+  h('polyline', { points: '20 10 14 10 14 4' }),
+  h('line', { x1: '14', y1: '10', x2: '21', y2: '3' }),
+  h('line', { x1: '3', y1: '21', x2: '10', y2: '14' }),
+])
+
 const navGroups = [
   {
     group: 'Dashboards & Metrics',
@@ -118,6 +141,7 @@ const navGroups = [
 ]
 
 const currentThemeIcon = computed(() => themeStore.isDark ? SunIcon : MoonIcon)
+const currentWidthIcon = computed(() => isFullWidth.value ? MinimizeIcon : MaximizeIcon)
 </script>
 
 <template>
@@ -135,6 +159,9 @@ const currentThemeIcon = computed(() => themeStore.isDark ? SunIcon : MoonIcon)
         <div class="text-2xl font-bold text-primary-blue tracking-tight">SvcWatch</div>
       </div>
       <div class="flex items-center gap-6">
+        <button @click="toggleContentWidth" class="bg-transparent border-none text-text-secondary cursor-pointer p-2 rounded-md flex items-center justify-center transition-all duration-200 hover:bg-bg-primary hover:text-primary-blue" :title="isFullWidth ? 'Use Contained Width' : 'Use Full Width'">
+          <component :is="currentWidthIcon" />
+        </button>
         <button @click="themeStore.toggleTheme" class="bg-transparent border-none text-text-secondary cursor-pointer p-2 rounded-md flex items-center justify-center transition-all duration-200 hover:bg-bg-primary hover:text-primary-blue" :title="themeStore.isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode'">
           <component :is="currentThemeIcon" />
         </button>
@@ -182,7 +209,7 @@ const currentThemeIcon = computed(() => themeStore.isDark ? SunIcon : MoonIcon)
 
       <!-- Main Content Area -->
       <main class="flex-1 overflow-y-auto bg-bg-primary">
-        <div class="p-8">
+        <div class="p-8 mx-auto w-full transition-[max-width] duration-300 ease-in-out" :class="isFullWidth ? 'max-w-none' : 'max-w-[1600px]'">
           <RouterView />
         </div>
       </main>
@@ -193,4 +220,3 @@ const currentThemeIcon = computed(() => themeStore.isDark ? SunIcon : MoonIcon)
 <style scoped>
 /* Only keeping structural-only or non-tailwind logic if absolutely needed, but here we can remove all */
 </style>
-
